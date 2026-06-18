@@ -48,8 +48,23 @@ export const useAuthStore = defineStore('auth', () => {
       const result = await authService.sync()
       if (result.type === 'ok') user.value = result.data
       return { type: 'ok', data: undefined }
-    } catch {
-      return { type: 'error', message: 'Sign in with Google failed. Please try again.' }
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? ''
+      console.error('[auth] loginWithGoogle failed:', code, err)
+
+      const messages: Record<string, string> = {
+        'auth/popup-blocked':
+          'The sign-in popup was blocked. Please allow popups for this site and try again.',
+        'auth/popup-closed-by-user': 'Sign-in cancelled.',
+        'auth/unauthorized-domain':
+          'This domain is not authorised in Firebase. Add it under Authentication → Settings → Authorised domains.',
+        'auth/operation-not-allowed':
+          'Google sign-in is not enabled. Enable it in the Firebase console under Authentication → Sign-in method.',
+        'auth/network-request-failed':
+          'Network error — check your internet connection and try again.',
+      }
+
+      return { type: 'error', message: messages[code] ?? `Sign in failed (${code || 'unknown error'}).` }
     }
   }
 
