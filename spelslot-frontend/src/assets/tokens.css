@@ -1,0 +1,62 @@
+/* Spelslot Design Tokens
+ * All component colors must reference these variables — never hardcode hex.
+ * Drop a new theme by overriding these at :root. */
+
+:root {
+  /* ── Parchment ── warm off-white, base background */
+  --ss-parchment:       #F5F0E8;
+  --ss-parchment-dark:  #EDE8DB;
+  --ss-parchment-deeper:#E0D9CC;
+
+  /* ── Primary ── amber/rust accent (amber-600 family) */
+  --ss-primary:         #D97706;
+  --ss-primary-hover:   #B45309;
+  --ss-primary-light:   #FEF3C7;
+  --ss-primary-fg:      #FFFFFF;
+
+  /* ── Shell ── dark brown, sidebar and top nav */
+  --ss-shell:           #2D1B0E;
+  --ss-shell-lighter:   #3D2B1A;
+  --ss-shell-fg:        #F5F0E8;
+  --ss-shell-fg-muted:  #C4A882;
+
+  /* ── Text */
+  --ss-text:            #1C1410;
+  --ss-text-muted:      #6B5744;
+  --ss-text-subtle:     #9C8475;
+  --ss-text-inverse:    #F5F0E8;
+
+  /* ── Surface */
+  --ss-surface:         #FFFFFF;
+  --ss-surface-raised:  #FAF7F2;
+  --ss-surface-overlay: rgba(28, 20, 16, 0.6);
+
+  /* ── Border */
+  --ss-border:          #D4C4B0;
+  --ss-border-subtle:   #EAE0D4;
+
+  /* ── Feedback */
+  --ss-success:         #16A34A;
+  --ss-success-bg:      #DCFCE7;
+  --ss-warning:         #CA8A04;
+  --ss-warning-bg:      #FEF9C3;
+  --ss-danger:          #DC2626;
+  --ss-danger-bg:       #FEE2E2;
+  --ss-info:            #2563EB;
+  --ss-info-bg:         #DBEAFE;
+
+  /* ── Radius */
+  --ss-radius-sm:       4px;
+  --ss-radius:          8px;
+  --ss-radius-lg:       12px;
+
+  /* ── Shadow */
+  --ss-shadow-sm:       0 1px 3px rgba(28, 20, 16, 0.12);
+  --ss-shadow:          0 4px 12px rgba(28, 20, 16, 0.15);
+  --ss-shadow-lg:       0 8px 24px rgba(28, 20, 16, 0.20);
+
+  /* ── Layout */
+  --ss-navbar-height:            56px;
+  --ss-sidebar-width:            220px;
+  --ss-sidebar-collapsed-width:  60px;
+}

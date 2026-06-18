@@ -1,0 +1,16 @@
+{
+  "name": "spelslot-platform",
+  "private": true,
+  "workspaces": [
+    "spelslot-backend",
+    "spelslot-frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=spelslot-backend",
+    "dev:frontend": "npm run dev --workspace=spelslot-frontend",
+    "dev": "concurrently -n backend,frontend -c cyan,magenta \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
