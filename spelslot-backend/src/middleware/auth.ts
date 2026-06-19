@@ -10,6 +10,22 @@ export interface AuthRequest extends Request {
   }
 }
 
+export async function optionalAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const header = req.headers.authorization
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const decoded = await getAuth().verifyIdToken(header.slice(7))
+      ;(req as AuthRequest).user = {
+        uid: decoded.uid,
+        email: decoded.email ?? '',
+        name: decoded.name ?? '',
+        picture: decoded.picture ?? '',
+      }
+    } catch { /* no-op — unauthenticated request continues */ }
+  }
+  next()
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization
   if (!header?.startsWith('Bearer ')) {

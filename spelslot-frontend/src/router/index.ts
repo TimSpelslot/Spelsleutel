@@ -28,6 +28,16 @@ const router = createRouter({
           component: () => import('@/views/CodexView.vue'),
         },
         {
+          path: 'codex/new',
+          name: 'codex-new',
+          component: () => import('@/views/CodexNewEntry.vue'),
+        },
+        {
+          path: 'codex/:slug',
+          name: 'codex-entry',
+          component: () => import('@/views/CodexEntryView.vue'),
+        },
+        {
           path: 'session',
           name: 'session',
           component: () => import('@/views/SessionView.vue'),

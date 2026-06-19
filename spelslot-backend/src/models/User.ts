@@ -37,6 +37,4 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true },
 )
 
-UserSchema.index({ uid: 1 }, { unique: true })
-
 export const User = model<IUser>('User', UserSchema)

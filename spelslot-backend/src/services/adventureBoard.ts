@@ -1,13 +1,11 @@
 // Typed wrapper around the AdventureBoard live API.
-// Auth: Bearer service token from ADVENTUREBOARD_API_TOKEN env var.
 // Base URL: https://signup.spelslot.nl
 
 const AB_BASE = 'https://signup.spelslot.nl'
 
 function authHeader(): Record<string, string> {
   const token = process.env.ADVENTUREBOARD_API_TOKEN
-  if (!token) throw new Error('ADVENTUREBOARD_API_TOKEN is not set')
-  return { Authorization: `Bearer ${token}` }
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 // ── AB API types (derived from OpenAPI spec v0.11.0) ──────────────────
