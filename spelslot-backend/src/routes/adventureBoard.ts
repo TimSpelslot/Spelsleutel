@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { requireAuth } from '../middleware/auth'
-import { getUpcomingSessions, getUserAssignments } from '../services/adventureBoard'
+import { getUpcomingSessions, getUserAssignments, getAdventure } from '../services/adventureBoard'
 
 export const adventureBoardRouter = Router()
 
@@ -14,6 +14,26 @@ adventureBoardRouter.get(
     try {
       const sessions = await getUpcomingSessions()
       res.json(sessions)
+    } catch (err) {
+      next(err)
+    }
+  },
+)
+
+// GET /api/adventure-board/sessions/:id
+// Returns full adventure detail including assignments and signups.
+adventureBoardRouter.get(
+  '/sessions/:id',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = Number(req.params.id)
+      if (!Number.isFinite(id)) {
+        res.status(400).json({ message: 'id must be a number' })
+        return
+      }
+      const session = await getAdventure(id)
+      res.json(session)
     } catch (err) {
       next(err)
     }

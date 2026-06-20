@@ -7,6 +7,7 @@ import { connectDB } from '../config/db'
 import { WorldEntry } from '../models/WorldEntry'
 import { WorldDocument } from '../models/WorldDocument'
 import { WorldEntryRelation } from '../models/WorldEntryRelation'
+import { LkCalendar } from '../models/LkCalendar'
 import { toSlug } from '../utils/slug'
 
 // ── LK format types ───────────────────────────────────────────────────────
@@ -55,6 +56,41 @@ interface LkRoot {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+// Walk ProseMirror JSON and replace mention nodes that still use raw lkIds
+// with resolved slug (id) + entry name (label). Idempotent: skips nodes
+// that already have a label set.
+function enrichMentionNodes(
+  node: unknown,
+  slugMap: Map<string, string>,
+  nameMap: Map<string, string>,
+): { changed: boolean; node: unknown } {
+  if (!node || typeof node !== 'object') return { changed: false, node }
+  const n = node as Record<string, unknown>
+
+  if (n.type === 'mention' && n.attrs && typeof n.attrs === 'object') {
+    const attrs = n.attrs as Record<string, unknown>
+    if (typeof attrs.id === 'string' && !attrs.label) {
+      const slug = slugMap.get(attrs.id)
+      const name = nameMap.get(attrs.id)
+      if (slug && name) {
+        return { changed: true, node: { ...n, attrs: { ...attrs, id: slug, label: name } } }
+      }
+    }
+  }
+
+  if (Array.isArray(n.content)) {
+    let changed = false
+    const content = n.content.map((child) => {
+      const result = enrichMentionNodes(child, slugMap, nameMap)
+      if (result.changed) changed = true
+      return result.node
+    })
+    if (changed) return { changed: true, node: { ...n, content } }
+  }
+
+  return { changed: false, node }
+}
+
 const TYPE_TAGS = new Set(['location', 'npc', 'faction', 'item', 'event', 'rule', 'session'])
 
 function inferType(tags: string[]): string {
@@ -93,6 +129,9 @@ async function main() {
   console.log(`[import] ${data.resources.length} resources in export (exportId: ${data.exportId})`)
 
   await connectDB()
+
+  // Name map from export (for mention enrichment in pass 4)
+  const lkIdToName = new Map<string, string>(data.resources.map((r) => [r.id, r.name]))
 
   // Pre-load existing slugs and lkId→ObjectId map
   const existing = await WorldEntry.find({}, 'lkId slug').lean()
@@ -136,14 +175,17 @@ async function main() {
     )
 
     lkIdToMongoId.set(resource.id, entry._id)
+    lkIdToSlug.set(resource.id, entry.slug)
     entryCount++
 
     for (const doc of resource.documents ?? []) {
+      // Upsert by (entryId, lkDocId) — some LK exports reuse lkDocIds across
+      // different resources; keying on entryId ensures each entry keeps its own
+      // document records rather than having them stolen by a later sibling.
       await WorldDocument.findOneAndUpdate(
-        { lkDocId: doc.id },
+        { entryId: entry._id, lkDocId: doc.id },
         {
           $set: {
-            entryId: entry._id,
             name: doc.name ?? 'Page',
             type: doc.type,
             content: doc.content ?? null,
@@ -152,7 +194,7 @@ async function main() {
             isFirst: doc.isFirst ?? false,
             calendarId: doc.calendarId,
           },
-          $setOnInsert: { lkDocId: doc.id },
+          $setOnInsert: { entryId: entry._id, lkDocId: doc.id },
         },
         { upsert: true },
       )
@@ -190,31 +232,114 @@ async function main() {
 
     const links = (resource.properties ?? []).filter((p) => p.type === 'RESOURCE_LINK')
     for (const link of links) {
-      // LK stores the target resource id; field name varies by LK version
-      const targetLkId =
-        (link.value as Record<string, string> | undefined)?.resourceId ??
-        (link.resourceId as string | undefined)
-      if (!targetLkId) continue
+      // LK stores targets in data.items[].resourceId (each property can have
+      // multiple targets). Fall back to the flat fields for older LK versions.
+      const items = (link.data as { items?: { resourceId: string }[] } | undefined)?.items
+      const targetIds: string[] = items?.length
+        ? items.map((i) => i.resourceId).filter(Boolean)
+        : [
+            (link.value as Record<string, string> | undefined)?.resourceId ?? '',
+            (link.resourceId as string | undefined) ?? '',
+          ].filter(Boolean)
 
-      const targetMongoId = lkIdToMongoId.get(targetLkId)
-      if (!targetMongoId) {
-        skipped++
-        continue
+      const linkLabel = (link.title as string | undefined) ?? (link.label as string | undefined)
+
+      for (const targetLkId of targetIds) {
+        const targetMongoId = lkIdToMongoId.get(targetLkId)
+        if (!targetMongoId) {
+          skipped++
+          continue
+        }
+        await WorldEntryRelation.findOneAndUpdate(
+          { sourceId: sourceMongoId, targetId: targetMongoId },
+          {
+            $set: { type: linkLabel ?? undefined },
+            $setOnInsert: { lkPropertyId: link.id },
+          },
+          { upsert: true },
+        )
+        relationCount++
       }
-
-      await WorldEntryRelation.findOneAndUpdate(
-        { sourceId: sourceMongoId, targetId: targetMongoId },
-        {
-          $set: { type: (link.label as string | undefined) ?? undefined },
-          $setOnInsert: { lkPropertyId: link.id },
-        },
-        { upsert: true },
-      )
-      relationCount++
     }
   }
 
   console.log(`[import] Upserted ${relationCount} relations (${skipped} targets not found)`)
+
+  // ── Pass 4: enrich inline mention nodes in page documents ─────────────
+  console.log('[import] Pass 4: enriching inline mention nodes...')
+  let mentionDocCount = 0
+  const pageDocs = await WorldDocument.find({ type: 'page' }).lean()
+  for (const doc of pageDocs) {
+    if (!doc.content) continue
+    const result = enrichMentionNodes(doc.content, lkIdToSlug, lkIdToName)
+    if (result.changed) {
+      await WorldDocument.findByIdAndUpdate(doc._id, { $set: { content: result.node } })
+      mentionDocCount++
+    }
+  }
+  console.log(`[import] Enriched inline mentions in ${mentionDocCount} documents`)
+
+  // ── Calendars: upsert all calendar definitions ───────────────────────────
+  console.log('[import] Importing calendars...')
+  let calCount = 0
+  for (const cal of (data as unknown as { calendars?: Record<string, unknown>[] }).calendars ?? []) {
+    await LkCalendar.findOneAndUpdate(
+      { lkCalendarId: cal.id as string },
+      {
+        $set: {
+          name: (cal.name as string) ?? 'Unknown',
+          hasZeroYear: (cal.hasZeroYear as boolean) ?? false,
+          hoursInDay: (cal.hoursInDay as number) ?? 24,
+          minutesInHour: (cal.minutesInHour as number) ?? 60,
+          months: ((cal.months as Record<string, unknown>[]) ?? []).map((m) => ({
+            id: m.id, name: m.name, length: m.length, isIntercalary: m.isIntercalary ?? false,
+          })),
+          leapDays: ((cal.leapDays as Record<string, unknown>[]) ?? []).map((l) => ({
+            id: l.id, month: l.month ?? 0, day: l.day ?? 0, interval: l.interval ?? '', offset: l.offset ?? 0,
+          })),
+          weekdays: ((cal.weekdays as Record<string, unknown>[]) ?? []).map((w) => ({ id: w.id, name: w.name })),
+          negativeEra: cal.negativeEra
+            ? { id: (cal.negativeEra as Record<string, unknown>).id, name: (cal.negativeEra as Record<string, unknown>).name, abbr: (cal.negativeEra as Record<string, unknown>).abbr }
+            : undefined,
+          positiveEra: cal.positiveEra
+            ? { id: (cal.positiveEra as Record<string, unknown>).id, name: (cal.positiveEra as Record<string, unknown>).name, abbr: (cal.positiveEra as Record<string, unknown>).abbr }
+            : undefined,
+        },
+      },
+      { upsert: true },
+    )
+    calCount++
+  }
+  console.log(`[import] Upserted ${calCount} calendars`)
+
+  // ── Pass 5: resolve timeline event URIs to Codex slugs ───────────────────
+  console.log('[import] Pass 5: resolving timeline event URIs...')
+  let timelineEnrichedCount = 0
+  const timeDocs = await WorldDocument.find({ type: 'time' }).lean()
+  for (const doc of timeDocs) {
+    if (!doc.content) continue
+    const content = doc.content as { lanes?: unknown[]; events?: Record<string, unknown>[] }
+    if (!Array.isArray(content.events) || !content.events.length) continue
+
+    let changed = false
+    const enrichedEvents = content.events.map((event) => {
+      const uri = event.uri as string | undefined
+      if (!uri) return event
+      const match = uri.match(/^lk:\/\/resources\/([^/]+)/)
+      if (!match) return event
+      const slug = lkIdToSlug.get(match[1])
+      if (!slug || event.slug === slug) return event
+      changed = true
+      return { ...event, slug }
+    })
+
+    if (changed) {
+      await WorldDocument.findByIdAndUpdate(doc._id, { $set: { content: { ...content, events: enrichedEvents } } })
+      timelineEnrichedCount++
+    }
+  }
+  console.log(`[import] Enriched URIs in ${timelineEnrichedCount} timeline documents`)
+
   console.log('[import] Done!')
 
   await mongoose.connection.close()

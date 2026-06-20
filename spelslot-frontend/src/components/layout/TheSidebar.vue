@@ -13,13 +13,30 @@ const userInitials = computed(() => {
   return name.charAt(0).toUpperCase() || '?'
 })
 
-const navItems = [
-  { name: 'dashboard', label: 'Dashboard', icon: 'pi pi-home' },
-  { name: 'codex',     label: 'Codex',     icon: 'pi pi-book' },
-  { name: 'session',   label: 'Sessions',  icon: 'pi pi-calendar' },
-] as const
+type NavItem = { name: string; label: string; icon: string }
 
-const marketplaceItem = { label: 'Marketplace', icon: 'pi pi-shopping-bag' }
+const navItems = computed<NavItem[]>(() => {
+  const role = auth.effectiveUser?.role
+  const items: NavItem[] = [
+    { name: 'dashboard',      label: 'Dashboard',    icon: 'pi pi-home' },
+    { name: 'codex',          label: 'Codex',        icon: 'pi pi-book' },
+    { name: 'sessions',       label: 'Sessions',     icon: 'pi pi-calendar' },
+    { name: 'session-player', label: 'Session',      icon: 'pi pi-play-circle' },
+    { name: 'marketplace',    label: 'Marketplace',  icon: 'pi pi-shopping-bag' },
+  ]
+  // DM Dashboard only for permanent DM/ADMIN roles.
+  // Player-hosted sessions will add this link dynamically once AdventureBoard
+  // integration is in place and we know who's running a given session.
+  if (role === 'DM' || role === 'ADMIN') {
+    items.push({ name: 'session-dm', label: 'DM Dashboard', icon: 'pi pi-shield' })
+  }
+  if (role === 'ADMIN') {
+    items.push({ name: 'admin', label: 'Admin', icon: 'pi pi-sliders-h' })
+  }
+  return items
+})
+
+
 </script>
 
 <template>
@@ -44,15 +61,6 @@ const marketplaceItem = { label: 'Marketplace', icon: 'pi pi-shopping-bag' }
         <span class="sidebar__label">{{ item.label }}</span>
       </RouterLink>
 
-      <!-- Marketplace: placeholder, not yet routed -->
-      <div
-        class="sidebar__item sidebar__item--disabled"
-        v-tooltip.right="sidebar.collapsed ? marketplaceItem.label : undefined"
-      >
-        <i :class="['sidebar__icon', marketplaceItem.icon]" aria-hidden="true" />
-        <span class="sidebar__label">{{ marketplaceItem.label }}</span>
-        <span v-if="!sidebar.collapsed" class="sidebar__coming-soon">Soon</span>
-      </div>
     </nav>
 
     <!-- Divider -->

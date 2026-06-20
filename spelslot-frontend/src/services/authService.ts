@@ -28,4 +28,22 @@ export const authService = {
     if (result.type === 'error') return result
     return { type: 'ok', data: normalise(result.data) }
   },
+
+  async requestWorldbuilder(): Promise<Result<User>> {
+    const result = await api.post<RawUser>('/api/auth/me/request-worldbuilder', {})
+    if (result.type === 'error') return result
+    return { type: 'ok', data: normalise(result.data) }
+  },
+
+  async updateProfile(displayName: string): Promise<Result<User>> {
+    const result = await api.patch<RawUser>('/api/auth/me', { displayName })
+    if (result.type === 'error') return result
+    return { type: 'ok', data: normalise(result.data) }
+  },
+
+  async updatePreferences(prefs: Partial<Pick<User, 'notifySignup' | 'notifyAssignment' | 'notifyMarketplace' | 'notifySession'>>): Promise<Result<User>> {
+    const result = await api.patch<RawUser>('/api/auth/me/preferences', prefs)
+    if (result.type === 'error') return result
+    return { type: 'ok', data: normalise(result.data) }
+  },
 }

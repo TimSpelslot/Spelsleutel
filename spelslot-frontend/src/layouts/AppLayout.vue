@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import TheNavbar from '@/components/layout/TheNavbar.vue'
 import TheSidebar from '@/components/layout/TheSidebar.vue'
 import { useSidebar } from '@/composables/useSidebar'
+import { useFcm } from '@/composables/useFcm'
 
 const sidebar = useSidebar()
+const fcm = useFcm()
+
+onMounted(() => fcm.init())
 </script>
 
 <template>

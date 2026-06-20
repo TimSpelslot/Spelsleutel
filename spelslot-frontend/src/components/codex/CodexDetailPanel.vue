@@ -9,7 +9,9 @@ import Textarea from 'primevue/textarea'
 import Skeleton from 'primevue/skeleton'
 import TiptapRenderer from './TiptapRenderer.vue'
 import CodexEditor from './CodexEditor.vue'
+import TimelineView from './TimelineView.vue'
 import { codexService, type CodexEntryDetail, type EntryType } from '@/services/codexService'
+import { uploadImage } from '@/services/uploadService'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
@@ -37,6 +39,32 @@ const metaForm = reactive({
   summary: '',
 })
 const editorContent = ref<unknown>(null)
+
+// Banner state
+const bannerForm = reactive({ enabled: false, url: '', yPosition: 50 })
+const bannerUploading = ref(false)
+const bannerUploadProgress = ref(0)
+const bannerUploadError = ref<string | null>(null)
+const bannerFileInput = ref<HTMLInputElement | null>(null)
+
+async function handleBannerFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  bannerUploading.value = true
+  bannerUploadError.value = null
+  bannerUploadProgress.value = 0
+  const result = await uploadImage(file, (percent) => {
+    bannerUploadProgress.value = percent
+  })
+  bannerUploading.value = false
+  if (result.type === 'ok') {
+    bannerForm.url = result.data
+    bannerForm.enabled = true
+  } else {
+    bannerUploadError.value = result.message
+  }
+  if (bannerFileInput.value) bannerFileInput.value.value = ''
+}
 
 async function load(slug: string) {
   loading.value = true
@@ -69,9 +97,9 @@ const visibleDocs = computed(() => (detail.value?.documents ?? []).filter((d) =>
 const relations = computed(() => detail.value?.relations ?? [])
 const activeDoc = computed(() => visibleDocs.value[activeDocIndex.value] ?? null)
 
-// Permission logic
+// Permission logic (uses effectiveUser so dev role toggles affect the UI)
 const canWrite = computed(() => {
-  const user = auth.user
+  const user = auth.effectiveUser
   const e = entry.value
   if (!user || !e) return false
   if (user.role === 'DM' || user.role === 'ADMIN') return true
@@ -103,7 +131,8 @@ const permissionOptions = computed(() => {
     { label: 'Players', value: 'PLAYERS' },
     { label: 'Private', value: 'PRIVATE' },
   ]
-  if (auth.user?.role === 'DM' || auth.user?.role === 'ADMIN') {
+  const r = auth.effectiveUser?.role
+  if (r === 'DM' || r === 'ADMIN') {
     opts.splice(2, 0, { label: 'DM Only', value: 'DM_ONLY' })
   }
   return opts
@@ -118,6 +147,10 @@ function enterEditMode() {
   metaForm.tags = [...(entry.value.tags ?? [])]
   metaForm.summary = entry.value.summary ?? ''
   editorContent.value = activeDoc.value?.content ?? null
+  bannerForm.enabled = entry.value.banner?.enabled ?? false
+  bannerForm.url = entry.value.banner?.url ?? ''
+  bannerForm.yPosition = entry.value.banner?.yPosition ?? 50
+  bannerUploadError.value = null
   isEditing.value = true
 }
 
@@ -136,6 +169,7 @@ async function saveEdit() {
       permission: metaForm.permission,
       tags: metaForm.tags,
       summary: metaForm.summary,
+      banner: { enabled: bannerForm.enabled, url: bannerForm.url, yPosition: bannerForm.yPosition },
     })
     if (activeDoc.value && editorContent.value) {
       await codexService.updateDocument(entry.value.id, activeDoc.value.id, {
@@ -233,6 +267,66 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
             <label class="edit-label">Tags</label>
             <InputChips v-model="metaForm.tags" placeholder="Add tag, press Enter…" class="edit-chips" />
           </div>
+
+          <!-- Banner -->
+          <div class="edit-meta__row">
+            <label class="edit-label">Banner image</label>
+
+            <!-- Preview -->
+            <div
+              v-if="bannerForm.url"
+              class="edit-banner-preview"
+              :style="{ backgroundImage: `url(${bannerForm.url})`, backgroundPositionY: `${bannerForm.yPosition}%` }"
+            />
+
+            <div class="edit-banner-controls">
+              <input
+                ref="bannerFileInput"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                class="edit-banner-file-input"
+                @change="handleBannerFile"
+              />
+              <Button
+                :label="bannerForm.url ? 'Replace image' : 'Upload image'"
+                icon="pi pi-upload"
+                size="small"
+                outlined
+                :loading="bannerUploading"
+                @click="bannerFileInput?.click()"
+              />
+
+              <template v-if="bannerForm.url">
+                <label class="edit-label edit-label--inline">
+                  Visible
+                  <input type="checkbox" v-model="bannerForm.enabled" />
+                </label>
+
+                <div class="edit-banner-position">
+                  <span class="edit-label edit-label--inline">Vertical position</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    v-model.number="bannerForm.yPosition"
+                    class="edit-banner-slider"
+                  />
+                  <span class="edit-banner-position-val">{{ bannerForm.yPosition }}%</span>
+                </div>
+
+                <button class="edit-banner-remove" @click="bannerForm.url = ''; bannerForm.enabled = false">
+                  <i class="pi pi-times" /> Remove
+                </button>
+              </template>
+
+              <!-- Upload progress -->
+              <div v-if="bannerUploading" class="edit-banner-progress">
+                <div class="edit-banner-progress-bar" :style="{ width: `${bannerUploadProgress}%` }" />
+              </div>
+              <p v-if="bannerUploadError" class="edit-banner-error">{{ bannerUploadError }}</p>
+            </div>
+          </div>
+
           <div class="edit-actions">
             <Button label="Save" icon="pi pi-check" :loading="saving" @click="saveEdit" />
             <Button label="Cancel" text severity="secondary" @click="cancelEdit" />
@@ -295,10 +389,16 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
           </button>
         </div>
 
-        <div v-if="activeDoc" class="detail-doc-body">
+        <div
+          v-if="activeDoc"
+          class="detail-doc-body"
+          :class="{ 'detail-doc-body--timeline': activeDoc.type === 'time' }"
+        >
           <!-- Edit mode: show editor for page docs -->
           <CodexEditor
             v-if="isEditing && activeDoc.type === 'page'"
+            :key="activeDoc.id"
+            :doc-id="activeDoc.id"
             :content="editorContent"
             @update="editorContent = $event"
           />
@@ -308,13 +408,20 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
             <TiptapRenderer
               v-if="activeDoc.type === 'page' && hasContent(activeDoc.content)"
               :content="activeDoc.content"
+              @navigate="$emit('navigate', $event)"
             />
             <div v-else-if="activeDoc.type === 'page'" class="detail-no-content">
               This page has no content yet.
             </div>
+            <TimelineView
+              v-else-if="activeDoc.type === 'time'"
+              :content="(activeDoc.content as { lanes?: unknown[]; events?: unknown[] }) ?? {}"
+              :calendar-id="activeDoc.calendarId ?? null"
+              @navigate="$emit('navigate', $event)"
+            />
             <div v-else class="detail-no-content">
               <i class="pi pi-clock" />
-              {{ activeDoc.type.charAt(0).toUpperCase() + activeDoc.type.slice(1) }} viewer coming in v2.
+              {{ activeDoc.type.charAt(0).toUpperCase() + activeDoc.type.slice(1) }} viewer not yet supported.
             </div>
           </template>
         </div>
@@ -512,6 +619,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
 .detail-tab:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .detail-doc-body { padding: 1.25rem; background: var(--ss-surface); }
+.detail-doc-body--timeline { padding: 0; }
 
 .detail-no-content {
   display: flex;
@@ -562,4 +670,87 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
 }
 
 .detail-relation__unknown { color: var(--ss-text-muted); font-style: italic; }
+
+/* ── Banner upload ── */
+.edit-banner-preview {
+  width: 100%;
+  height: 100px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-radius: var(--ss-radius);
+  border: 1px solid var(--ss-border);
+  margin-bottom: 0.5rem;
+}
+
+.edit-banner-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.edit-banner-file-input { display: none; }
+
+.edit-label--inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ss-text-muted);
+}
+
+.edit-banner-position {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.edit-banner-slider {
+  flex: 1;
+  accent-color: var(--ss-primary);
+}
+
+.edit-banner-position-val {
+  font-size: 0.75rem;
+  color: var(--ss-text-muted);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.edit-banner-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--ss-danger, #ef4444);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+}
+.edit-banner-remove:hover { opacity: 0.75; }
+
+.edit-banner-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--ss-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.edit-banner-progress-bar {
+  height: 100%;
+  background: var(--ss-primary);
+  transition: width 0.2s;
+}
+
+.edit-banner-error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ss-danger, #ef4444);
+}
 </style>

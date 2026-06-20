@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { generateKeyBetween } from 'fractional-indexing'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import Button from 'primevue/button'
@@ -14,9 +15,14 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const canCreateEntry = computed(() => {
-  const u = auth.user
+  const u = auth.effectiveUser
   if (!u) return false
   return u.role === 'DM' || u.role === 'ADMIN' || u.isWorldbuilder
+})
+
+const canReorder = computed(() => {
+  const role = auth.effectiveUser?.role
+  return role === 'DM' || role === 'ADMIN'
 })
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -124,6 +130,42 @@ function toggleType(type: string) {
 function navigateRelation(slug: string) {
   selectEntry(slug)
 }
+
+async function handleReorder({
+  draggedId,
+  targetId,
+  position,
+}: {
+  draggedId: string
+  targetId: string
+  position: 'before' | 'after'
+}) {
+  const dragged = entries.value.find((e) => e.id === draggedId)
+  const target  = entries.value.find((e) => e.id === targetId)
+  if (!dragged || !target || dragged.parentId !== target.parentId) return
+
+  // Sorted siblings excluding the dragged entry
+  const siblings = entries.value
+    .filter((e) => e.parentId === target.parentId && e.id !== draggedId)
+    .sort((a, b) => a.pos.localeCompare(b.pos))
+
+  const targetIdx = siblings.findIndex((e) => e.id === targetId)
+
+  // Empty strings are not valid fractional-indexing keys — treat as null
+  const safePos = (p: string | null | undefined): string | null =>
+    p && p.length > 0 ? p : null
+
+  const beforePos = safePos(position === 'before' ? siblings[targetIdx - 1]?.pos : target.pos)
+  const afterPos  = safePos(position === 'before' ? target.pos : siblings[targetIdx + 1]?.pos)
+
+  try {
+    const newPos = generateKeyBetween(beforePos, afterPos)
+    dragged.pos = newPos
+    await codexService.updateEntry(draggedId, { pos: newPos })
+  } catch (err) {
+    console.error('[Codex] Reorder failed — pos values may be incompatible:', { beforePos, afterPos, err })
+  }
+}
 </script>
 
 <template>
@@ -202,7 +244,9 @@ function navigateRelation(slug: string) {
                 :key="node.entry.id"
                 :node="node"
                 :selected-slug="selectedSlug"
+                :can-reorder="canReorder"
                 @select="selectEntry"
+                @reorder="handleReorder"
               />
             </div>
           </div>

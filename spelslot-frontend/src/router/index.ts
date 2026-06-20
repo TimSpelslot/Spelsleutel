@@ -38,9 +38,46 @@ const router = createRouter({
           component: () => import('@/views/CodexEntryView.vue'),
         },
         {
+          path: 'sessions',
+          name: 'sessions',
+          component: () => import('@/views/AdventureBoardView.vue'),
+        },
+        {
           path: 'session',
           name: 'session',
           component: () => import('@/views/SessionView.vue'),
+        },
+        {
+          path: 'session/dm',
+          name: 'session-dm',
+          component: () => import('@/views/SessionDmView.vue'),
+          meta: { requiresDM: true },
+        },
+        {
+          path: 'session/player',
+          name: 'session-player',
+          component: () => import('@/views/SessionPlayerView.vue'),
+        },
+        {
+          path: 'marketplace',
+          name: 'marketplace',
+          component: () => import('@/views/MarketplaceView.vue'),
+        },
+        {
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/NotificationsView.vue'),
+        },
+        {
+          path: 'admin',
+          name: 'admin',
+          component: () => import('@/views/AdminView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: () => import('@/views/ProfileView.vue'),
         },
       ],
     },
@@ -58,6 +95,14 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.requiresGuest && auth.user) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresDM && !auth.hasPermission(['DM', 'ADMIN'])) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresAdmin && !auth.hasPermission('ADMIN')) {
     return { name: 'dashboard' }
   }
 })

@@ -9,17 +9,21 @@
     "import:lk": "tsx src/scripts/importLk.ts"
   },
   "dependencies": {
+    "@hocuspocus/server": "^3.4.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.0.1",
     "firebase-admin": "^13.10.0",
     "fractional-indexing": "^3.2.0",
     "mongoose": "^8.9.0",
-    "slugify": "^1.6.9"
+    "multer": "^2.2.0",
+    "slugify": "^1.6.9",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.10.0",
     "nodemon": "^3.1.7",
     "tsx": "^4.19.2",

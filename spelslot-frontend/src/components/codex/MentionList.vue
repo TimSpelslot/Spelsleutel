@@ -13,7 +13,7 @@ watch(() => props.items, () => { selectedIndex.value = 0 })
 
 function select(index: number) {
   const item = props.items[index]
-  if (item) props.command({ id: item.id, label: item.name })
+  if (item) props.command({ id: item.slug, label: item.name })
 }
 
 function onKeyDown(event: KeyboardEvent): boolean {

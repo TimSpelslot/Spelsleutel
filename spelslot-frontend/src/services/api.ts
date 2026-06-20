@@ -78,12 +78,29 @@ export const api = {
     }
   },
 
-  async delete<T>(path: string): Promise<Result<T>> {
+  async put<T>(path: string, body: unknown): Promise<Result<T>> {
+    try {
+      const authHeader = await getAuthHeader()
+      const res = await fetch(`${BASE_URL}${path}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify(body),
+      })
+      return handleResponse<T>(res)
+    } catch {
+      return { type: 'error', message: 'Network error — check your internet connection and try again.' }
+    }
+  },
+
+  async delete<T>(path: string, body?: unknown): Promise<Result<T>> {
     try {
       const authHeader = await getAuthHeader()
       const res = await fetch(`${BASE_URL}${path}`, {
         method: 'DELETE',
-        headers: authHeader,
+        headers: body
+          ? { 'Content-Type': 'application/json', ...authHeader }
+          : authHeader,
+        body: body ? JSON.stringify(body) : undefined,
       })
       return handleResponse<T>(res)
     } catch {

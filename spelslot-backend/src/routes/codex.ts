@@ -139,9 +139,12 @@ codexRouter.get('/', optionalAuth, async (req, res) => {
     const nameFilter = req.query.name
       ? { name: { $regex: req.query.name as string, $options: 'i' } }
       : {}
+    const isRecent = req.query.sort === 'recent'
+    const limitParam = parseInt(req.query.limit as string) || (req.query.name ? 20 : 2000)
     const entries = await WorldEntry.find({ ...permissionFilter(mongoUser), ...nameFilter })
       .select('-lkProperties')
-      .limit(req.query.name ? 20 : 2000)
+      .sort(isRecent ? { updatedAt: -1 } : {})
+      .limit(isRecent ? Math.min(limitParam, 20) : limitParam)
       .lean()
     res.json({ entries: entries.map((e) => buildEntrySummary(e as Record<string, unknown>)) })
   } catch {

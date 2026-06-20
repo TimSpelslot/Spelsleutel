@@ -18,11 +18,19 @@ const activeDocIndex = ref(0)
 async function loadEntry(slug: string) {
   loading.value = true
   error.value = null
-  activeDocIndex.value = 0
   const result = await codexService.getBySlug(slug)
   loading.value = false
-  if (result.type === 'ok') detail.value = result.data
-  else error.value = result.message
+  if (result.type === 'ok') {
+    detail.value = result.data
+    // Default to the first page-type visible document so parent entries
+    // with a board/time doc as first don't hide their written content.
+    const visible = result.data.documents.filter((d) => !d.isHidden)
+    const firstPageIdx = visible.findIndex((d) => d.type === 'page')
+    activeDocIndex.value = firstPageIdx >= 0 ? firstPageIdx : 0
+  } else {
+    activeDocIndex.value = 0
+    error.value = result.message
+  }
 }
 
 onMounted(() => loadEntry(route.params.slug as string))
@@ -163,6 +171,7 @@ function typeMeta(type: EntryType) {
           <TiptapRenderer
             v-if="activeDoc.type === 'page' && activeDoc.content"
             :content="activeDoc.content"
+            @navigate="router.push({ name: 'codex-entry', params: { slug: $event } })"
           />
           <!-- Other types: not rendered yet -->
           <div v-else-if="activeDoc.type !== 'page'" class="entry-view__unsupported">

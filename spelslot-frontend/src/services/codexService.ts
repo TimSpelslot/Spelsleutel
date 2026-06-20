@@ -62,6 +62,12 @@ export const codexService = {
     return { type: 'ok', data: result.data.entries }
   },
 
+  async listRecent(limit = 6): Promise<Result<CodexEntry[]>> {
+    const result = await api.get<{ entries: CodexEntry[] }>(`/api/codex?sort=recent&limit=${limit}`)
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.entries }
+  },
+
   async getBySlug(slug: string): Promise<Result<CodexEntryDetail>> {
     return api.get<CodexEntryDetail>(`/api/codex/slug/${slug}`)
   },
@@ -107,5 +113,17 @@ export const codexService = {
     const result = await api.delete<{ success: boolean }>(`/api/codex/${entryId}/documents/${docId}`)
     if (result.type === 'error') return result
     return { type: 'ok', data: undefined }
+  },
+
+  async syncSession(abSessionId: number): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
+    return api.post('/api/codex/sessions/sync', { abSessionId })
+  },
+
+  async getSessionByAbId(abSessionId: number): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
+    return api.get(`/api/codex/sessions/by-ab/${abSessionId}`)
+  },
+
+  async getCalendar(calendarId: string): Promise<Result<import('@/utils/lkCalendar').LkCalendarDef>> {
+    return api.get(`/api/calendars/${calendarId}`)
   },
 }

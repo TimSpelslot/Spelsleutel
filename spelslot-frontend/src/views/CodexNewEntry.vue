@@ -40,7 +40,8 @@ const permissionOptions = computed(() => {
     { label: 'Players', value: 'PLAYERS' },
     { label: 'Private', value: 'PRIVATE' },
   ]
-  if (auth.user?.role === 'DM' || auth.user?.role === 'ADMIN') {
+  const r = auth.effectiveUser?.role
+  if (r === 'DM' || r === 'ADMIN') {
     opts.splice(2, 0, { label: 'DM Only', value: 'DM_ONLY' })
   }
   return opts

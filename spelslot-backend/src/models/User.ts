@@ -14,6 +14,7 @@ export interface IUser {
   notifyAssignment: boolean
   notifyMarketplace: boolean
   notifySession: boolean
+  fcmTokens: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -33,6 +34,7 @@ const UserSchema = new Schema<IUser>(
     notifyAssignment: { type: Boolean, default: true },
     notifyMarketplace: { type: Boolean, default: true },
     notifySession: { type: Boolean, default: true },
+    fcmTokens: { type: [String], default: [] },
   },
   { timestamps: true },
 )

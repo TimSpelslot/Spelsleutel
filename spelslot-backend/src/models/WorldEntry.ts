@@ -6,6 +6,7 @@ export type EntryPermission = 'PUBLIC' | 'PLAYERS' | 'DM_ONLY' | 'PRIVATE'
 
 export interface IWorldEntry {
   lkId?: string
+  abSessionId?: number
   name: string
   slug: string
   type: EntryType
@@ -36,6 +37,7 @@ const BannerSchema = new Schema(
 const WorldEntrySchema = new Schema<IWorldEntry>(
   {
     lkId: { type: String },
+    abSessionId: { type: Number },
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     type: {
@@ -63,5 +65,6 @@ const WorldEntrySchema = new Schema<IWorldEntry>(
 )
 
 WorldEntrySchema.index({ lkId: 1 }, { sparse: true, unique: true })
+WorldEntrySchema.index({ abSessionId: 1 }, { sparse: true, unique: true })
 
 export const WorldEntry = model<IWorldEntry>('WorldEntry', WorldEntrySchema)

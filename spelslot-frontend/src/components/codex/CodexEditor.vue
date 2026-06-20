@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, ref, shallowRef } from 'vue'
 import { useEditor, EditorContent, VueRenderer } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { Table } from '@tiptap/extension-table'
@@ -7,17 +7,53 @@ import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import Mention from '@tiptap/extension-mention'
+import Collaboration from '@tiptap/extension-collaboration'
+import * as Y from 'yjs'
+import { HocuspocusProvider } from '@hocuspocus/provider'
 import tippy, { type Instance } from 'tippy.js'
 import MentionList from './MentionList.vue'
 import { codexService } from '@/services/codexService'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
+  docId: string
   content: unknown
 }>()
 
 const emit = defineEmits<{
   update: [content: object]
 }>()
+
+const auth = useAuthStore()
+const COLLAB_URL = import.meta.env.VITE_COLLAB_URL ?? 'ws://localhost:3001'
+
+// ── Y.js + Hocuspocus ────────────────────────────────────────────────────
+
+const ydoc = new Y.Doc()
+const collabStatus = ref<'connected' | 'connecting' | 'disconnected'>('disconnected')
+
+const provider = shallowRef(
+  new HocuspocusProvider({
+    url: COLLAB_URL,
+    name: props.docId,
+    document: ydoc,
+    // Token as function so it's fetched fresh at connection time (handles expiry)
+    token: () => auth.firebaseUser?.getIdToken() ?? Promise.resolve(''),
+    onStatus({ status }) {
+      collabStatus.value = status as typeof collabStatus.value
+    },
+    onSynced() {
+      // If the server had no prior Y.js state for this doc, seed from the
+      // ProseMirror JSON that was loaded via the REST API.
+      const fragment = ydoc.getXmlFragment('default')
+      if (fragment.length === 0 && props.content) {
+        editor.value?.commands.setContent(props.content as object)
+      }
+    },
+  }),
+)
+
+// ── Mention suggestion ───────────────────────────────────────────────────
 
 const mentionSuggestion = {
   items: async ({ query }: { query: string }) => {
@@ -52,10 +88,7 @@ const mentionSuggestion = {
         popup[0].setProps({ getReferenceClientRect: suggProps.clientRect as () => DOMRect })
       },
       onKeyDown: ({ event }: { event: KeyboardEvent }) => {
-        if (event.key === 'Escape') {
-          popup?.[0]?.hide()
-          return true
-        }
+        if (event.key === 'Escape') { popup?.[0]?.hide(); return true }
         return (renderer?.ref as { onKeyDown?: (e: KeyboardEvent) => boolean } | null)?.onKeyDown?.(event) ?? false
       },
       onExit: () => {
@@ -66,10 +99,13 @@ const mentionSuggestion = {
   },
 }
 
+// ── Editor ───────────────────────────────────────────────────────────────
+
 const editor = useEditor({
-  content: props.content as object | undefined,
   extensions: [
-    StarterKit,
+    // Disable StarterKit's built-in undo/redo — Collaboration provides Y.js UndoManager instead
+    StarterKit.configure({ undoRedo: false }),
+    Collaboration.configure({ document: ydoc }),
     Table.configure({ resizable: false }),
     TableRow,
     TableCell,
@@ -81,23 +117,19 @@ const editor = useEditor({
     }),
   ],
   onUpdate: ({ editor: e }) => {
+    // Still emit so CodexDetailPanel can save metadata + content together on "Save"
     emit('update', e.getJSON())
   },
 })
 
-watch(() => props.content, (next) => {
-  if (!editor.value || !next) return
-  if (JSON.stringify(editor.value.getJSON()) !== JSON.stringify(next)) {
-    editor.value.commands.setContent(next as object)
-  }
+onBeforeUnmount(() => {
+  provider.value.destroy()
+  editor.value?.destroy()
 })
-
-onBeforeUnmount(() => editor.value?.destroy())
 
 function cmd() { return editor.value?.chain().focus() }
 function isActive(name: string, attrs?: object) { return editor.value?.isActive(name, attrs) ?? false }
 function insertTable() {
-  // Table commands are added at runtime by the extension; cast needed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(editor.value?.chain().focus() as any)?.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
 }
@@ -140,13 +172,17 @@ function insertTable() {
 
       <span class="ce-sep" />
 
-      <!-- Undo / Redo -->
+      <!-- Undo / Redo — powered by Y.js UndoManager via Collaboration extension -->
       <button class="ce-btn" title="Undo" :disabled="!editor?.can().undo()" @click="cmd()?.undo().run()">
         <i class="pi pi-undo" style="font-size:0.75rem" />
       </button>
       <button class="ce-btn" title="Redo" :disabled="!editor?.can().redo()" @click="cmd()?.redo().run()">
         <i class="pi pi-replay" style="font-size:0.75rem" />
       </button>
+
+      <!-- Connection indicator -->
+      <span class="ce-sep" />
+      <span class="ce-collab-dot" :class="`ce-collab-dot--${collabStatus}`" :title="`Collaboration: ${collabStatus}`" />
     </div>
 
     <EditorContent class="codex-editor__content" :editor="editor" />
@@ -205,6 +241,23 @@ function insertTable() {
   flex-shrink: 0;
 }
 
+/* Collaboration status dot */
+.ce-collab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ss-border);
+}
+.ce-collab-dot--connected { background: #22c55e; }
+.ce-collab-dot--connecting { background: #f59e0b; animation: ce-pulse 1s ease-in-out infinite; }
+.ce-collab-dot--disconnected { background: #ef4444; }
+
+@keyframes ce-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .codex-editor__content :deep(.ProseMirror) {
   padding: 1rem 1.25rem;
   min-height: 320px;
@@ -242,14 +295,5 @@ function insertTable() {
   padding: 0.05em 0.35em;
   font-weight: 500;
   white-space: nowrap;
-}
-
-/* Cursor */
-.codex-editor__content :deep(.ProseMirror p.is-editor-empty:first-child::before) {
-  content: attr(data-placeholder);
-  color: var(--ss-text-subtle);
-  pointer-events: none;
-  float: left;
-  height: 0;
 }
 </style>

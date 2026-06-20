@@ -12,16 +12,31 @@ const props = defineProps<{
   content: unknown
 }>()
 
-// ProseMirror schema validation rejects entire documents containing unknown
-// node types (e.g. LK's bodiedExtension "Secret" blocks). Strip them so the
-// surrounding standard content still renders.
-const KNOWN_NODES = new Set([
+const emit = defineEmits<{
+  navigate: [slug: string]
+}>()
+
+// Node types native to Tiptap's StarterKit + our extensions.
+const NATIVE_NODES = new Set([
   'doc', 'paragraph', 'text', 'heading', 'blockquote',
   'bulletList', 'bullet_list', 'orderedList', 'ordered_list',
   'listItem', 'list_item', 'codeBlock', 'code_block',
   'horizontalRule', 'horizontal_rule', 'hardBreak', 'hard_break',
   'table', 'tableRow', 'tableCell', 'tableHeader',
   'mention',
+])
+
+// LK (Atlassian Editor) block nodes that can be downgraded to blockquote
+// so their children remain visible instead of being silently stripped.
+const DEGRADE_TO_BLOCKQUOTE = new Set([
+  'panel', 'expand', 'nestedExpand', 'bodiedExtension',
+  'layoutSection', 'layoutColumn',
+  'taskList', 'decisionList',
+])
+
+// LK block nodes whose children we lift directly (transparent wrappers).
+const TRANSPARENT_NODES = new Set([
+  'taskItem', 'decisionItem',
 ])
 
 interface PmNode {
@@ -33,19 +48,45 @@ interface PmNode {
   [key: string]: unknown
 }
 
-function sanitize(node: PmNode): PmNode | null {
-  if (!KNOWN_NODES.has(node.type)) return null
-  if (!node.content) return node
-  return {
-    ...node,
-    content: node.content.map(sanitize).filter((n): n is PmNode => n !== null),
+// Returns an array so that transparent / degraded nodes can contribute
+// multiple children to their parent's content list.
+function sanitize(node: PmNode): PmNode[] {
+  if (NATIVE_NODES.has(node.type)) {
+    if (!node.content) return [node]
+    return [{ ...node, content: node.content.flatMap(sanitize) }]
   }
+
+  if (DEGRADE_TO_BLOCKQUOTE.has(node.type)) {
+    const children = (node.content ?? []).flatMap(sanitize)
+    if (!children.length) return []
+    return [{ type: 'blockquote', content: children }]
+  }
+
+  if (TRANSPARENT_NODES.has(node.type)) {
+    return (node.content ?? []).flatMap(sanitize)
+  }
+
+  // Unknown inline nodes: keep text content as plain text
+  if (node.type === 'text' || (node.text && typeof node.text === 'string')) {
+    return [{ type: 'text', text: node.text as string }]
+  }
+
+  // Unknown node with children: lift children directly
+  if (node.content && node.content.length > 0) {
+    return node.content.flatMap(sanitize)
+  }
+
+  return []
 }
 
 function prepare(raw: unknown): object | null {
   if (!raw || typeof raw !== 'object') return null
-  const sanitized = sanitize(raw as PmNode)
-  return sanitized
+  const root = raw as PmNode
+  if (root.type !== 'doc') return null
+  return {
+    type: 'doc',
+    content: (root.content ?? []).flatMap(sanitize),
+  }
 }
 
 const editor = useEditor({
@@ -76,10 +117,17 @@ watch(
 onBeforeUnmount(() => {
   editor.value?.destroy()
 })
+
+function handleClick(e: MouseEvent) {
+  const target = (e.target as HTMLElement).closest('[data-type="mention"]')
+  if (!target) return
+  const slug = target.getAttribute('data-id')
+  if (slug) emit('navigate', slug)
+}
 </script>
 
 <template>
-  <div class="tiptap-renderer">
+  <div class="tiptap-renderer" @click="handleClick">
     <EditorContent :editor="editor" />
   </div>
 </template>

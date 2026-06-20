@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { CodexEntry } from '@/services/codexService'
+import { codexDrag } from '@/composables/useCodexDrag'
 
 defineOptions({ name: 'CodexTreeNode' })
 
@@ -13,10 +14,12 @@ export interface TreeNode {
 const props = defineProps<{
   node: TreeNode
   selectedSlug: string | null
+  canReorder: boolean
 }>()
 
 const emit = defineEmits<{
   select: [slug: string]
+  reorder: [payload: { draggedId: string; targetId: string; position: 'before' | 'after' }]
 }>()
 
 const expanded = ref(props.node.depth === 0)
@@ -25,31 +28,94 @@ function toggle(e: MouseEvent) {
   e.stopPropagation()
   expanded.value = !expanded.value
 }
+
+// ── Per-node drop indicator ────────────────────────────────────────────────
+const dropTarget = ref<'before' | 'after' | null>(null)
+
+function onDragStart(e: DragEvent) {
+  codexDrag.id = props.node.entry.id
+  codexDrag.parentId = props.node.entry.parentId ?? null
+  e.dataTransfer!.effectAllowed = 'move'
+}
+
+function onDragEnd() {
+  codexDrag.id = null
+  codexDrag.parentId = null
+  dropTarget.value = null
+}
+
+function onDragOver(e: DragEvent) {
+  if (
+    !codexDrag.id ||
+    codexDrag.id === props.node.entry.id ||
+    codexDrag.parentId !== (props.node.entry.parentId ?? null)
+  ) return
+
+  dropTarget.value =
+    e.offsetY < (e.currentTarget as HTMLElement).offsetHeight / 2 ? 'before' : 'after'
+}
+
+function onDragLeave() {
+  dropTarget.value = null
+}
+
+function onDrop() {
+  if (
+    !codexDrag.id ||
+    codexDrag.id === props.node.entry.id ||
+    codexDrag.parentId !== (props.node.entry.parentId ?? null) ||
+    !dropTarget.value
+  ) return
+
+  emit('reorder', {
+    draggedId: codexDrag.id,
+    targetId: props.node.entry.id,
+    position: dropTarget.value,
+  })
+
+  codexDrag.id = null
+  codexDrag.parentId = null
+  dropTarget.value = null
+}
 </script>
 
 <template>
   <div>
-    <button
-      class="tree-node"
+    <div
+      class="tree-node-wrap"
       :class="{
-        'tree-node--selected': selectedSlug === node.entry.slug,
-        'tree-node--dm': node.entry.permission === 'DM_ONLY',
-        'tree-node--draft': node.entry.status === 'DRAFT',
+        'drop-before': dropTarget === 'before',
+        'drop-after': dropTarget === 'after',
       }"
-      :style="{ paddingLeft: `${0.4 + node.depth * 1}rem` }"
-      :title="node.entry.name"
-      @click="emit('select', node.entry.slug)"
     >
-      <span
-        class="tree-node__chevron"
-        :style="{ visibility: node.children.length ? 'visible' : 'hidden' }"
-        @click.stop="toggle"
+      <button
+        class="tree-node"
+        :class="{
+          'tree-node--selected': selectedSlug === node.entry.slug,
+          'tree-node--dm': node.entry.permission === 'DM_ONLY',
+          'tree-node--draft': node.entry.status === 'DRAFT',
+        }"
+        :style="{ paddingLeft: `${0.4 + node.depth * 1}rem` }"
+        :title="node.entry.name"
+        :draggable="canReorder"
+        @click="emit('select', node.entry.slug)"
+        @dragstart.stop="onDragStart"
+        @dragend="onDragEnd"
+        @dragover.prevent.stop="onDragOver"
+        @dragleave="onDragLeave"
+        @drop.prevent.stop="onDrop"
       >
-        <i :class="['pi', expanded ? 'pi-chevron-down' : 'pi-chevron-right']" />
-      </span>
-      <span class="tree-node__name">{{ node.entry.name }}</span>
-      <span v-if="node.entry.permission === 'DM_ONLY'" class="tree-node__dm">DM</span>
-    </button>
+        <span
+          class="tree-node__chevron"
+          :style="{ visibility: node.children.length ? 'visible' : 'hidden' }"
+          @click.stop="toggle"
+        >
+          <i :class="['pi', expanded ? 'pi-chevron-down' : 'pi-chevron-right']" />
+        </span>
+        <span class="tree-node__name">{{ node.entry.name }}</span>
+        <span v-if="node.entry.permission === 'DM_ONLY'" class="tree-node__dm">DM</span>
+      </button>
+    </div>
 
     <div v-if="expanded && node.children.length">
       <CodexTreeNode
@@ -57,13 +123,38 @@ function toggle(e: MouseEvent) {
         :key="child.entry.id"
         :node="child"
         :selected-slug="selectedSlug"
+        :can-reorder="canReorder"
         @select="emit('select', $event)"
+        @reorder="emit('reorder', $event)"
       />
     </div>
   </div>
 </template>
 
 <style>
+.tree-node-wrap {
+  position: relative;
+}
+
+.tree-node-wrap.drop-before::before,
+.tree-node-wrap.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ss-primary);
+  z-index: 10;
+}
+
+.tree-node-wrap.drop-before::before {
+  top: 0;
+}
+
+.tree-node-wrap.drop-after::after {
+  bottom: 0;
+}
+
 .tree-node {
   display: flex;
   align-items: center;
