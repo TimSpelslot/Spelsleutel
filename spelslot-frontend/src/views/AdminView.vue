@@ -26,7 +26,7 @@ const ROLE_OPTIONS = [
   { label: 'Player', value: 'PLAYER' },
   { label: 'DM', value: 'DM' },
   { label: 'Admin', value: 'ADMIN' },
-] as const
+]
 
 onMounted(async () => {
   loading.value = true

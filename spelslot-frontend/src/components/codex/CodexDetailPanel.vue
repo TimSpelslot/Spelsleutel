@@ -189,8 +189,9 @@ function hasContent(content: unknown): boolean {
   return doc.type === 'doc' && Array.isArray(doc.content) && doc.content.length > 0
 }
 
-function timelineContent(content: unknown): { lanes?: unknown[]; events?: unknown[] } {
-  return (content as { lanes?: unknown[]; events?: unknown[] }) ?? {}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function timelineContent(content: unknown): any {
+  return content ?? {}
 }
 
 const TYPE_META: Record<EntryType, { label: string; icon: string }> = {

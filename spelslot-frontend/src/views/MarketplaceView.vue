@@ -98,8 +98,6 @@ function timeAgo(iso: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-const RARITY_ORDER: Record<Rarity, number> = { common: 0, uncommon: 1, rare: 2, very_rare: 3, legendary: 4 }
-function rarityOrder(r: Rarity) { return RARITY_ORDER[r] ?? 0 }
 
 function openItem(item: MarketplaceItem) { selectedItem.value = item }
 </script>

@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { monsterService, type Monster, type MonsterSummary } from '@/services/monsterService'
 import { useSessionMonstersStore } from '@/stores/sessionMonsters'
-import type { MonsterTab } from '@/stores/sessionMonsters'
 
 const store = useSessionMonstersStore()
 const tabs = computed(() => store.tabs)
