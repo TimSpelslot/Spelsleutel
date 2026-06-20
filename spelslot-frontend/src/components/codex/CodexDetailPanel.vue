@@ -189,6 +189,10 @@ function hasContent(content: unknown): boolean {
   return doc.type === 'doc' && Array.isArray(doc.content) && doc.content.length > 0
 }
 
+function timelineContent(content: unknown): { lanes?: unknown[]; events?: unknown[] } {
+  return (content as { lanes?: unknown[]; events?: unknown[] }) ?? {}
+}
+
 const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   lore:     { label: 'Lore',     icon: 'pi-book' },
   location: { label: 'Location', icon: 'pi-map-marker' },
@@ -415,7 +419,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
             </div>
             <TimelineView
               v-else-if="activeDoc.type === 'time'"
-              :content="(activeDoc.content as { lanes?: unknown[]; events?: unknown[] }) ?? {}"
+              :content="timelineContent(activeDoc.content)"
               :calendar-id="activeDoc.calendarId ?? null"
               @navigate="$emit('navigate', $event)"
             />

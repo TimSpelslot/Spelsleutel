@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { monsterService, type Monster, type MonsterSummary } from '@/services/monsterService'
+import { useSessionMonstersStore } from '@/stores/sessionMonsters'
+import type { MonsterTab } from '@/stores/sessionMonsters'
 
-interface MonsterTab {
-  id: number
-  label: string
-  type: 'monster' | 'image'
-  monster: Monster | null
-  imageUrl: string | null
-}
-
-let nextId = 1
-
-const tabs = ref<MonsterTab[]>([])
-const activeId = ref<number | null>(null)
+const store = useSessionMonstersStore()
+const tabs = computed(() => store.tabs)
+const activeId = computed({
+  get: () => store.activeId,
+  set: (v) => { store.activeId = v },
+})
 const adding = ref(false)       // add-panel open
 const addMode = ref<'search' | 'url' | 'image'>('search')
 
@@ -79,15 +75,7 @@ async function selectMonster(summary: MonsterSummary) {
     addError.value = result.message
     return
   }
-  const tab: MonsterTab = {
-    id: nextId++,
-    label: summary.name,
-    type: 'monster',
-    monster: result.data,
-    imageUrl: null,
-  }
-  tabs.value.push(tab)
-  activeId.value = tab.id
+  store.addMonsterTab(result.data)
   closeAdd()
 }
 
@@ -105,15 +93,7 @@ async function loadFromUrl() {
     return
   }
   const { monster, alternatives } = result.data
-  const tab: MonsterTab = {
-    id: nextId++,
-    label: (monster as { name?: string }).name ?? 'Monster',
-    type: 'monster',
-    monster: monster as Monster,
-    imageUrl: null,
-  }
-  tabs.value.push(tab)
-  activeId.value = tab.id
+  store.addMonsterTab(monster as Monster)
   if (alternatives.length > 1) urlAlternatives.value = alternatives.slice(1)
   closeAdd()
 }
@@ -126,17 +106,7 @@ function browseFile() {
 function onFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
-  const url = URL.createObjectURL(file)
-  const tab: MonsterTab = {
-    id: nextId++,
-    label: file.name.replace(/\.[^.]+$/, ''),
-    type: 'image',
-    monster: null,
-    imageUrl: url,
-  }
-  tabs.value.push(tab)
-  activeId.value = tab.id
-  // Reset input so same file can be re-selected
+  store.addImageTab(file.name.replace(/\.[^.]+$/, ''), URL.createObjectURL(file))
   if (fileInputRef.value) fileInputRef.value.value = ''
   closeAdd()
 }
@@ -145,16 +115,7 @@ function onDrop(e: DragEvent) {
   e.preventDefault()
   const file = e.dataTransfer?.files?.[0]
   if (!file || !file.type.startsWith('image/')) return
-  const url = URL.createObjectURL(file)
-  const tab: MonsterTab = {
-    id: nextId++,
-    label: file.name.replace(/\.[^.]+$/, ''),
-    type: 'image',
-    monster: null,
-    imageUrl: url,
-  }
-  tabs.value.push(tab)
-  activeId.value = tab.id
+  store.addImageTab(file.name.replace(/\.[^.]+$/, ''), URL.createObjectURL(file))
   closeAdd()
 }
 
@@ -167,16 +128,7 @@ function onGlobalPaste(e: ClipboardEvent) {
       e.preventDefault()
       const file = item.getAsFile()
       if (!file) continue
-      const url = URL.createObjectURL(file)
-      const tab: MonsterTab = {
-        id: nextId++,
-        label: 'Pasted screenshot',
-        type: 'image',
-        monster: null,
-        imageUrl: url,
-      }
-      tabs.value.push(tab)
-      activeId.value = tab.id
+      store.addImageTab('Pasted screenshot', URL.createObjectURL(file))
       if (adding.value) closeAdd()
       break
     }
@@ -187,18 +139,12 @@ onMounted(() => document.addEventListener('paste', onGlobalPaste))
 onUnmounted(() => document.removeEventListener('paste', onGlobalPaste))
 
 // ── Tab management ────────────────────────────────────────────────────────
-const activeTab = computed(() => tabs.value.find((t) => t.id === activeId.value) ?? null)
+const activeTab = computed(() => store.tabs.find((t) => t.id === store.activeId) ?? null)
 
 function closeTab(id: number, e: MouseEvent) {
   e.stopPropagation()
-  const idx = tabs.value.findIndex((t) => t.id === id)
-  const tab = tabs.value[idx]
-  if (tab?.imageUrl) URL.revokeObjectURL(tab.imageUrl)
-  tabs.value.splice(idx, 1)
-  if (activeId.value === id) {
-    activeId.value = tabs.value[Math.max(0, idx - 1)]?.id ?? null
-  }
-  if (tabs.value.length === 0) adding.value = true
+  store.removeTab(id)
+  if (store.tabs.length === 0) adding.value = true
 }
 
 // ── Stat block helpers ────────────────────────────────────────────────────

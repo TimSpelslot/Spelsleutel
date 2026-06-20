@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useSessionMonstersStore } from '@/stores/sessionMonsters'
 
 interface Monster {
   id: string
@@ -20,6 +21,9 @@ const DND_CONDITIONS = [
   'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified',
   'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious',
 ]
+
+const monstersStore = useSessionMonstersStore()
+const pinnedMonsters = computed(() => monstersStore.pinnedMonsters)
 
 const storageKey = computed(() => `spelslot-combat-${props.sessionId ?? 'draft'}`)
 
@@ -50,6 +54,13 @@ watch(storageKey, load, { immediate: true })
 const sorted = computed(() =>
   [...monsters.value].sort((a, b) => b.initiative - a.initiative),
 )
+
+function fillFromPinned(tab: typeof pinnedMonsters.value[number]) {
+  addForm.value.name = tab.monster.name
+  addForm.value.maxHp = String(tab.monster.hit_points)
+  addForm.value.ac = String(tab.monster.armor_class)
+  showAdd.value = true
+}
 
 function addMonster() {
   const name = addForm.value.name.trim()
@@ -130,6 +141,20 @@ function clearAll() {
       </button>
       <button v-if="monsters.length > 0" class="ct__btn ct__btn--danger" @click="clearAll">
         <i class="pi pi-trash" />
+      </button>
+    </div>
+
+    <!-- Pinned monster quick-add chips (always visible when there are pinned monsters) -->
+    <div v-if="pinnedMonsters.length" class="ct__pinned">
+      <span class="ct__pinned-label">Pinned:</span>
+      <button
+        v-for="tab in pinnedMonsters"
+        :key="tab.id"
+        class="ct__pinned-chip"
+        :title="`HP ${tab.monster.hit_points} · AC ${tab.monster.armor_class}`"
+        @click="fillFromPinned(tab)"
+      >
+        {{ tab.label }}
       </button>
     </div>
 
@@ -312,6 +337,42 @@ function clearAll() {
 .ct__btn--dmg:hover { background: color-mix(in srgb, #ef4444 10%, transparent); }
 .ct__btn--heal { color: #22c55e; border-color: color-mix(in srgb, #22c55e 30%, transparent); }
 .ct__btn--heal:hover { background: color-mix(in srgb, #22c55e 10%, transparent); }
+
+/* ── Pinned monsters ── */
+.ct__pinned {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--ss-border);
+  background: color-mix(in srgb, var(--ss-primary) 4%, transparent);
+  flex-shrink: 0;
+}
+
+.ct__pinned-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ss-text-muted);
+  flex-shrink: 0;
+}
+
+.ct__pinned-chip {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--ss-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ss-primary) 35%, transparent);
+  border-radius: 99px;
+  color: var(--ss-primary);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ct__pinned-chip:hover {
+  background: color-mix(in srgb, var(--ss-primary) 20%, transparent);
+}
 
 /* ── Add form ── */
 .ct__add-form {
