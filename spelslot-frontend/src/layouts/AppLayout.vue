@@ -7,9 +7,12 @@ import { useSidebar } from '@/composables/useSidebar'
 import { useFcm } from '@/composables/useFcm'
 
 const sidebar = useSidebar()
-const fcm = useFcm()
 
-onMounted(() => fcm.init())
+// FCM is initialised explicitly from the Notifications page so the user
+// sees a proper explanation before the browser prompt fires.
+// We still register the message handler here if permission was already granted.
+const fcm = useFcm()
+onMounted(() => fcm.initIfAlreadyGranted())
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express'
-import { HydratedDocument } from 'mongoose'
+import { HydratedDocument, isValidObjectId } from 'mongoose'
 import { requireAuth, type AuthRequest } from '../middleware/auth'
 import { User, type IUser } from '../models/User'
 
@@ -46,6 +46,9 @@ adminRouter.get('/users', async (_req, res, next) => {
 // ── PATCH /api/admin/users/:id ───────────────────────────────────────────
 // Updatable fields: role, isWorldbuilder, worldbuilderRequestPending, dndbeyondCharacterId
 adminRouter.patch('/users/:id', async (req, res, next) => {
+  if (!isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: 'Invalid user ID' }); return
+  }
   try {
     const allowed = ['role', 'isWorldbuilder', 'worldbuilderRequestPending', 'dndbeyondCharacterId'] as const
     type AllowedKey = (typeof allowed)[number]

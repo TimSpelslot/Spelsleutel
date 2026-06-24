@@ -9,6 +9,7 @@ import PartyRoster from '@/components/session/panels/PartyRoster.vue'
 import SessionNotes from '@/components/session/panels/SessionNotes.vue'
 import MyNotes from '@/components/session/panels/MyNotes.vue'
 import { usePanelLayout, type PanelConfig } from '@/composables/usePanelLayout'
+import { useIsMobile } from '@/composables/useIsMobile'
 import { codexService, type CodexEntry } from '@/services/codexService'
 import CharacterSheet from '@/components/session/panels/CharacterSheet.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -95,6 +96,15 @@ const PLAYER_PANELS: PanelConfig[] = [
 ]
 
 const layout = usePanelLayout(PLAYER_PANELS, 'spelslot-panel-layout-player')
+const isMobile = useIsMobile()
+const mobileTab = ref<string>('character')
+
+const MOBILE_TABS = [
+  { id: 'character', label: 'Character', icon: 'pi-user' },
+  { id: 'roster',    label: 'Party',     icon: 'pi-users' },
+  { id: 'notes',     label: 'Session',   icon: 'pi-file-edit' },
+  { id: 'my-notes',  label: 'My Notes',  icon: 'pi-pencil' },
+]
 
 function resetLayout() {
   if (!confirm('Reset all panels to their default positions?')) return
@@ -104,7 +114,52 @@ function resetLayout() {
 </script>
 
 <template>
-  <div class="spv">
+  <!-- ── Mobile tab view ── -->
+  <div v-if="isMobile" class="spv spv--mobile">
+    <div class="spv__topbar spv__topbar--mobile">
+      <Button icon="pi pi-arrow-left" text size="small" @click="router.push('/dashboard')" />
+      <Select
+        :model-value="selectedSessionId"
+        :options="sessionOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Select session…"
+        class="spv__session-dropdown spv__session-dropdown--mobile"
+        show-clear
+        @change="onSessionChange($event.value)"
+      />
+      <span class="spv__view-badge">Player</span>
+    </div>
+
+    <div class="spv__mobile-tabs">
+      <button
+        v-for="tab in MOBILE_TABS"
+        :key="tab.id"
+        class="spv__mobile-tab"
+        :class="{ 'spv__mobile-tab--active': mobileTab === tab.id }"
+        @click="mobileTab = tab.id"
+      >
+        <i :class="`pi ${tab.icon}`" />
+        <span>{{ tab.label }}</span>
+      </button>
+    </div>
+
+    <div class="spv__mobile-content">
+      <CharacterSheet v-if="mobileTab === 'character'" :character-id="characterId" />
+      <PartyRoster v-else-if="mobileTab === 'roster'" :session-id="selectedSessionId" />
+      <SessionNotes
+        v-else-if="mobileTab === 'notes'"
+        :key="activeDocId ?? 'no-session'"
+        :session-id="selectedSessionId"
+        :session-doc-id="activeDocId"
+        :readonly="false"
+      />
+      <MyNotes v-else-if="mobileTab === 'my-notes'" :session-id="selectedSessionId" />
+    </div>
+  </div>
+
+  <!-- ── Desktop floating panel view ── -->
+  <div v-else class="spv">
 
     <!-- ── Top bar ── -->
     <div class="spv__topbar">
@@ -246,5 +301,65 @@ function resetLayout() {
   letter-spacing: 0.08em;
   color: var(--ss-shell-fg-muted);
   opacity: 0.8;
+}
+
+/* ── Mobile layout ── */
+.spv--mobile {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--ss-navbar-height));
+  overflow: hidden;
+}
+
+.spv__topbar--mobile {
+  gap: 0.5rem;
+}
+
+.spv__session-dropdown--mobile {
+  flex: 1;
+  min-width: 0;
+}
+
+.spv__mobile-tabs {
+  display: flex;
+  background: var(--ss-shell);
+  border-bottom: 1px solid color-mix(in srgb, var(--ss-primary) 25%, transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.spv__mobile-tabs::-webkit-scrollbar { display: none; }
+
+.spv__mobile-tab {
+  flex: 1;
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--ss-shell-fg-muted);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.spv__mobile-tab .pi { font-size: 1rem; }
+.spv__mobile-tab--active {
+  color: var(--ss-primary);
+  border-bottom-color: var(--ss-primary);
+}
+
+.spv__mobile-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ss-parchment);
 }
 </style>

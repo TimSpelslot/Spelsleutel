@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -54,8 +54,8 @@ async function saveEdit() {
   saveError.value = null
   // Accept full DnD Beyond URL or plain numeric ID
   const rawDndId = editDndId.value.trim()
-  const urlMatch = rawDndId.match(/dndbeyond\.com\/characters\/(\d+)/i)
-  const normalizedDndId = urlMatch ? urlMatch[1] : (rawDndId || null)
+  const urlMatch = rawDndId.match(/^https?:\/\/(www\.)?dndbeyond\.com\/characters\/(\d+)/i)
+  const normalizedDndId = urlMatch ? urlMatch[2] : (/^\d+$/.test(rawDndId) ? rawDndId : null)
 
   const result = await adminService.updateUser(editTarget.value.id, {
     role: editRole.value,
@@ -116,11 +116,57 @@ function roleLabel(role: string) {
 function initials(user: AdminUser) {
   return (user.displayName || user.name).charAt(0).toUpperCase() || '?'
 }
+
+const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderRequestPending))
 </script>
 
 <template>
   <div class="admin-view">
     <h1 class="admin-view__title">Admin</h1>
+
+    <!-- Worldbuilder pending requests -->
+    <section v-if="pendingRequests.length" class="admin-requests">
+      <h2 class="admin-requests__heading">
+        <i class="pi pi-bell admin-requests__icon" />
+        Worldbuilder Requests
+        <span class="admin-requests__count">{{ pendingRequests.length }}</span>
+      </h2>
+      <ul class="admin-requests__list">
+        <li
+          v-for="user in pendingRequests"
+          :key="user.id"
+          class="admin-requests__item"
+        >
+          <Avatar
+            :image="user.avatarUrl ?? undefined"
+            :label="user.avatarUrl ? undefined : initials(user)"
+            shape="circle"
+            class="admin-requests__avatar"
+          />
+          <div class="admin-requests__info">
+            <span class="admin-requests__name">{{ user.displayName || user.name }}</span>
+            <span class="admin-requests__email">{{ user.email }}</span>
+          </div>
+          <div class="admin-requests__actions">
+            <Button
+              label="Approve"
+              icon="pi pi-check"
+              size="small"
+              severity="success"
+              @click="approveWorldbuilder(user)"
+            />
+            <Button
+              label="Reject"
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
+              text
+              @click="rejectWorldbuilder(user)"
+            />
+          </div>
+        </li>
+      </ul>
+    </section>
 
     <section class="admin-section">
       <h2 class="admin-section__heading">
@@ -306,6 +352,96 @@ function initials(user: AdminUser) {
   font-weight: 700;
   color: var(--ss-text);
   margin: 0 0 1.5rem;
+}
+
+/* ── Pending requests banner ── */
+.admin-requests {
+  background: color-mix(in srgb, var(--ss-warning, #f59e0b) 8%, var(--ss-surface));
+  border: 1px solid color-mix(in srgb, var(--ss-warning, #f59e0b) 35%, transparent);
+  border-radius: var(--ss-radius);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.admin-requests__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ss-text);
+  padding: 0.75rem 1.25rem;
+  margin: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ss-warning, #f59e0b) 25%, transparent);
+}
+
+.admin-requests__icon {
+  color: var(--ss-warning, #f59e0b);
+}
+
+.admin-requests__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+  height: 1.2em;
+  padding: 0 0.3em;
+  border-radius: 99px;
+  background: var(--ss-warning, #f59e0b);
+  color: #000;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 0.2rem;
+}
+
+.admin-requests__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-requests__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ss-warning, #f59e0b) 15%, transparent);
+}
+
+.admin-requests__item:last-child {
+  border-bottom: none;
+}
+
+.admin-requests__avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.admin-requests__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-requests__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ss-text);
+}
+
+.admin-requests__email {
+  font-size: 0.72rem;
+  color: var(--ss-text-muted);
+}
+
+.admin-requests__actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 /* ── Section ── */

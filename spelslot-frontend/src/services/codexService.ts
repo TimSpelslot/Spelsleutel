@@ -20,6 +20,7 @@ export interface CodexEntry {
   iconShape?: string
   banner: { enabled: boolean; url: string; yPosition: number }
   summary?: string
+  abSessionId?: number | null
   authorId: string | null
   editors: string[]
   createdAt: string

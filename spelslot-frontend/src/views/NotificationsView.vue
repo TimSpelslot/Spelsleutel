@@ -5,11 +5,26 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useAuthStore } from '@/stores/auth'
 import { notificationService } from '@/services/notificationService'
+import { useFcm } from '@/composables/useFcm'
 import { useRouter } from 'vue-router'
 
 const store = useNotificationsStore()
 const auth = useAuthStore()
 const router = useRouter()
+const fcm = useFcm()
+
+// ── Push permission state ────────────────────────────────────────────────
+const pushPermission = ref<NotificationPermission>(
+  'Notification' in window ? Notification.permission : 'denied',
+)
+const enablingPush = ref(false)
+
+async function enablePush() {
+  enablingPush.value = true
+  const result = await fcm.requestAndInit()
+  pushPermission.value = result
+  enablingPush.value = false
+}
 
 // ── Preferences local state ──────────────────────────────────────────────
 const prefs = ref({
@@ -20,16 +35,20 @@ const prefs = ref({
 })
 const savingPrefs = ref(false)
 const prefsSaved = ref(false)
+let saveTimer: ReturnType<typeof setTimeout> | null = null
 
-async function savePrefs() {
-  savingPrefs.value = true
+function savePrefs() {
   prefsSaved.value = false
-  const result = await notificationService.updatePreferences(prefs.value)
-  savingPrefs.value = false
-  if (result.type === 'ok') {
-    prefsSaved.value = true
-    setTimeout(() => { prefsSaved.value = false }, 2000)
-  }
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(async () => {
+    savingPrefs.value = true
+    const result = await notificationService.updatePreferences(prefs.value)
+    savingPrefs.value = false
+    if (result.type === 'ok') {
+      prefsSaved.value = true
+      setTimeout(() => { prefsSaved.value = false }, 2000)
+    }
+  }, 400)
 }
 
 onMounted(() => store.load())
@@ -119,6 +138,47 @@ async function handleClick(id: string, href?: string) {
           />
         </li>
       </ul>
+    </section>
+
+    <!-- Push permission -->
+    <section class="notif-section notif-push">
+      <h2 class="notif-section__heading">
+        <i class="pi pi-mobile notif-section__icon" />
+        Push notifications
+      </h2>
+      <div class="notif-push__body">
+        <template v-if="pushPermission === 'granted'">
+          <i class="pi pi-check-circle notif-push__icon notif-push__icon--ok" />
+          <div class="notif-push__text">
+            <span class="notif-push__label">Enabled on this device</span>
+            <span class="notif-push__hint">You'll receive push notifications in your browser.</span>
+          </div>
+        </template>
+        <template v-else-if="pushPermission === 'denied'">
+          <i class="pi pi-ban notif-push__icon notif-push__icon--blocked" />
+          <div class="notif-push__text">
+            <span class="notif-push__label">Blocked in your browser</span>
+            <span class="notif-push__hint">
+              To re-enable, click the lock icon in your browser's address bar,
+              find the Notifications setting, and change it to Allow.
+            </span>
+          </div>
+        </template>
+        <template v-else>
+          <i class="pi pi-bell notif-push__icon" />
+          <div class="notif-push__text">
+            <span class="notif-push__label">Not enabled on this device</span>
+            <span class="notif-push__hint">Enable to receive notifications even when the app is not open.</span>
+          </div>
+          <Button
+            label="Enable"
+            icon="pi pi-bell"
+            size="small"
+            :loading="enablingPush"
+            @click="enablePush"
+          />
+        </template>
+      </div>
     </section>
 
     <!-- Preferences -->
@@ -338,6 +398,43 @@ async function handleClick(id: string, href?: string) {
 
 .notif-item:hover .notif-item__delete {
   opacity: 1;
+}
+
+/* ── Push ── */
+.notif-push__body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.notif-push__icon {
+  font-size: 1.2rem;
+  color: var(--ss-text-muted);
+  flex-shrink: 0;
+}
+
+.notif-push__icon--ok { color: var(--ss-success, #22c55e); }
+.notif-push__icon--blocked { color: var(--ss-danger); }
+
+.notif-push__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-push__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ss-text);
+}
+
+.notif-push__hint {
+  font-size: 0.78rem;
+  color: var(--ss-text-muted);
+  line-height: 1.4;
 }
 
 /* ── Preferences ── */

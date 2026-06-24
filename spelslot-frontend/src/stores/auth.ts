@@ -54,7 +54,8 @@ export const useAuthStore = defineStore('auth', () => {
 
         if (fbUser) {
           const result = await authService.sync()
-          user.value = result.type === 'ok' ? result.data : null
+          if (result.type === 'ok') user.value = result.data
+          // on error keep existing user — backend may be temporarily down
         } else {
           user.value = null
         }

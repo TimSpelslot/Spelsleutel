@@ -5,6 +5,7 @@ import { generateKeyBetween } from 'fractional-indexing'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import Button from 'primevue/button'
+import { useToast } from 'primevue/usetoast'
 import CodexTreeNode, { type TreeNode } from '@/components/codex/CodexTreeNode.vue'
 import CodexDetailPanel from '@/components/codex/CodexDetailPanel.vue'
 import { codexService, type CodexEntry, type EntryType } from '@/services/codexService'
@@ -13,6 +14,7 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const toast = useToast()
 
 const canCreateEntry = computed(() => {
   const u = auth.effectiveUser
@@ -147,7 +149,7 @@ async function handleReorder({
   // Sorted siblings excluding the dragged entry
   const siblings = entries.value
     .filter((e) => e.parentId === target.parentId && e.id !== draggedId)
-    .sort((a, b) => a.pos.localeCompare(b.pos))
+    .sort((a, b) => (a.pos ?? '').localeCompare(b.pos ?? ''))
 
   const targetIdx = siblings.findIndex((e) => e.id === targetId)
 
@@ -158,12 +160,14 @@ async function handleReorder({
   const beforePos = safePos(position === 'before' ? siblings[targetIdx - 1]?.pos : target.pos)
   const afterPos  = safePos(position === 'before' ? target.pos : siblings[targetIdx + 1]?.pos)
 
+  const originalPos = dragged.pos
   try {
     const newPos = generateKeyBetween(beforePos, afterPos)
     dragged.pos = newPos
     await codexService.updateEntry(draggedId, { pos: newPos })
-  } catch (err) {
-    console.error('[Codex] Reorder failed — pos values may be incompatible:', { beforePos, afterPos, err })
+  } catch {
+    dragged.pos = originalPos
+    toast.add({ severity: 'error', summary: 'Reorder failed', detail: 'Could not save the new position. Try again.', life: 4000 })
   }
 }
 </script>

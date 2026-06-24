@@ -36,6 +36,11 @@ async function handleResponse<T>(res: Response): Promise<Result<T>> {
     return { type: 'error', message: 'You do not have permission to perform this action.' }
   }
 
+  try {
+    const body = (await res.json()) as { message?: string }
+    if (body.message) return { type: 'error', message: body.message }
+  } catch { /* body not JSON */ }
+
   return { type: 'error', message: `HTTP ${res.status}` }
 }
 

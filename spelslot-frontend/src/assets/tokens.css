@@ -55,6 +55,13 @@
   --ss-shadow:          0 4px 12px rgba(28, 20, 16, 0.15);
   --ss-shadow-lg:       0 8px 24px rgba(28, 20, 16, 0.20);
 
+  /* ── Rank colors (AdventureBoard session difficulty indicators) */
+  --ss-rank-low:  hsl(220 10% 60%);
+  --ss-rank-ok:   #84cc16;
+  --ss-rank-mid:  #f59e0b;
+  --ss-rank-high: #f97316;
+  --ss-rank-max:  #ef4444;
+
   /* ── Layout */
   --ss-navbar-height:            56px;
   --ss-sidebar-width:            220px;

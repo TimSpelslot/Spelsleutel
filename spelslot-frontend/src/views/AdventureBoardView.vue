@@ -9,6 +9,10 @@ import { adventureBoardService, type AbSession } from '@/services/adventureBoard
 import { codexService } from '@/services/codexService'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import { rankColor, rankLabel } from '@/utils/rank'
+import DragonHeadSvg from '@/assets/spiked-dragon-head.svg?raw'
+import DungeonGateSvg from '@/assets/dungeon-gate.svg?raw'
+import DramaMasksSvg from '@/assets/drama-masks.svg?raw'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -93,17 +97,7 @@ function formatMonth(dateStr: string): string {
     .toUpperCase()
 }
 
-function rankLabel(val: number): string {
-  return ['', 'Low', 'Low-mid', 'Average', 'Mid-high', 'High'][val] ?? `${val}`
-}
 
-function rankColor(val: number): string {
-  if (val <= 1) return 'var(--ss-text-muted)'
-  if (val === 2) return '#84cc16'
-  if (val === 3) return '#f59e0b'
-  if (val === 4) return '#f97316'
-  return '#ef4444'
-}
 </script>
 
 <template>
@@ -237,25 +231,31 @@ function rankColor(val: number): string {
               <span
                 v-if="session.ranks.combat"
                 class="ab-rank"
+                :style="{ color: rankColor(session.ranks.combat) }"
                 :title="`Combat: ${rankLabel(session.ranks.combat)}`"
               >
-                <i class="pi pi-bolt" :style="{ color: rankColor(session.ranks.combat) }" />
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span class="ab-rank__icon" v-html="DragonHeadSvg" />
                 {{ session.ranks.combat }}
               </span>
               <span
                 v-if="session.ranks.exploration"
                 class="ab-rank"
+                :style="{ color: rankColor(session.ranks.exploration) }"
                 :title="`Exploration: ${rankLabel(session.ranks.exploration)}`"
               >
-                <i class="pi pi-map" :style="{ color: rankColor(session.ranks.exploration) }" />
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span class="ab-rank__icon" v-html="DungeonGateSvg" />
                 {{ session.ranks.exploration }}
               </span>
               <span
                 v-if="session.ranks.roleplaying"
                 class="ab-rank"
+                :style="{ color: rankColor(session.ranks.roleplaying) }"
                 :title="`Roleplaying: ${rankLabel(session.ranks.roleplaying)}`"
               >
-                <i class="pi pi-comments" :style="{ color: rankColor(session.ranks.roleplaying) }" />
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span class="ab-rank__icon" v-html="DramaMasksSvg" />
                 {{ session.ranks.roleplaying }}
               </span>
             </div>
@@ -368,23 +368,32 @@ function rankColor(val: number): string {
         <!-- Rank bars -->
         <div v-if="selectedSession.ranks.combat || selectedSession.ranks.exploration || selectedSession.ranks.roleplaying" class="ab-detail__ranks">
           <div class="ab-detail__rank-row">
-            <span class="ab-detail__rank-label"><i class="pi pi-bolt" /> Combat</span>
+            <span class="ab-detail__rank-label">
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span class="ab-rank__icon" v-html="DragonHeadSvg" /> Combat
+            </span>
             <div class="ab-detail__rank-bar">
-              <div v-for="n in 5" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.combat }" />
+              <div v-for="n in 3" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.combat }" :style="n <= selectedSession.ranks.combat ? { background: rankColor(selectedSession.ranks.combat) } : {}" />
             </div>
             <span class="ab-detail__rank-text">{{ rankLabel(selectedSession.ranks.combat) }}</span>
           </div>
           <div class="ab-detail__rank-row">
-            <span class="ab-detail__rank-label"><i class="pi pi-map" /> Exploration</span>
+            <span class="ab-detail__rank-label">
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span class="ab-rank__icon" v-html="DungeonGateSvg" /> Exploration
+            </span>
             <div class="ab-detail__rank-bar">
-              <div v-for="n in 5" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.exploration }" />
+              <div v-for="n in 3" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.exploration }" :style="n <= selectedSession.ranks.exploration ? { background: rankColor(selectedSession.ranks.exploration) } : {}" />
             </div>
             <span class="ab-detail__rank-text">{{ rankLabel(selectedSession.ranks.exploration) }}</span>
           </div>
           <div class="ab-detail__rank-row">
-            <span class="ab-detail__rank-label"><i class="pi pi-comments" /> Roleplaying</span>
+            <span class="ab-detail__rank-label">
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span class="ab-rank__icon" v-html="DramaMasksSvg" /> Roleplaying
+            </span>
             <div class="ab-detail__rank-bar">
-              <div v-for="n in 5" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.roleplaying }" />
+              <div v-for="n in 3" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.roleplaying }" :style="n <= selectedSession.ranks.roleplaying ? { background: rankColor(selectedSession.ranks.roleplaying) } : {}" />
             </div>
             <span class="ab-detail__rank-text">{{ rankLabel(selectedSession.ranks.roleplaying) }}</span>
           </div>
@@ -666,7 +675,19 @@ function rankColor(val: number): string {
   font-weight: 600;
 }
 
-.ab-rank .pi { font-size: 0.6rem; }
+.ab-rank__icon {
+  display: inline-flex;
+  align-items: center;
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+}
+
+.ab-rank__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
 
 /* ── Empty / error ── */
 .ab-empty {

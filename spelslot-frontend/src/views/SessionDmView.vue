@@ -11,6 +11,7 @@ import SessionNotes from '@/components/session/panels/SessionNotes.vue'
 import DmNotes from '@/components/session/panels/DmNotes.vue'
 import MonsterStatBlock from '@/components/session/panels/MonsterStatBlock.vue'
 import { usePanelLayout, type PanelConfig } from '@/composables/usePanelLayout'
+import { useIsMobile } from '@/composables/useIsMobile'
 import { codexService, type CodexEntry } from '@/services/codexService'
 
 const router = useRouter()
@@ -19,6 +20,7 @@ const router = useRouter()
 
 const sessions = ref<CodexEntry[]>([])
 const selectedSessionId = ref<string | null>(null)
+const selectedAbSessionId = ref<number | null>(null)
 const sessionOptions = computed(() =>
   sessions.value.map((s) => ({ label: s.name, value: s.id })),
 )
@@ -38,6 +40,7 @@ onMounted(async () => {
 
 async function onSessionChange(id: string | null) {
   selectedSessionId.value = id
+  selectedAbSessionId.value = sessions.value.find((s) => s.id === id)?.abSessionId ?? null
   if (!id || sessionDocIds.value[id]) return
   const detail = await codexService.getById(id)
   if (detail.type === 'ok') {
@@ -97,6 +100,16 @@ const DM_PANELS: PanelConfig[] = [
 ]
 
 const layout = usePanelLayout(DM_PANELS, 'spelslot-panel-layout-dm')
+const isMobile = useIsMobile()
+const mobileTab = ref<string>('combat')
+
+const MOBILE_TABS = [
+  { id: 'combat',   label: 'Combat',   icon: 'pi-shield' },
+  { id: 'roster',   label: 'Roster',   icon: 'pi-users' },
+  { id: 'notes',    label: 'Notes',    icon: 'pi-file-edit' },
+  { id: 'dm-notes', label: 'DM Notes', icon: 'pi-lock' },
+  { id: 'monster',  label: 'Monsters', icon: 'pi-book' },
+]
 
 function resetLayout() {
   if (!confirm('Reset all panels to their default positions?')) return
@@ -106,7 +119,53 @@ function resetLayout() {
 </script>
 
 <template>
-  <div class="sdm">
+  <!-- ── Mobile tab view ── -->
+  <div v-if="isMobile" class="sdm sdm--mobile">
+    <div class="sdm__topbar sdm__topbar--mobile">
+      <Button icon="pi pi-arrow-left" text size="small" @click="router.push('/dashboard')" />
+      <Select
+        :model-value="selectedSessionId"
+        :options="sessionOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Select session…"
+        class="sdm__session-dropdown sdm__session-dropdown--mobile"
+        show-clear
+        @change="onSessionChange($event.value)"
+      />
+      <span class="sdm__view-badge">DM</span>
+    </div>
+
+    <div class="sdm__mobile-tabs">
+      <button
+        v-for="tab in MOBILE_TABS"
+        :key="tab.id"
+        class="sdm__mobile-tab"
+        :class="{ 'sdm__mobile-tab--active': mobileTab === tab.id }"
+        @click="mobileTab = tab.id"
+      >
+        <i :class="`pi ${tab.icon}`" />
+        <span>{{ tab.label }}</span>
+      </button>
+    </div>
+
+    <div class="sdm__mobile-content">
+      <CombatTracker v-if="mobileTab === 'combat'" :session-id="selectedSessionId" />
+      <PartyRoster v-else-if="mobileTab === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
+      <SessionNotes
+        v-else-if="mobileTab === 'notes'"
+        :key="activeDocId ?? 'no-session'"
+        :session-id="selectedSessionId"
+        :session-doc-id="activeDocId"
+        :readonly="false"
+      />
+      <DmNotes v-else-if="mobileTab === 'dm-notes'" :session-id="selectedSessionId" />
+      <MonsterStatBlock v-else-if="mobileTab === 'monster'" />
+    </div>
+  </div>
+
+  <!-- ── Desktop floating panel view ── -->
+  <div v-else class="sdm">
 
     <!-- ── Top bar ── -->
     <div class="sdm__topbar">
@@ -162,7 +221,7 @@ function resetLayout() {
       @focus="layout.focus(p.id)"
     >
       <CombatTracker v-if="p.id === 'combat'" :session-id="selectedSessionId" />
-      <PartyRoster v-else-if="p.id === 'roster'" :session-id="selectedSessionId" />
+      <PartyRoster v-else-if="p.id === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
       <SessionNotes
         v-else-if="p.id === 'notes'"
         :key="activeDocId ?? 'no-session'"
@@ -251,5 +310,65 @@ function resetLayout() {
   letter-spacing: 0.08em;
   color: var(--ss-primary);
   opacity: 0.8;
+}
+
+/* ── Mobile layout ── */
+.sdm--mobile {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--ss-navbar-height));
+  overflow: hidden;
+}
+
+.sdm__topbar--mobile {
+  gap: 0.5rem;
+}
+
+.sdm__session-dropdown--mobile {
+  flex: 1;
+  min-width: 0;
+}
+
+.sdm__mobile-tabs {
+  display: flex;
+  background: var(--ss-shell);
+  border-bottom: 1px solid color-mix(in srgb, var(--ss-primary) 25%, transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.sdm__mobile-tabs::-webkit-scrollbar { display: none; }
+
+.sdm__mobile-tab {
+  flex: 1;
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--ss-shell-fg-muted);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.sdm__mobile-tab .pi { font-size: 1rem; }
+.sdm__mobile-tab--active {
+  color: var(--ss-primary);
+  border-bottom-color: var(--ss-primary);
+}
+
+.sdm__mobile-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ss-parchment);
 }
 </style>

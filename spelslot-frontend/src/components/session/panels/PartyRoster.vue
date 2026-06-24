@@ -5,11 +5,42 @@ import Tag from 'primevue/tag'
 import Skeleton from 'primevue/skeleton'
 import { adventureBoardService, type AbSession } from '@/services/adventureBoardService'
 
-defineProps<{
+const props = defineProps<{
   sessionId: string | null
+  abSessionId: number | null
 }>()
 
-// ── Session list (for the dropdown) ──────────────────────────────────────
+// ── When a Codex session with a known AB session ID is selected,
+//    load it directly. Otherwise show the manual dropdown.
+const detail = ref<AbSession | null>(null)
+const detailLoading = ref(false)
+const detailError = ref<string | null>(null)
+const activeTab = ref<'party' | 'waitlist'>('party')
+
+async function loadById(id: number) {
+  detailLoading.value = true
+  detailError.value = null
+  detail.value = null
+  const result = await adventureBoardService.getSession(id)
+  detailLoading.value = false
+  if (result.type === 'ok') {
+    detail.value = result.data
+    activeTab.value = 'party'
+  } else {
+    detailError.value = result.message
+  }
+}
+
+watch(() => props.abSessionId, (id) => {
+  if (id) {
+    loadById(id)
+    selectedAbId.value = null // clear manual selection
+  } else {
+    detail.value = null
+  }
+}, { immediate: true })
+
+// ── Manual dropdown (fallback when no abSessionId on the Codex entry) ────
 
 const sessions = ref<AbSession[]>([])
 const sessionsLoading = ref(false)
@@ -23,31 +54,17 @@ const sessionOptions = computed(() =>
 )
 
 onMounted(async () => {
+  // Only load the dropdown list when there's no auto-selected session
+  if (props.abSessionId) return
   sessionsLoading.value = true
   const result = await adventureBoardService.getAllSessions()
   sessionsLoading.value = false
   if (result.type === 'ok') sessions.value = result.data
 })
 
-// ── Selected session detail ───────────────────────────────────────────────
-
-const detail = ref<AbSession | null>(null)
-const detailLoading = ref(false)
-const detailError = ref<string | null>(null)
-const activeTab = ref<'party' | 'waitlist'>('party')
-
 watch(selectedAbId, async (id) => {
-  if (!id) { detail.value = null; return }
-  detailLoading.value = true
-  detailError.value = null
-  const result = await adventureBoardService.getSession(id)
-  detailLoading.value = false
-  if (result.type === 'ok') {
-    detail.value = result.data
-    activeTab.value = 'party'
-  } else {
-    detailError.value = result.message
-  }
+  if (!id) return
+  loadById(id)
 })
 
 function formatDate(dateStr: string): string {
@@ -61,8 +78,8 @@ function formatDate(dateStr: string): string {
 <template>
   <div class="roster">
 
-    <!-- Session selector -->
-    <div class="roster__selector">
+    <!-- Manual session selector — only shown when no Codex session is selected -->
+    <div v-if="!abSessionId" class="roster__selector">
       <Select
         v-model="selectedAbId"
         :options="sessionOptions"
@@ -77,7 +94,7 @@ function formatDate(dateStr: string): string {
     </div>
 
     <!-- No session selected -->
-    <div v-if="!selectedAbId" class="roster__empty">
+    <div v-if="!abSessionId && !selectedAbId" class="roster__empty">
       <i class="pi pi-users roster__empty-icon" />
       <p>Choose a session to see the party.</p>
     </div>

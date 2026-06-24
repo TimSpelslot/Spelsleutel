@@ -82,6 +82,7 @@ if (auth.user?.dndbeyondCharacterId) {
   ddbService.getCharacter(auth.user.dndbeyondCharacterId).then((r) => {
     ddbLoading.value = false
     if (r.type === 'ok') ddbCharacter.value = r.data.character
+    else ddbError.value = r.message
   })
 }
 

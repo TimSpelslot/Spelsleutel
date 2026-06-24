@@ -61,6 +61,7 @@ function buildEntrySummary(e: Record<string, unknown>) {
     iconShape: e.iconShape,
     banner: e.banner,
     summary: e.summary,
+    abSessionId: e.abSessionId ?? null,
     authorId: e.authorId ? (e.authorId as object).toString() : null,
     editors: Array.isArray(e.editors) ? e.editors.map((id) => (id as object).toString()) : [],
     createdAt: e.createdAt,
@@ -140,7 +141,7 @@ codexRouter.get('/', optionalAuth, async (req, res) => {
       ? { name: { $regex: req.query.name as string, $options: 'i' } }
       : {}
     const isRecent = req.query.sort === 'recent'
-    const limitParam = parseInt(req.query.limit as string) || (req.query.name ? 20 : 2000)
+    const limitParam = Math.max(1, parseInt(req.query.limit as string) || (req.query.name ? 20 : 2000))
     const entries = await WorldEntry.find({ ...permissionFilter(mongoUser), ...nameFilter })
       .select('-lkProperties')
       .sort(isRecent ? { updatedAt: -1 } : {})

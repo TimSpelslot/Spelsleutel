@@ -8,6 +8,10 @@ import { useAuthStore } from '@/stores/auth'
 import { adventureBoardService, type UpcomingSession } from '@/services/adventureBoardService'
 import { codexService, type CodexEntry } from '@/services/codexService'
 import { authService } from '@/services/authService'
+import { rankColor, rankLabel } from '@/utils/rank'
+import DragonHeadSvg from '@/assets/spiked-dragon-head.svg?raw'
+import DungeonGateSvg from '@/assets/dungeon-gate.svg?raw'
+import DramaMasksSvg from '@/assets/drama-masks.svg?raw'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -103,13 +107,6 @@ function formatMonth(dateStr: string): string {
     .toUpperCase()
 }
 
-function rankDot(val: number): string {
-  if (val <= 1) return 'hsl(220 10% 60%)'
-  if (val === 2) return '#84cc16'
-  if (val === 3) return '#f59e0b'
-  if (val === 4) return '#f97316'
-  return '#ef4444'
-}
 
 // ── Role display ──────────────────────────────────────────────────────────
 const ROLE_LABEL: Record<string, string> = { PLAYER: 'Player', DM: 'Dungeon Master', ADMIN: 'Admin' }
@@ -263,14 +260,17 @@ onMounted(async () => {
                   <span v-for="tag in session.tags.slice(0, 2)" :key="tag" class="session-card__chip">{{ tag }}</span>
                 </div>
                 <div class="session-card__ranks">
-                  <span v-if="session.ranks.combat" class="session-card__rank" :title="`Combat: ${session.ranks.combat}/5`">
-                    <i class="pi pi-bolt" :style="{ color: rankDot(session.ranks.combat) }" />
+                  <span v-if="session.ranks.combat" class="session-card__rank" :style="{ color: rankColor(session.ranks.combat) }" :title="`Combat: ${rankLabel(session.ranks.combat)}`">
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span class="session-card__rank-icon" v-html="DragonHeadSvg" />
                   </span>
-                  <span v-if="session.ranks.exploration" class="session-card__rank" :title="`Exploration: ${session.ranks.exploration}/5`">
-                    <i class="pi pi-map" :style="{ color: rankDot(session.ranks.exploration) }" />
+                  <span v-if="session.ranks.exploration" class="session-card__rank" :style="{ color: rankColor(session.ranks.exploration) }" :title="`Exploration: ${rankLabel(session.ranks.exploration)}`">
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span class="session-card__rank-icon" v-html="DungeonGateSvg" />
                   </span>
-                  <span v-if="session.ranks.roleplaying" class="session-card__rank" :title="`Roleplaying: ${session.ranks.roleplaying}/5`">
-                    <i class="pi pi-comments" :style="{ color: rankDot(session.ranks.roleplaying) }" />
+                  <span v-if="session.ranks.roleplaying" class="session-card__rank" :style="{ color: rankColor(session.ranks.roleplaying) }" :title="`Roleplaying: ${rankLabel(session.ranks.roleplaying)}`">
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span class="session-card__rank-icon" v-html="DramaMasksSvg" />
                   </span>
                 </div>
               </div>
@@ -594,7 +594,17 @@ onMounted(async () => {
 }
 
 .session-card__ranks { display: flex; gap: 0.35rem; flex-shrink: 0; }
-.session-card__rank .pi { font-size: 0.65rem; }
+.session-card__rank-icon {
+  display: inline-flex;
+  align-items: center;
+  width: 0.9em;
+  height: 0.9em;
+}
+.session-card__rank-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
 
 /* ── Quick links ── */
 .quick-links {

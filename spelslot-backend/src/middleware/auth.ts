@@ -44,7 +44,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       picture: decoded.picture ?? '',
     }
     next()
-  } catch {
+  } catch (err) {
+    console.error('[auth] Token verification failed:', (err as Error).message)
     res.status(401).json({ message: 'Unauthorized' })
   }
 }
