@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import AutoComplete from 'primevue/autocomplete'
+import SelectButton from 'primevue/selectbutton'
 import { monsterService, type Monster, type MonsterSummary } from '@/services/monsterService'
 import { useSessionMonstersStore } from '@/stores/sessionMonsters'
 
@@ -11,9 +13,14 @@ const activeId = computed({
 })
 const adding = ref(false)       // add-panel open
 const addMode = ref<'search' | 'url' | 'image'>('search')
+const ADD_MODES = [
+  { label: 'Search', value: 'search' },
+  { label: 'URL', value: 'url' },
+  { label: 'Image', value: 'image' },
+]
 
 // ── Add panel state ───────────────────────────────────────────────────────
-const searchQuery = ref('')
+const searchQuery = ref<string | MonsterSummary>('')
 const suggestions = ref<MonsterSummary[]>([])
 const searchLoading = ref(false)
 const addLoading = ref(false)
@@ -21,8 +28,6 @@ const addError = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const urlInput = ref('')
 const urlAlternatives = ref<MonsterSummary[]>([])
-
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 function openAdd() {
   adding.value = true
@@ -48,20 +53,22 @@ function switchAddMode(m: 'search' | 'url' | 'image') {
   addError.value = null
 }
 
-// ── Search ────────────────────────────────────────────────────────────────
-function onSearchInput() {
-  if (searchTimeout) clearTimeout(searchTimeout)
+// ── Search (PrimeVue AutoComplete: debounce via :delay, fetch on @complete) ──
+async function onSearch(e: { query: string }) {
+  const q = e.query.trim()
   addError.value = null
-  if (!searchQuery.value.trim() || searchQuery.value.trim().length < 2) {
+  if (q.length < 2) {
     suggestions.value = []
     return
   }
-  searchTimeout = setTimeout(async () => {
-    searchLoading.value = true
-    const result = await monsterService.search(searchQuery.value.trim())
-    searchLoading.value = false
-    if (result.type === 'ok') suggestions.value = result.data
-  }, 300)
+  searchLoading.value = true
+  const result = await monsterService.search(q)
+  searchLoading.value = false
+  if (result.type === 'ok') suggestions.value = result.data
+}
+
+function onSelectMonster(e: { value: MonsterSummary }) {
+  selectMonster(e.value)
 }
 
 async function selectMonster(summary: MonsterSummary) {
@@ -211,42 +218,37 @@ function fmtBonus(n: number): string {
     <!-- ── Add panel ── -->
     <div v-if="adding" class="msb__add-panel">
       <!-- Mode toggle -->
-      <div class="msb__add-modes">
-        <button :class="['msb__add-mode', { 'msb__add-mode--active': addMode === 'search' }]" @click="switchAddMode('search')">
-          Search
-        </button>
-        <button :class="['msb__add-mode', { 'msb__add-mode--active': addMode === 'url' }]" @click="switchAddMode('url')">
-          URL
-        </button>
-        <button :class="['msb__add-mode', { 'msb__add-mode--active': addMode === 'image' }]" @click="switchAddMode('image')">
-          Image
-        </button>
-      </div>
+      <SelectButton
+        :model-value="addMode"
+        :options="ADD_MODES"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        class="msb__add-modes"
+        @update:model-value="(m) => m && switchAddMode(m)"
+      />
 
       <!-- Search -->
       <template v-if="addMode === 'search'">
-        <div class="msb__search-row">
-          <input
-            v-model="searchQuery"
-            class="msb__search"
-            type="text"
-            placeholder="Monster name…"
-            autocomplete="off"
-            @input="onSearchInput"
-          />
-          <i v-if="searchLoading || addLoading" class="pi pi-spin pi-spinner msb__spin" />
-        </div>
-        <ul v-if="suggestions.length" class="msb__suggestions">
-          <li
-            v-for="s in suggestions"
-            :key="s.slug"
-            class="msb__suggestion"
-            @click="selectMonster(s)"
-          >
-            <span class="msb__suggestion-name">{{ s.name }}</span>
-            <span class="msb__suggestion-meta">CR {{ s.challenge_rating }} · {{ s.size }} {{ s.type }}</span>
-          </li>
-        </ul>
+        <AutoComplete
+          v-model="searchQuery"
+          :suggestions="suggestions"
+          option-label="name"
+          placeholder="Monster name…"
+          :delay="300"
+          complete-on-focus
+          fluid
+          @complete="onSearch"
+          @option-select="onSelectMonster"
+        >
+          <template #option="{ option }">
+            <div class="msb__suggestion">
+              <span class="msb__suggestion-name">{{ option.name }}</span>
+              <span class="msb__suggestion-meta">CR {{ option.challenge_rating }} · {{ option.size }} {{ option.type }}</span>
+            </div>
+          </template>
+        </AutoComplete>
+        <p v-if="addLoading" class="msb__add-loading"><i class="pi pi-spin pi-spinner" /> Loading…</p>
         <p v-if="addError" class="msb__add-error">{{ addError }}</p>
       </template>
 
@@ -518,36 +520,11 @@ function fmtBonus(n: number): string {
   background: color-mix(in srgb, var(--ss-primary) 3%, transparent);
 }
 
-.msb__add-modes {
-  display: flex;
-  gap: 0.3rem;
-}
+/* SelectButton (Search / URL / Image) — stretch the three options full-width */
+.msb__add-modes { display: flex; }
+.msb__add-modes :deep(.p-togglebutton) { flex: 1; }
 
-.msb__add-mode {
-  flex: 1;
-  background: none;
-  border: 1px solid var(--ss-border);
-  border-radius: var(--ss-radius);
-  padding: 0.2rem 0.4rem;
-  font-size: 0.7rem;
-  color: var(--ss-text-muted);
-  cursor: pointer;
-}
-.msb__add-mode:hover { border-color: var(--ss-primary); color: var(--ss-text); }
-.msb__add-mode--active {
-  border-color: var(--ss-primary);
-  background: color-mix(in srgb, var(--ss-primary) 10%, transparent);
-  color: var(--ss-primary);
-  font-weight: 600;
-}
-
-/* Search inside add panel */
-.msb__search-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
+/* Text input inside add panel (URL mode) */
 .msb__search {
   flex: 1;
   background: var(--ss-parchment-dark);
@@ -560,31 +537,25 @@ function fmtBonus(n: number): string {
 }
 .msb__search:focus { border-color: var(--ss-primary); }
 
-.msb__spin { color: var(--ss-text-muted); font-size: 0.72rem; flex-shrink: 0; }
-
-.msb__suggestions {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--ss-border);
-  border-radius: var(--ss-radius);
-  background: var(--ss-surface, var(--ss-parchment));
-  max-height: 180px;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
+/* Suggestion row rendered inside the AutoComplete #option slot */
 .msb__suggestion {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 0.3rem 0.55rem;
-  cursor: pointer;
   gap: 0.5rem;
+  width: 100%;
 }
-.msb__suggestion:hover { background: color-mix(in srgb, var(--ss-primary) 10%, transparent); }
 .msb__suggestion-name { font-weight: 600; color: var(--ss-text); font-size: 0.78rem; }
 .msb__suggestion-meta { font-size: 0.65rem; color: var(--ss-text-muted); white-space: nowrap; }
+
+.msb__add-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--ss-text-muted);
+  margin: 0;
+}
 
 .msb__add-error {
   font-size: 0.7rem;

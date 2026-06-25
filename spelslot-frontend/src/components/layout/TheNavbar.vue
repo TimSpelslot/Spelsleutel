@@ -8,12 +8,14 @@ import Popover from 'primevue/popover'
 import Tag from 'primevue/tag'
 import { useAuthStore } from '@/stores/auth'
 import { useSidebar } from '@/composables/useSidebar'
+import { useColorScheme } from '@/composables/useColorScheme'
 import { useNotificationsStore } from '@/stores/notifications'
 import type { UserRole } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
 const sidebar = useSidebar()
+const colorScheme = useColorScheme()
 const notifs = useNotificationsStore()
 
 const bellPopover = ref()
@@ -120,6 +122,17 @@ async function logout() {
     </div>
 
     <div class="navbar__end">
+      <!-- Light / dark mode toggle -->
+      <Button
+        :icon="colorScheme.isDark ? 'pi pi-sun' : 'pi pi-moon'"
+        text
+        rounded
+        :aria-label="colorScheme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+        :title="colorScheme.isDark ? 'Light mode' : 'Dark mode'"
+        class="navbar__theme-toggle"
+        @click="colorScheme.toggle()"
+      />
+
       <!-- Notification bell -->
       <OverlayBadge
         :value="notifs.unreadCount > 0 ? String(notifs.unreadCount) : undefined"
@@ -308,7 +321,7 @@ async function logout() {
 
 .view-pill--active {
   background: var(--ss-primary);
-  color: #fff;
+  color: var(--ss-primary-fg);
 }
 
 /* Pulsing amber ring when actively overriding the real role */

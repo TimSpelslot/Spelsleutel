@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import PrimeVue from 'primevue/config'
-import Aura from '@primevue/themes/aura'
+import { spelslotPreset } from '@/theme/spelslotPreset'
 import { createPinia } from 'pinia'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
@@ -10,12 +10,28 @@ import 'tippy.js/dist/tippy.css'
 import router from '@/router'
 import App from './App.vue'
 import '@/assets/tokens.css'
+import { initColorScheme } from '@/composables/useColorScheme'
 import { useAuthStore } from '@/stores/auth'
+
+// Apply the persisted (or system) light/dark choice before mount to avoid a flash.
+initColorScheme()
 
 const app = createApp(App)
 
 // Registration order per conventions: PrimeVue → Pinia → services → directives
-app.use(PrimeVue, { theme: { preset: Aura } })
+app.use(PrimeVue, {
+  theme: {
+    preset: spelslotPreset,
+    options: {
+      // Dark mode toggles via a `.ss-dark` class on <html> (managed by useColorScheme).
+      darkModeSelector: '.ss-dark',
+      // Wrap all PrimeVue styles in an @layer named `primevue`. Our app CSS (scoped
+      // component styles + tokens.css) stays unlayered, and unlayered styles always
+      // beat layered ones — so app overrides win with no specificity hacks / !important.
+      cssLayer: { name: 'primevue', order: 'primevue' },
+    },
+  },
+})
 const pinia = createPinia()
 app.use(pinia)
 app.use(ConfirmationService)

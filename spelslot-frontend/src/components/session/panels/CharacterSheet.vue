@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import Avatar from 'primevue/avatar'
+import Button from 'primevue/button'
 import { ddbService, type DdbCharacter } from '@/services/ddbService'
 
 const props = defineProps<{
@@ -99,7 +101,7 @@ onMounted(load)
       <i class="pi pi-exclamation-circle" />
       <p>{{ error }}</p>
       <p class="char-sheet__error-hint">Character ID: {{ characterId }}</p>
-      <button class="char-sheet__retry" @click="load">Retry</button>
+      <Button label="Retry" severity="secondary" outlined size="small" class="char-sheet__retry" @click="load" />
     </div>
 
     <!-- Character data -->
@@ -107,15 +109,13 @@ onMounted(load)
 
       <!-- Header -->
       <div class="char-sheet__header">
-        <img
-          v-if="character.avatarUrl"
-          :src="character.avatarUrl"
-          :alt="character.name"
+        <Avatar
+          :image="character.avatarUrl || undefined"
+          :icon="character.avatarUrl ? undefined : 'pi pi-user'"
+          shape="circle"
+          size="large"
           class="char-sheet__avatar"
         />
-        <div v-else class="char-sheet__avatar char-sheet__avatar--placeholder">
-          <i class="pi pi-user" />
-        </div>
         <div class="char-sheet__identity">
           <span class="char-sheet__name">{{ character.name }}</span>
           <span class="char-sheet__class">{{ classLabel }}</span>
@@ -125,25 +125,32 @@ onMounted(load)
           </div>
         </div>
         <div class="char-sheet__header-actions">
-          <a
+          <Button
             v-if="ddbUrl"
+            as="a"
             :href="ddbUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="char-sheet__ddb-link"
+            icon="pi pi-external-link"
+            severity="secondary"
+            text
+            rounded
+            size="small"
             title="Open full sheet on DnD Beyond"
-          >
-            <i class="pi pi-external-link" />
-          </a>
-          <button
-            class="char-sheet__refresh"
-            :class="{ 'char-sheet__refresh--spinning': refreshing }"
+            aria-label="Open full sheet on DnD Beyond"
+          />
+          <Button
+            icon="pi pi-refresh"
+            severity="secondary"
+            text
+            rounded
+            size="small"
+            :loading="refreshing"
             :disabled="refreshing"
             title="Sync from DnD Beyond"
+            aria-label="Sync from DnD Beyond"
             @click="refresh"
-          >
-            <i class="pi pi-refresh" />
-          </button>
+          />
         </div>
       </div>
 
@@ -231,17 +238,7 @@ onMounted(load)
 .char-sheet__error { color: var(--ss-danger, #ef4444); }
 .char-sheet__error-hint { color: var(--ss-text-muted); font-size: 0.72rem; }
 
-.char-sheet__retry {
-  background: none;
-  border: 1px solid var(--ss-border);
-  border-radius: var(--ss-radius);
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  color: var(--ss-primary);
-  margin-top: 0.25rem;
-}
-.char-sheet__retry:hover { background: var(--ss-parchment-dark); }
+.char-sheet__retry { margin-top: 0.25rem; }
 
 /* Header */
 .char-sheet__header {
@@ -250,22 +247,10 @@ onMounted(load)
   gap: 0.6rem;
 }
 
+/* PrimeVue Avatar (size="large" = 48px) gets a brand border */
 .char-sheet__avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
   border: 2px solid var(--ss-border);
   flex-shrink: 0;
-}
-
-.char-sheet__avatar--placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ss-parchment-dark);
-  color: var(--ss-text-muted);
-  font-size: 1.25rem;
 }
 
 .char-sheet__identity {
@@ -316,42 +301,6 @@ onMounted(load)
   gap: 0.25rem;
   flex-shrink: 0;
 }
-
-.char-sheet__ddb-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--ss-primary) 12%, transparent);
-  color: var(--ss-primary);
-  font-size: 0.7rem;
-  text-decoration: none;
-  border: 1px solid color-mix(in srgb, var(--ss-primary) 25%, transparent);
-  transition: background 0.15s;
-}
-.char-sheet__ddb-link:hover { background: color-mix(in srgb, var(--ss-primary) 22%, transparent); }
-
-.char-sheet__refresh {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: none;
-  border: 1px solid var(--ss-border);
-  border-radius: 4px;
-  cursor: pointer;
-  color: var(--ss-text-muted);
-  font-size: 0.7rem;
-  transition: color 0.15s;
-}
-.char-sheet__refresh:hover { color: var(--ss-primary); border-color: var(--ss-primary); }
-.char-sheet__refresh--spinning .pi { animation: spin 1s linear infinite; }
-.char-sheet__refresh:disabled { opacity: 0.5; cursor: not-allowed; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Stale warning */
 .char-sheet__stale {

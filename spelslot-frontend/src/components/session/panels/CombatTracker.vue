@@ -119,9 +119,9 @@ function hpPercent(m: Monster) {
 }
 
 function hpColor(pct: number) {
-  if (pct > 60) return '#22c55e'
-  if (pct > 30) return '#f59e0b'
-  return '#ef4444'
+  if (pct > 60) return 'var(--ss-success)'
+  if (pct > 30) return 'var(--ss-warning)'
+  return 'var(--ss-danger)'
 }
 
 function clearAll() {
@@ -331,12 +331,12 @@ function clearAll() {
 .ct__btn:hover { color: var(--ss-text); border-color: var(--ss-text-muted); }
 .ct__btn--add { border-color: var(--ss-primary); color: var(--ss-primary); }
 .ct__btn--add:hover { background: color-mix(in srgb, var(--ss-primary) 10%, transparent); }
-.ct__btn--danger { color: #ef4444; border-color: color-mix(in srgb, #ef4444 40%, transparent); }
-.ct__btn--danger:hover { background: color-mix(in srgb, #ef4444 10%, transparent); }
-.ct__btn--dmg { color: #ef4444; border-color: color-mix(in srgb, #ef4444 30%, transparent); }
-.ct__btn--dmg:hover { background: color-mix(in srgb, #ef4444 10%, transparent); }
-.ct__btn--heal { color: #22c55e; border-color: color-mix(in srgb, #22c55e 30%, transparent); }
-.ct__btn--heal:hover { background: color-mix(in srgb, #22c55e 10%, transparent); }
+.ct__btn--danger { color: var(--ss-danger); border-color: color-mix(in srgb, var(--ss-danger) 40%, transparent); }
+.ct__btn--danger:hover { background: color-mix(in srgb, var(--ss-danger) 10%, transparent); }
+.ct__btn--dmg { color: var(--ss-danger); border-color: color-mix(in srgb, var(--ss-danger) 30%, transparent); }
+.ct__btn--dmg:hover { background: color-mix(in srgb, var(--ss-danger) 10%, transparent); }
+.ct__btn--heal { color: var(--ss-success); border-color: color-mix(in srgb, var(--ss-success) 30%, transparent); }
+.ct__btn--heal:hover { background: color-mix(in srgb, var(--ss-success) 10%, transparent); }
 
 /* ── Pinned monsters ── */
 .ct__pinned {
@@ -487,7 +487,7 @@ function clearAll() {
   transition: color 0.1s;
 }
 
-.ct__icon-btn:hover { color: #ef4444; }
+.ct__icon-btn:hover { color: var(--ss-danger); }
 
 /* ── HP ── */
 .ct__hp-row {
@@ -573,15 +573,15 @@ function clearAll() {
   padding: 0.1rem 0.45rem;
   font-size: 0.65rem;
   font-weight: 600;
-  background: color-mix(in srgb, #f59e0b 15%, transparent);
-  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
-  color: #f59e0b;
+  background: color-mix(in srgb, var(--ss-warning) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ss-warning) 40%, transparent);
+  color: var(--ss-warning);
   border-radius: 99px;
   cursor: pointer;
   transition: background 0.1s;
 }
 
-.ct__cond-chip:hover { background: color-mix(in srgb, #ef4444 15%, transparent); color: #ef4444; border-color: color-mix(in srgb, #ef4444 40%, transparent); }
+.ct__cond-chip:hover { background: color-mix(in srgb, var(--ss-danger) 15%, transparent); color: var(--ss-danger); border-color: color-mix(in srgb, var(--ss-danger) 40%, transparent); }
 .ct__cond-chip .pi { font-size: 0.55rem; }
 
 .ct__cond-add { position: relative; }
@@ -633,5 +633,5 @@ function clearAll() {
 }
 
 .ct__cond-option:hover { border-color: var(--ss-primary); color: var(--ss-primary); }
-.ct__cond-option--active { background: color-mix(in srgb, #f59e0b 15%, transparent); border-color: #f59e0b; color: #f59e0b; }
+.ct__cond-option--active { background: color-mix(in srgb, var(--ss-warning) 15%, transparent); border-color: var(--ss-warning); color: var(--ss-warning); }
 </style>

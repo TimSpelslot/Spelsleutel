@@ -37,6 +37,14 @@ const activeDocId = computed(() =>
   selectedSessionId.value ? (sessionDocIds.value[selectedSessionId.value] ?? null) : null,
 )
 
+// AdventureBoard session id for the selected session — PartyRoster requires it
+// (null falls back to its manual session picker). Mirrors SessionDmView.
+const selectedAbSessionId = computed<number | null>(() =>
+  selectedSessionId.value
+    ? (sessions.value.find((s) => s.id === selectedSessionId.value)?.abSessionId ?? null)
+    : null,
+)
+
 onMounted(async () => {
   const result = await codexService.listEntries()
   if (result.type === 'ok') {
@@ -146,7 +154,7 @@ function resetLayout() {
 
     <div class="spv__mobile-content">
       <CharacterSheet v-if="mobileTab === 'character'" :character-id="characterId" />
-      <PartyRoster v-else-if="mobileTab === 'roster'" :session-id="selectedSessionId" />
+      <PartyRoster v-else-if="mobileTab === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
       <SessionNotes
         v-else-if="mobileTab === 'notes'"
         :key="activeDocId ?? 'no-session'"
@@ -214,7 +222,7 @@ function resetLayout() {
       @close="layout.close(p.id)"
       @focus="layout.focus(p.id)"
     >
-      <PartyRoster v-if="p.id === 'roster'" :session-id="selectedSessionId" />
+      <PartyRoster v-if="p.id === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
       <SessionNotes
         v-else-if="p.id === 'notes'"
         :key="activeDocId ?? 'no-session'"

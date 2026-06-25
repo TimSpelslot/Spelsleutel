@@ -447,8 +447,8 @@ onMounted(async () => {
 }
 
 .worldbuilder-banner--pending {
-  background-color: color-mix(in srgb, #3b82f6 8%, transparent);
-  border-color: color-mix(in srgb, #3b82f6 25%, transparent);
+  background-color: color-mix(in srgb, var(--ss-info) 8%, transparent);
+  border-color: color-mix(in srgb, var(--ss-info) 25%, transparent);
 }
 
 .worldbuilder-banner__icon {
@@ -458,7 +458,7 @@ onMounted(async () => {
 }
 
 .worldbuilder-banner--pending .worldbuilder-banner__icon {
-  color: #3b82f6;
+  color: var(--ss-info);
 }
 
 .worldbuilder-banner__text {
@@ -566,7 +566,7 @@ onMounted(async () => {
 .session-card__dm .pi,
 .session-card__spots .pi { font-size: 0.7rem; }
 
-.session-card__spots-free { color: #22c55e; }
+.session-card__spots-free { color: var(--ss-success); }
 .session-card__spots-full { color: var(--ss-danger); }
 
 .session-card__desc {

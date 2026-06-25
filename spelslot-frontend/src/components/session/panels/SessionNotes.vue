@@ -167,9 +167,9 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   background: var(--ss-border);
 }
-.session-notes__collab-dot--connected { background: #22c55e; }
-.session-notes__collab-dot--connecting { background: #f59e0b; animation: sn-pulse 1s ease-in-out infinite; }
-.session-notes__collab-dot--disconnected { background: #ef4444; }
+.session-notes__collab-dot--connected { background: var(--ss-success); }
+.session-notes__collab-dot--connecting { background: var(--ss-warning); animation: sn-pulse 1s ease-in-out infinite; }
+.session-notes__collab-dot--disconnected { background: var(--ss-danger); }
 
 @keyframes sn-pulse {
   0%, 100% { opacity: 1; }

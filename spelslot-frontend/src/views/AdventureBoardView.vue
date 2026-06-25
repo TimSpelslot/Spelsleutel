@@ -742,7 +742,7 @@ function formatMonth(dateStr: string): string {
   flex-shrink: 0;
 }
 
-.ab-detail__spots-free { color: #22c55e; margin-left: 0.25em; font-size: 0.8em; }
+.ab-detail__spots-free { color: var(--ss-success); margin-left: 0.25em; font-size: 0.8em; }
 .ab-detail__spots-full { color: var(--ss-danger); margin-left: 0.25em; font-size: 0.8em; }
 
 .ab-detail__no-karma { color: var(--ss-text-muted); font-size: 0.85em; }

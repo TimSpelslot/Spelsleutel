@@ -249,9 +249,9 @@ function insertTable() {
   flex-shrink: 0;
   background: var(--ss-border);
 }
-.ce-collab-dot--connected { background: #22c55e; }
-.ce-collab-dot--connecting { background: #f59e0b; animation: ce-pulse 1s ease-in-out infinite; }
-.ce-collab-dot--disconnected { background: #ef4444; }
+.ce-collab-dot--connected { background: var(--ss-success); }
+.ce-collab-dot--connecting { background: var(--ss-warning); animation: ce-pulse 1s ease-in-out infinite; }
+.ce-collab-dot--disconnected { background: var(--ss-danger); }
 
 @keyframes ce-pulse {
   0%, 100% { opacity: 1; }

@@ -248,8 +248,8 @@ const panelStyle = computed(() => ({
 }
 
 .fp__ctrl--close:hover {
-  color: #f87171;
-  background: color-mix(in srgb, #f87171 15%, transparent);
+  color: var(--ss-danger);
+  background: color-mix(in srgb, var(--ss-danger) 15%, transparent);
 }
 
 /* ── Content ── */
