@@ -3,10 +3,13 @@ import { ref, onMounted, computed } from 'vue'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import { ddbService, type DdbCharacter } from '@/services/ddbService'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   characterId: string | null
 }>()
+
+const { t } = useI18n()
 
 const character = ref<DdbCharacter | null>(null)
 const loading = ref(false)
@@ -16,11 +19,20 @@ const refreshing = ref(false)
 
 const STAT_KEYS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
 const STAT_LABELS: Record<string, string> = {
-  str: 'STR', dex: 'DEX', con: 'CON', int: 'INT', wis: 'WIS', cha: 'CHA',
+  str: 'STR',
+  dex: 'DEX',
+  con: 'CON',
+  int: 'INT',
+  wis: 'WIS',
+  cha: 'CHA',
 }
 const SAVE_LABELS: Record<string, string> = {
-  str: 'Strength', dex: 'Dexterity', con: 'Constitution',
-  int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma',
+  str: 'Strength',
+  dex: 'Dexterity',
+  con: 'Constitution',
+  int: 'Intelligence',
+  wis: 'Wisdom',
+  cha: 'Charisma',
 }
 
 const classLabel = computed(() => {
@@ -31,22 +43,23 @@ const classLabel = computed(() => {
 })
 
 const ddbUrl = computed(() =>
-  props.characterId ? `https://www.dndbeyond.com/characters/${props.characterId}` : null
+  props.characterId ? `https://www.dndbeyond.com/characters/${props.characterId}` : null,
 )
 
 function fmtMod(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`
 }
 
-function saveMod(key: typeof STAT_KEYS[number]): string {
+function saveMod(key: (typeof STAT_KEYS)[number]): string {
   if (!character.value) return ''
   const base = character.value.modifiers[key]
   const prof = character.value.savingThrowProficiencies?.includes(key)
-    ? character.value.proficiencyBonus : 0
+    ? character.value.proficiencyBonus
+    : 0
   return fmtMod(base + prof)
 }
 
-function hasProf(key: typeof STAT_KEYS[number]): boolean {
+function hasProf(key: (typeof STAT_KEYS)[number]): boolean {
   return character.value?.savingThrowProficiencies?.includes(key) ?? false
 }
 
@@ -83,30 +96,39 @@ onMounted(load)
 
 <template>
   <div class="char-sheet">
-
     <!-- No character linked -->
     <div v-if="!characterId" class="char-sheet__empty">
       <i class="pi pi-user char-sheet__empty-icon" />
-      <p>No DnD Beyond character linked.</p>
-      <p class="char-sheet__empty-hint">Ask an admin to add your character ID in the admin panel.</p>
+      <p>{{ t('session.characterSheet.noCharacterLinked') }}</p>
+      <p class="char-sheet__empty-hint">
+        {{ t('session.characterSheet.noCharacterHint') }}
+      </p>
     </div>
 
     <!-- Loading -->
     <div v-else-if="loading" class="char-sheet__loading">
-      <i class="pi pi-spin pi-spinner" /> Loading character…
+      <i class="pi pi-spin pi-spinner" /> {{ t('session.characterSheet.loadingCharacter') }}
     </div>
 
     <!-- Error -->
     <div v-else-if="error && !character" class="char-sheet__error">
       <i class="pi pi-exclamation-circle" />
       <p>{{ error }}</p>
-      <p class="char-sheet__error-hint">Character ID: {{ characterId }}</p>
-      <Button label="Retry" severity="secondary" outlined size="small" class="char-sheet__retry" @click="load" />
+      <p class="char-sheet__error-hint">
+        {{ t('session.characterSheet.characterIdLabel', { id: characterId }) }}
+      </p>
+      <Button
+        :label="t('session.characterSheet.retry')"
+        severity="secondary"
+        outlined
+        size="small"
+        class="char-sheet__retry"
+        @click="load"
+      />
     </div>
 
     <!-- Character data -->
     <template v-else-if="character">
-
       <!-- Header -->
       <div class="char-sheet__header">
         <Avatar
@@ -120,8 +142,14 @@ onMounted(load)
           <span class="char-sheet__name">{{ character.name }}</span>
           <span class="char-sheet__class">{{ classLabel }}</span>
           <div class="char-sheet__badges">
-            <span class="char-sheet__badge">Lvl {{ character.totalLevel }}</span>
-            <span class="char-sheet__badge">Prof {{ fmtMod(character.proficiencyBonus) }}</span>
+            <span class="char-sheet__badge">{{
+              t('session.characterSheet.badges.level', { level: character.totalLevel })
+            }}</span>
+            <span class="char-sheet__badge">{{
+              t('session.characterSheet.badges.proficiency', {
+                bonus: fmtMod(character.proficiencyBonus),
+              })
+            }}</span>
           </div>
         </div>
         <div class="char-sheet__header-actions">
@@ -136,8 +164,8 @@ onMounted(load)
             text
             rounded
             size="small"
-            title="Open full sheet on DnD Beyond"
-            aria-label="Open full sheet on DnD Beyond"
+            :title="t('session.characterSheet.openFullSheet')"
+            :aria-label="t('session.characterSheet.openFullSheet')"
           />
           <Button
             icon="pi pi-refresh"
@@ -147,8 +175,8 @@ onMounted(load)
             size="small"
             :loading="refreshing"
             :disabled="refreshing"
-            title="Sync from DnD Beyond"
-            aria-label="Sync from DnD Beyond"
+            :title="t('session.characterSheet.syncFromDdb')"
+            :aria-label="t('session.characterSheet.syncFromDdb')"
             @click="refresh"
           />
         </div>
@@ -156,32 +184,34 @@ onMounted(load)
 
       <!-- Stale warning -->
       <div v-if="stale" class="char-sheet__stale">
-        <i class="pi pi-exclamation-triangle" /> Showing cached data — DnD Beyond may be unavailable.
+        <i class="pi pi-exclamation-triangle" /> {{ t('session.characterSheet.staleWarning') }}
       </div>
 
       <!-- AC · HP · Speed row -->
       <div class="char-sheet__vitals">
         <div class="char-sheet__vital">
-          <span class="char-sheet__vital-label">AC</span>
+          <span class="char-sheet__vital-label">{{ t('session.characterSheet.vitals.ac') }}</span>
           <span class="char-sheet__vital-value">{{ character.armorClass }}</span>
         </div>
         <div class="char-sheet__vital">
-          <span class="char-sheet__vital-label">Max HP</span>
+          <span class="char-sheet__vital-label">{{
+            t('session.characterSheet.vitals.maxHp')
+          }}</span>
           <span class="char-sheet__vital-value">{{ character.maxHp }}</span>
         </div>
         <div class="char-sheet__vital">
-          <span class="char-sheet__vital-label">Speed</span>
-          <span class="char-sheet__vital-value">{{ character.speed }} ft</span>
+          <span class="char-sheet__vital-label">{{
+            t('session.characterSheet.vitals.speed')
+          }}</span>
+          <span class="char-sheet__vital-value">{{
+            t('session.characterSheet.vitals.speedValue', { speed: character.speed })
+          }}</span>
         </div>
       </div>
 
       <!-- Ability scores -->
       <div class="char-sheet__abilities">
-        <div
-          v-for="key in STAT_KEYS"
-          :key="key"
-          class="char-sheet__ability"
-        >
+        <div v-for="key in STAT_KEYS" :key="key" class="char-sheet__ability">
           <span class="char-sheet__ability-label">{{ STAT_LABELS[key] }}</span>
           <span class="char-sheet__ability-mod">{{ fmtMod(character.modifiers[key]) }}</span>
           <span class="char-sheet__ability-score">{{ character.stats[key] }}</span>
@@ -189,7 +219,7 @@ onMounted(load)
       </div>
 
       <!-- Saving throws -->
-      <div class="char-sheet__section-title">Saving Throws</div>
+      <div class="char-sheet__section-title">{{ t('common.savingThrows') }}</div>
       <div class="char-sheet__saves">
         <div
           v-for="key in STAT_KEYS"
@@ -202,7 +232,6 @@ onMounted(load)
           <span class="char-sheet__save-name">{{ SAVE_LABELS[key] }}</span>
         </div>
       </div>
-
     </template>
   </div>
 </template>
@@ -233,12 +262,26 @@ onMounted(load)
   padding: 1rem;
 }
 
-.char-sheet__empty-icon { font-size: 2rem; opacity: 0.3; margin-bottom: 0.25rem; }
-.char-sheet__empty-hint { font-size: 0.72rem; opacity: 0.7; }
-.char-sheet__error { color: var(--ss-danger, #ef4444); }
-.char-sheet__error-hint { color: var(--ss-text-muted); font-size: 0.72rem; }
+.char-sheet__empty-icon {
+  font-size: 2rem;
+  opacity: 0.3;
+  margin-bottom: 0.25rem;
+}
+.char-sheet__empty-hint {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.char-sheet__error {
+  color: var(--ss-danger, #ef4444);
+}
+.char-sheet__error-hint {
+  color: var(--ss-text-muted);
+  font-size: 0.72rem;
+}
 
-.char-sheet__retry { margin-top: 0.25rem; }
+.char-sheet__retry {
+  margin-top: 0.25rem;
+}
 
 /* Header */
 .char-sheet__header {

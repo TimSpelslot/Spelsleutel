@@ -9,7 +9,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const loading = ref(false)
   let pollHandle: ReturnType<typeof setInterval> | null = null
 
-  const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
+  const unreadCount = computed(() => notifications.value.filter((n) => !n.read).length)
 
   async function load() {
     loading.value = true
@@ -21,7 +21,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   async function markRead(id: string) {
     const result = await notificationService.markRead(id)
     if (result.type === 'ok') {
-      const n = notifications.value.find(n => n._id === id)
+      const n = notifications.value.find((n) => n._id === id)
       if (n) n.read = true
     }
   }
@@ -29,14 +29,16 @@ export const useNotificationsStore = defineStore('notifications', () => {
   async function markAllRead() {
     const result = await notificationService.markAllRead()
     if (result.type === 'ok') {
-      notifications.value.forEach(n => { n.read = true })
+      notifications.value.forEach((n) => {
+        n.read = true
+      })
     }
   }
 
   async function remove(id: string) {
     const result = await notificationService.remove(id)
     if (result.type === 'ok') {
-      notifications.value = notifications.value.filter(n => n._id !== id)
+      notifications.value = notifications.value.filter((n) => n._id !== id)
     }
   }
 
@@ -54,5 +56,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  return { notifications, loading, unreadCount, load, markRead, markAllRead, remove, startPolling, stopPolling }
+  return {
+    notifications,
+    loading,
+    unreadCount,
+    load,
+    markRead,
+    markAllRead,
+    remove,
+    startPolling,
+    stopPolling,
+  }
 })

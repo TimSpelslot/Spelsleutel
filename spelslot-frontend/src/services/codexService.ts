@@ -1,7 +1,15 @@
 import { api } from './api'
 import type { Result } from '@/types'
 
-export type EntryType = 'lore' | 'location' | 'npc' | 'faction' | 'item' | 'event' | 'rule' | 'session'
+export type EntryType =
+  | 'lore'
+  | 'location'
+  | 'npc'
+  | 'faction'
+  | 'item'
+  | 'event'
+  | 'rule'
+  | 'session'
 
 export interface CodexEntry {
   id: string
@@ -78,7 +86,8 @@ export const codexService = {
   },
 
   async createEntry(
-    payload: Pick<CodexEntry, 'name' | 'type'> & Partial<Pick<CodexEntry, 'permission' | 'status' | 'parentId' | 'tags' | 'summary'>>,
+    payload: Pick<CodexEntry, 'name' | 'type'> &
+      Partial<Pick<CodexEntry, 'permission' | 'status' | 'parentId' | 'tags' | 'summary'>>,
   ): Promise<Result<CodexEntry>> {
     const result = await api.post<{ entry: CodexEntry }>('/api/codex', payload)
     if (result.type === 'error') return result
@@ -111,20 +120,28 @@ export const codexService = {
   },
 
   async deleteDocument(entryId: string, docId: string): Promise<Result<void>> {
-    const result = await api.delete<{ success: boolean }>(`/api/codex/${entryId}/documents/${docId}`)
+    const result = await api.delete<{ success: boolean }>(
+      `/api/codex/${entryId}/documents/${docId}`,
+    )
     if (result.type === 'error') return result
     return { type: 'ok', data: undefined }
   },
 
-  async syncSession(abSessionId: number): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
+  async syncSession(
+    abSessionId: number,
+  ): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
     return api.post('/api/codex/sessions/sync', { abSessionId })
   },
 
-  async getSessionByAbId(abSessionId: number): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
+  async getSessionByAbId(
+    abSessionId: number,
+  ): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
     return api.get(`/api/codex/sessions/by-ab/${abSessionId}`)
   },
 
-  async getCalendar(calendarId: string): Promise<Result<import('@/utils/lkCalendar').LkCalendarDef>> {
+  async getCalendar(
+    calendarId: string,
+  ): Promise<Result<import('@/utils/lkCalendar').LkCalendarDef>> {
     return api.get(`/api/calendars/${calendarId}`)
   },
 }

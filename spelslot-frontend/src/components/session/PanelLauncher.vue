@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PanelConfig } from '@/composables/usePanelLayout'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   closedPanels: PanelConfig[]
@@ -10,28 +11,30 @@ const emit = defineEmits<{
   open: [id: string]
   reset: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <div class="launcher">
     <span class="launcher__label">
       <i class="pi pi-th-large" />
-      Panels
+      {{ t('session.layout.panels') }}
     </span>
 
     <div class="launcher__divider" />
 
     <template v-if="closedPanels.length === 0">
-      <span class="launcher__hint">All panels open</span>
+      <span class="launcher__hint">{{ t('session.layout.allPanelsOpen') }}</span>
     </template>
 
     <template v-else>
-      <span class="launcher__hint">Closed:</span>
+      <span class="launcher__hint">{{ t('session.layout.closed') }}</span>
       <button
         v-for="p in closedPanels"
         :key="p.id"
         class="launcher__chip"
-        :title="`Restore ${p.title}`"
+        :title="t('session.layout.restorePanel', { title: p.title })"
         @click="emit('open', p.id)"
       >
         <i :class="['pi', p.icon]" />
@@ -41,9 +44,13 @@ const emit = defineEmits<{
 
     <div class="launcher__spacer" />
 
-    <button class="launcher__reset" title="Reset panel layout to defaults" @click="emit('reset')">
+    <button
+      class="launcher__reset"
+      :title="t('session.layout.resetLayoutTitle')"
+      @click="emit('reset')"
+    >
       <i class="pi pi-refresh" />
-      Reset layout
+      {{ t('session.layout.resetLayout') }}
     </button>
   </div>
 </template>
@@ -105,7 +112,10 @@ const emit = defineEmits<{
   border: 1px solid color-mix(in srgb, var(--ss-shell-fg) 16%, transparent);
   border-radius: 99px;
   cursor: pointer;
-  transition: color 0.1s, background 0.1s, border-color 0.1s;
+  transition:
+    color 0.1s,
+    background 0.1s,
+    border-color 0.1s;
   white-space: nowrap;
 }
 

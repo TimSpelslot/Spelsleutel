@@ -1,0 +1,32 @@
+{
+  "brand": "Spelslot",
+  "toggleSidebar": "Toggle sidebar",
+  "sidebar": {
+    "mainNavigation": "Main navigation",
+    "dashboard": "Dashboard",
+    "codex": "Codex",
+    "sessions": "Sessions",
+    "session": "Session",
+    "marketplace": "Marketplace",
+    "dmDashboard": "DM Dashboard",
+    "admin": "Admin"
+  },
+  "switchToLanguage": "Switch to {language}",
+  "switchToLight": "Switch to light mode",
+  "switchToDark": "Switch to dark mode",
+  "lightMode": "Light mode",
+  "darkMode": "Dark mode",
+  "notifications": "Notifications",
+  "profile": "Profile",
+  "signOut": "Sign out",
+  "devSimulate": "Dev: simulate a different role",
+  "popover": {
+    "heading": "Notifications",
+    "viewAll": "View all notifications"
+  },
+  "timeAgo": {
+    "minutes": "{m} min",
+    "hours": "{h}h",
+    "days": "{d}d"
+  }
+}

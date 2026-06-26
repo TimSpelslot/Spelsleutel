@@ -1,0 +1,34 @@
+{
+  "title": "Sessies",
+  "subtitle": "Aankomende D&D-avonturen via AdventureBoard",
+  "playerFallback": "Speler {id}",
+  "filters": {
+    "searchPlaceholder": "Zoek op titel, DM of tag…",
+    "openSpotsChip": "Vrije plekken"
+  },
+  "sessionCount": "{filtered} van {total}",
+  "empty": "Geen sessies gevonden. Pas de filters aan.",
+  "card": {
+    "spotsFree": "· {count} vrij",
+    "spotsFull": "· vol"
+  },
+  "detail": {
+    "waitlistSection": "Wachtlijst",
+    "noPlayersAssigned": "Nog geen spelers toegewezen",
+    "metaDm": "DM: {name}",
+    "metaRoom": "Ruimte: {room}",
+    "noKarma": "Telt niet mee voor karma",
+    "tagStoryAdventure": "Verhaalavontuur",
+    "tagWaitingList": "Wachtlijst",
+    "tagSessions": "{count} sessies",
+    "spotsOpen": "· {count} vrij",
+    "spotsFull": "· vol",
+    "rankCombat": "Combat",
+    "rankExploration": "Verkenning",
+    "rankRoleplaying": "Roleplay",
+    "rankTitleCombat": "Combat: {label}",
+    "rankTitleExploration": "Verkenning: {label}",
+    "rankTitleRoleplaying": "Roleplay: {label}",
+    "createSessionPageButton": "Sessiepagina aanmaken"
+  }
+}

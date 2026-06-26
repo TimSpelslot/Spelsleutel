@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEditor, EditorContent, VueRenderer } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { Table } from '@tiptap/extension-table'
@@ -24,6 +25,7 @@ const emit = defineEmits<{
   update: [content: object]
 }>()
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const COLLAB_URL = import.meta.env.VITE_COLLAB_URL ?? 'ws://localhost:3001'
 
@@ -88,8 +90,15 @@ const mentionSuggestion = {
         popup[0].setProps({ getReferenceClientRect: suggProps.clientRect as () => DOMRect })
       },
       onKeyDown: ({ event }: { event: KeyboardEvent }) => {
-        if (event.key === 'Escape') { popup?.[0]?.hide(); return true }
-        return (renderer?.ref as { onKeyDown?: (e: KeyboardEvent) => boolean } | null)?.onKeyDown?.(event) ?? false
+        if (event.key === 'Escape') {
+          popup?.[0]?.hide()
+          return true
+        }
+        return (
+          (renderer?.ref as { onKeyDown?: (e: KeyboardEvent) => boolean } | null)?.onKeyDown?.(
+            event,
+          ) ?? false
+        )
       },
       onExit: () => {
         popup?.[0]?.destroy()
@@ -127,11 +136,17 @@ onBeforeUnmount(() => {
   editor.value?.destroy()
 })
 
-function cmd() { return editor.value?.chain().focus() }
-function isActive(name: string, attrs?: object) { return editor.value?.isActive(name, attrs) ?? false }
+function cmd() {
+  return editor.value?.chain().focus()
+}
+function isActive(name: string, attrs?: object) {
+  return editor.value?.isActive(name, attrs) ?? false
+}
 function insertTable() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(editor.value?.chain().focus() as any)?.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+  ;(editor.value?.chain().focus() as any)
+    ?.insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+    .run()
 }
 </script>
 
@@ -139,50 +154,137 @@ function insertTable() {
   <div class="codex-editor">
     <div v-if="editor" class="codex-editor__toolbar">
       <!-- Text marks -->
-      <button class="ce-btn" :class="{ active: isActive('bold') }" title="Bold" @click="cmd()?.toggleBold().run()"><b>B</b></button>
-      <button class="ce-btn" :class="{ active: isActive('italic') }" title="Italic" @click="cmd()?.toggleItalic().run()"><em>I</em></button>
-      <button class="ce-btn" :class="{ active: isActive('strike') }" title="Strikethrough" @click="cmd()?.toggleStrike().run()"><s>S</s></button>
-      <button class="ce-btn" :class="{ active: isActive('code') }" title="Inline code" @click="cmd()?.toggleCode().run()">
-        <i class="pi pi-code" style="font-size:0.75rem" />
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('bold') }"
+        :title="t('codex.editor.bold')"
+        @click="cmd()?.toggleBold().run()"
+      >
+        <b>B</b>
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('italic') }"
+        :title="t('codex.editor.italic')"
+        @click="cmd()?.toggleItalic().run()"
+      >
+        <em>I</em>
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('strike') }"
+        :title="t('codex.editor.strikethrough')"
+        @click="cmd()?.toggleStrike().run()"
+      >
+        <s>S</s>
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('code') }"
+        :title="t('codex.editor.inlineCode')"
+        @click="cmd()?.toggleCode().run()"
+      >
+        <i class="pi pi-code" style="font-size: 0.75rem" />
       </button>
 
       <span class="ce-sep" />
 
       <!-- Headings -->
-      <button class="ce-btn" :class="{ active: isActive('heading', { level: 1 }) }" title="Heading 1" @click="cmd()?.toggleHeading({ level: 1 }).run()">H1</button>
-      <button class="ce-btn" :class="{ active: isActive('heading', { level: 2 }) }" title="Heading 2" @click="cmd()?.toggleHeading({ level: 2 }).run()">H2</button>
-      <button class="ce-btn" :class="{ active: isActive('heading', { level: 3 }) }" title="Heading 3" @click="cmd()?.toggleHeading({ level: 3 }).run()">H3</button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('heading', { level: 1 }) }"
+        :title="t('codex.editor.heading1')"
+        @click="cmd()?.toggleHeading({ level: 1 }).run()"
+      >
+        H1
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('heading', { level: 2 }) }"
+        :title="t('codex.editor.heading2')"
+        @click="cmd()?.toggleHeading({ level: 2 }).run()"
+      >
+        H2
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('heading', { level: 3 }) }"
+        :title="t('codex.editor.heading3')"
+        @click="cmd()?.toggleHeading({ level: 3 }).run()"
+      >
+        H3
+      </button>
 
       <span class="ce-sep" />
 
       <!-- Lists & blocks -->
-      <button class="ce-btn" :class="{ active: isActive('bulletList') }" title="Bullet list" @click="cmd()?.toggleBulletList().run()">
-        <i class="pi pi-list" style="font-size:0.75rem" />
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('bulletList') }"
+        :title="t('codex.editor.bulletList')"
+        @click="cmd()?.toggleBulletList().run()"
+      >
+        <i class="pi pi-list" style="font-size: 0.75rem" />
       </button>
-      <button class="ce-btn" :class="{ active: isActive('orderedList') }" title="Numbered list" @click="cmd()?.toggleOrderedList().run()">1.</button>
-      <button class="ce-btn" :class="{ active: isActive('blockquote') }" title="Blockquote" @click="cmd()?.toggleBlockquote().run()">"</button>
-      <button class="ce-btn" :class="{ active: isActive('codeBlock') }" title="Code block" @click="cmd()?.toggleCodeBlock().run()">{ }</button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('orderedList') }"
+        :title="t('codex.editor.numberedList')"
+        @click="cmd()?.toggleOrderedList().run()"
+      >
+        1.
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('blockquote') }"
+        :title="t('codex.editor.blockquote')"
+        @click="cmd()?.toggleBlockquote().run()"
+      >
+        "
+      </button>
+      <button
+        class="ce-btn"
+        :class="{ active: isActive('codeBlock') }"
+        :title="t('codex.editor.codeBlock')"
+        @click="cmd()?.toggleCodeBlock().run()"
+      >
+        { }
+      </button>
 
       <span class="ce-sep" />
 
       <!-- Table -->
-      <button class="ce-btn" title="Insert table" @click="insertTable()">
-        <i class="pi pi-table" style="font-size:0.75rem" />
+      <button class="ce-btn" :title="t('codex.editor.insertTable')" @click="insertTable()">
+        <i class="pi pi-table" style="font-size: 0.75rem" />
       </button>
 
       <span class="ce-sep" />
 
       <!-- Undo / Redo — powered by Y.js UndoManager via Collaboration extension -->
-      <button class="ce-btn" title="Undo" :disabled="!editor?.can().undo()" @click="cmd()?.undo().run()">
-        <i class="pi pi-undo" style="font-size:0.75rem" />
+      <button
+        class="ce-btn"
+        :title="t('codex.editor.undo')"
+        :disabled="!editor?.can().undo()"
+        @click="cmd()?.undo().run()"
+      >
+        <i class="pi pi-undo" style="font-size: 0.75rem" />
       </button>
-      <button class="ce-btn" title="Redo" :disabled="!editor?.can().redo()" @click="cmd()?.redo().run()">
-        <i class="pi pi-replay" style="font-size:0.75rem" />
+      <button
+        class="ce-btn"
+        :title="t('codex.editor.redo')"
+        :disabled="!editor?.can().redo()"
+        @click="cmd()?.redo().run()"
+      >
+        <i class="pi pi-replay" style="font-size: 0.75rem" />
       </button>
 
       <!-- Connection indicator -->
       <span class="ce-sep" />
-      <span class="ce-collab-dot" :class="`ce-collab-dot--${collabStatus}`" :title="`Collaboration: ${collabStatus}`" />
+      <span
+        class="ce-collab-dot"
+        :class="`ce-collab-dot--${collabStatus}`"
+        :title="t('codex.editor.collaborationStatus', { status: collabStatus })"
+      />
     </div>
 
     <EditorContent class="codex-editor__content" :editor="editor" />
@@ -223,15 +325,23 @@ function insertTable() {
   font-size: 0.8rem;
   font-family: inherit;
   color: var(--ss-text-muted);
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
-.ce-btn:hover { background: var(--ss-parchment-deeper, #e8ddd4); color: var(--ss-text); }
+.ce-btn:hover {
+  background: var(--ss-parchment-deeper, #e8ddd4);
+  color: var(--ss-text);
+}
 .ce-btn.active {
   background: color-mix(in srgb, var(--ss-primary) 15%, transparent);
   color: var(--ss-primary);
 }
-.ce-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.ce-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 .ce-sep {
   width: 1px;
@@ -249,13 +359,25 @@ function insertTable() {
   flex-shrink: 0;
   background: var(--ss-border);
 }
-.ce-collab-dot--connected { background: var(--ss-success); }
-.ce-collab-dot--connecting { background: var(--ss-warning); animation: ce-pulse 1s ease-in-out infinite; }
-.ce-collab-dot--disconnected { background: var(--ss-danger); }
+.ce-collab-dot--connected {
+  background: var(--ss-success);
+}
+.ce-collab-dot--connecting {
+  background: var(--ss-warning);
+  animation: ce-pulse 1s ease-in-out infinite;
+}
+.ce-collab-dot--disconnected {
+  background: var(--ss-danger);
+}
 
 @keyframes ce-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .codex-editor__content :deep(.ProseMirror) {
@@ -267,25 +389,97 @@ function insertTable() {
   font-size: 0.95rem;
 }
 
-.codex-editor__content :deep(.ProseMirror > * + *) { margin-top: 0.4em; }
-.codex-editor__content :deep(.ProseMirror p) { margin: 0 0 0.65em; }
-.codex-editor__content :deep(.ProseMirror h1) { font-size: 1.5rem; font-weight: 700; margin: 1.4em 0 0.4em; line-height: 1.3; }
-.codex-editor__content :deep(.ProseMirror h2) { font-size: 1.2rem; font-weight: 700; margin: 1.2em 0 0.35em; line-height: 1.3; }
-.codex-editor__content :deep(.ProseMirror h3) { font-size: 1rem; font-weight: 700; margin: 1em 0 0.3em; }
-.codex-editor__content :deep(.ProseMirror ul, .ProseMirror ol) { padding-left: 1.5em; margin: 0 0 0.65em; }
-.codex-editor__content :deep(.ProseMirror li) { margin-bottom: 0.2em; }
-.codex-editor__content :deep(.ProseMirror blockquote) { border-left: 3px solid var(--ss-primary); padding-left: 1em; margin: 0 0 0.65em; color: var(--ss-text-muted); }
-.codex-editor__content :deep(.ProseMirror code:not(pre *)) { background: var(--ss-parchment-dark); border: 1px solid var(--ss-border); border-radius: 3px; padding: 0.1em 0.35em; font-size: 0.875em; font-family: ui-monospace, monospace; color: var(--ss-primary); }
-.codex-editor__content :deep(.ProseMirror pre) { background: var(--ss-parchment-dark); border: 1px solid var(--ss-border); border-radius: var(--ss-radius, 6px); padding: 0.75rem 1rem; overflow-x: auto; margin: 0 0 0.65em; }
-.codex-editor__content :deep(.ProseMirror pre code) { background: none; border: none; padding: 0; }
-.codex-editor__content :deep(.ProseMirror hr) { border: none; border-top: 1px solid var(--ss-border); margin: 1.5em 0; }
+.codex-editor__content :deep(.ProseMirror > * + *) {
+  margin-top: 0.4em;
+}
+.codex-editor__content :deep(.ProseMirror p) {
+  margin: 0 0 0.65em;
+}
+.codex-editor__content :deep(.ProseMirror h1) {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.4em 0 0.4em;
+  line-height: 1.3;
+}
+.codex-editor__content :deep(.ProseMirror h2) {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 1.2em 0 0.35em;
+  line-height: 1.3;
+}
+.codex-editor__content :deep(.ProseMirror h3) {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1em 0 0.3em;
+}
+.codex-editor__content :deep(.ProseMirror ul, .ProseMirror ol) {
+  padding-left: 1.5em;
+  margin: 0 0 0.65em;
+}
+.codex-editor__content :deep(.ProseMirror li) {
+  margin-bottom: 0.2em;
+}
+.codex-editor__content :deep(.ProseMirror blockquote) {
+  border-left: 3px solid var(--ss-primary);
+  padding-left: 1em;
+  margin: 0 0 0.65em;
+  color: var(--ss-text-muted);
+}
+.codex-editor__content :deep(.ProseMirror code:not(pre *)) {
+  background: var(--ss-parchment-dark);
+  border: 1px solid var(--ss-border);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  font-size: 0.875em;
+  font-family: ui-monospace, monospace;
+  color: var(--ss-primary);
+}
+.codex-editor__content :deep(.ProseMirror pre) {
+  background: var(--ss-parchment-dark);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius, 6px);
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  margin: 0 0 0.65em;
+}
+.codex-editor__content :deep(.ProseMirror pre code) {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.codex-editor__content :deep(.ProseMirror hr) {
+  border: none;
+  border-top: 1px solid var(--ss-border);
+  margin: 1.5em 0;
+}
 
 /* Tables */
-.codex-editor__content :deep(.ProseMirror table) { width: 100%; border-collapse: collapse; margin: 0 0 1em; }
-.codex-editor__content :deep(.ProseMirror th, .ProseMirror td) { border: 1px solid var(--ss-border); padding: 0.4em 0.6em; vertical-align: top; }
-.codex-editor__content :deep(.ProseMirror th) { background: var(--ss-parchment-dark); font-weight: 700; text-align: left; }
-.codex-editor__content :deep(.ProseMirror .selectedCell::after) { background: color-mix(in srgb, var(--ss-primary) 12%, transparent); content: ''; inset: 0; pointer-events: none; position: absolute; z-index: 2; }
-.codex-editor__content :deep(.ProseMirror td, .ProseMirror th) { position: relative; }
+.codex-editor__content :deep(.ProseMirror table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1em;
+}
+.codex-editor__content :deep(.ProseMirror th, .ProseMirror td) {
+  border: 1px solid var(--ss-border);
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+}
+.codex-editor__content :deep(.ProseMirror th) {
+  background: var(--ss-parchment-dark);
+  font-weight: 700;
+  text-align: left;
+}
+.codex-editor__content :deep(.ProseMirror .selectedCell::after) {
+  background: color-mix(in srgb, var(--ss-primary) 12%, transparent);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.codex-editor__content :deep(.ProseMirror td, .ProseMirror th) {
+  position: relative;
+}
 
 /* Mention chip */
 .codex-editor__content :deep(.codex-mention) {

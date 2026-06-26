@@ -8,6 +8,7 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth'
 import { firebaseAuth } from '@/firebase'
+import { t } from '@/i18n'
 import { authService } from '@/services/authService'
 import type { Result, User, UserRole } from '@/types'
 
@@ -20,7 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Dev-only: override role for testing different views (persisted across page loads)
   const devRole = ref<UserRole | null>(
-    import.meta.env.DEV ? ((localStorage.getItem(DEV_ROLE_KEY) as UserRole | null) || null) : null,
+    import.meta.env.DEV ? (localStorage.getItem(DEV_ROLE_KEY) as UserRole | null) || null : null,
   )
 
   // The user seen by permission checks — devRole overrides role but not identity
@@ -32,9 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
       role: devRole.value,
       // DMs and Admins implicitly have worldbuilder rights
       isWorldbuilder:
-        devRole.value === 'DM' || devRole.value === 'ADMIN'
-          ? true
-          : user.value.isWorldbuilder,
+        devRole.value === 'DM' || devRole.value === 'ADMIN' ? true : user.value.isWorldbuilder,
     }
   })
 
@@ -82,18 +81,17 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('[auth] loginWithGoogle failed:', code, err)
 
       const messages: Record<string, string> = {
-        'auth/popup-blocked':
-          'The sign-in popup was blocked. Please allow popups for this site and try again.',
-        'auth/popup-closed-by-user': 'Sign-in cancelled.',
-        'auth/unauthorized-domain':
-          'This domain is not authorised in Firebase. Add it under Authentication → Settings → Authorised domains.',
-        'auth/operation-not-allowed':
-          'Google sign-in is not enabled. Enable it in the Firebase console under Authentication → Sign-in method.',
-        'auth/network-request-failed':
-          'Network error — check your internet connection and try again.',
+        'auth/popup-blocked': t('auth.errors.popupBlocked'),
+        'auth/popup-closed-by-user': t('auth.errors.popupClosedByUser'),
+        'auth/unauthorized-domain': t('auth.errors.unauthorizedDomain'),
+        'auth/operation-not-allowed': t('auth.errors.operationNotAllowed'),
+        'auth/network-request-failed': t('auth.errors.networkRequestFailed'),
       }
 
-      return { type: 'error', message: messages[code] ?? `Sign in failed (${code || 'unknown error'}).` }
+      return {
+        type: 'error',
+        message: messages[code] ?? t('auth.errors.default', { code: code || 'unknown error' }),
+      }
     }
   }
 

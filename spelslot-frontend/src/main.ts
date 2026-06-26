@@ -10,6 +10,7 @@ import 'tippy.js/dist/tippy.css'
 import router from '@/router'
 import App from './App.vue'
 import '@/assets/tokens.css'
+import { i18n } from '@/i18n'
 import { initColorScheme } from '@/composables/useColorScheme'
 import { useAuthStore } from '@/stores/auth'
 
@@ -18,7 +19,7 @@ initColorScheme()
 
 const app = createApp(App)
 
-// Registration order per conventions: PrimeVue → Pinia → services → directives
+// Registration order per conventions: PrimeVue → i18n → Pinia → services → directives
 app.use(PrimeVue, {
   theme: {
     preset: spelslotPreset,
@@ -32,6 +33,7 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(i18n)
 const pinia = createPinia()
 app.use(pinia)
 app.use(ConfirmationService)

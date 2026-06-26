@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { SUPPORTED_LOCALES, setLocale } from '@/i18n'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import OverlayBadge from 'primevue/overlaybadge'
@@ -12,6 +14,7 @@ import { useColorScheme } from '@/composables/useColorScheme'
 import { useNotificationsStore } from '@/stores/notifications'
 import type { UserRole } from '@/types'
 
+const { t, locale } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
 const sidebar = useSidebar()
@@ -19,6 +22,18 @@ const colorScheme = useColorScheme()
 const notifs = useNotificationsStore()
 
 const bellPopover = ref()
+
+// Switching is a straight toggle between the two supported locales.
+const currentLocale = computed(
+  () => SUPPORTED_LOCALES.find((l) => l.code === locale.value) ?? SUPPORTED_LOCALES[0],
+)
+const nextLocale = computed(
+  () => SUPPORTED_LOCALES.find((l) => l.code !== locale.value) ?? SUPPORTED_LOCALES[0],
+)
+
+function toggleLang() {
+  setLocale(nextLocale.value.code)
+}
 
 function toggleBell(event: MouseEvent) {
   bellPopover.value?.toggle(event)
@@ -48,18 +63,18 @@ function typeIcon(type: string) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60_000)
-  if (m < 1) return 'Just now'
-  if (m < 60) return `${m} min`
+  if (m < 1) return t('common.justNow')
+  if (m < 60) return t('nav.timeAgo.minutes', { m })
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h`
-  return `${Math.floor(h / 24)}d`
+  if (h < 24) return t('nav.timeAgo.hours', { h })
+  return t('nav.timeAgo.days', { d: Math.floor(h / 24) })
 }
 
-const VIEW_ROLES: { role: UserRole; label: string }[] = [
-  { role: 'ADMIN', label: 'Admin' },
-  { role: 'DM', label: 'DM' },
-  { role: 'PLAYER', label: 'Player' },
-]
+const VIEW_ROLES = computed<{ role: UserRole; label: string }[]>(() => [
+  { role: 'ADMIN', label: t('admin.roles.admin') },
+  { role: 'DM', label: t('admin.roles.dm') },
+  { role: 'PLAYER', label: t('admin.roles.player') },
+])
 
 const userInitials = computed(() => {
   const name = auth.user?.displayName ?? auth.user?.name ?? ''
@@ -68,9 +83,12 @@ const userInitials = computed(() => {
 
 const roleSeverity = computed(() => {
   switch (auth.effectiveUser?.role) {
-    case 'DM': return 'warn'
-    case 'ADMIN': return 'contrast'
-    default: return 'secondary'
+    case 'DM':
+      return 'warn'
+    case 'ADMIN':
+      return 'contrast'
+    default:
+      return 'secondary'
   }
 })
 
@@ -95,18 +113,18 @@ async function logout() {
         :icon="sidebar.mobileOpen ? 'pi pi-times' : 'pi pi-bars'"
         text
         rounded
-        aria-label="Toggle sidebar"
+        :aria-label="$t('nav.toggleSidebar')"
         class="navbar__toggle"
         @click="sidebar.toggle()"
       />
       <div class="navbar__brand">
         <i class="pi pi-shield navbar__brand-icon" aria-hidden="true" />
-        <span class="navbar__brand-name">Spelslot</span>
+        <span class="navbar__brand-name">{{ $t('nav.brand') }}</span>
       </div>
     </div>
 
     <!-- Dev view toggles (centre of navbar) -->
-    <div class="navbar__view-toggles" title="Dev: simulate a different role">
+    <div class="navbar__view-toggles" :title="$t('nav.devSimulate')">
       <button
         v-for="v in VIEW_ROLES"
         :key="v.role"
@@ -122,13 +140,25 @@ async function logout() {
     </div>
 
     <div class="navbar__end">
+      <!-- Language toggle (EN ⇄ NL) -->
+      <Button
+        text
+        rounded
+        class="navbar__lang-toggle"
+        :aria-label="$t('nav.switchToLanguage', { language: nextLocale.label })"
+        :title="$t('nav.switchToLanguage', { language: nextLocale.label })"
+        @click="toggleLang"
+      >
+        <span class="navbar__lang-code">{{ currentLocale.code.toUpperCase() }}</span>
+      </Button>
+
       <!-- Light / dark mode toggle -->
       <Button
         :icon="colorScheme.isDark ? 'pi pi-sun' : 'pi pi-moon'"
         text
         rounded
-        :aria-label="colorScheme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-        :title="colorScheme.isDark ? 'Light mode' : 'Dark mode'"
+        :aria-label="colorScheme.isDark ? $t('nav.switchToLight') : $t('nav.switchToDark')"
+        :title="colorScheme.isDark ? $t('nav.lightMode') : $t('nav.darkMode')"
         class="navbar__theme-toggle"
         @click="colorScheme.toggle()"
       />
@@ -143,17 +173,17 @@ async function logout() {
           icon="pi pi-bell"
           text
           rounded
-          aria-label="Notifications"
+          :aria-label="$t('nav.notifications')"
           @click="toggleBell"
         />
       </OverlayBadge>
 
       <Popover ref="bellPopover" class="notif-popover">
         <div class="notif-popover__header">
-          <span class="notif-popover__heading">Notifications</span>
+          <span class="notif-popover__heading">{{ $t('nav.popover.heading') }}</span>
           <Button
             v-if="notifs.unreadCount > 0"
-            label="Alles gelezen"
+            :label="$t('common.markAllRead')"
             text
             size="small"
             class="notif-popover__read-all"
@@ -166,7 +196,10 @@ async function logout() {
             v-for="n in notifs.notifications.slice(0, 8)"
             :key="n._id"
             class="notif-popover__item"
-            :class="{ 'notif-popover__item--unread': !n.read, 'notif-popover__item--clickable': !!n.href }"
+            :class="{
+              'notif-popover__item--unread': !n.read,
+              'notif-popover__item--clickable': !!n.href,
+            }"
             @click="handleNotifClick(n._id, n.href)"
           >
             <i :class="['notif-popover__icon', typeIcon(n.type)]" />
@@ -178,7 +211,7 @@ async function logout() {
             <span v-if="!n.read" class="notif-popover__dot" />
           </li>
           <li v-if="notifs.notifications.length === 0" class="notif-popover__empty">
-            Geen meldingen
+            {{ $t('common.noNotifications') }}
           </li>
         </ul>
 
@@ -188,7 +221,7 @@ async function logout() {
             class="notif-popover__all-link"
             @click="bellPopover?.hide()"
           >
-            Bekijk alle meldingen
+            {{ $t('nav.popover.viewAll') }}
             <i class="pi pi-arrow-right" />
           </RouterLink>
         </div>
@@ -201,7 +234,7 @@ async function logout() {
         shape="circle"
         class="navbar__avatar"
         style="cursor: pointer"
-        title="Profile"
+        :title="$t('nav.profile')"
         @click="router.push('/profile')"
       />
 
@@ -224,7 +257,7 @@ async function logout() {
         icon="pi pi-sign-out"
         text
         rounded
-        aria-label="Sign out"
+        :aria-label="$t('nav.signOut')"
         class="navbar__logout"
         @click="logout"
       />
@@ -310,7 +343,9 @@ async function logout() {
   background: none;
   color: var(--ss-shell-fg-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   white-space: nowrap;
 }
 
@@ -330,7 +365,21 @@ async function logout() {
 }
 
 /* ── End section ── */
-.navbar__bell { }
+.navbar__lang-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0.5rem !important;
+  width: auto !important;
+}
+
+.navbar__lang-code {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.navbar__bell {
+}
 
 .navbar__avatar {
   flex-shrink: 0;

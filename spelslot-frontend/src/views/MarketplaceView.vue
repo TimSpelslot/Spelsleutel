@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
@@ -14,13 +15,24 @@ import {
   type Rarity,
 } from '@/services/marketplaceService'
 
+const { t } = useI18n()
+
 // ── State ─────────────────────────────────────────────────────────────────
 const items = ref<MarketplaceItem[]>([])
 const loadingItems = ref(false)
 const itemsError = ref<string | null>(null)
 
 const stats = ref<{ totalItems: number; avgPrice: number; mostPopularRarity: string } | null>(null)
-const recentPurchases = ref<{ id: string; buyerUsername: string; itemName: string; quantity: number; totalCost: number; purchasedAt: string }[]>([])
+const recentPurchases = ref<
+  {
+    id: string
+    buyerUsername: string
+    itemName: string
+    quantity: number
+    totalCost: number
+    purchasedAt: string
+  }[]
+>([])
 const bestDeals = ref<(MarketplaceItem & { discountPercent: number })[]>([])
 const loadingOverview = ref(false)
 
@@ -31,28 +43,33 @@ const searchQuery = ref('')
 const selectedCategory = ref<string>('')
 const selectedRarity = ref<string>('')
 
-const RARITY_OPTIONS = [
-  { label: 'All rarities', value: '' },
-  { label: 'Common', value: 'common' },
-  { label: 'Uncommon', value: 'uncommon' },
-  { label: 'Rare', value: 'rare' },
-  { label: 'Very rare', value: 'very_rare' },
-  { label: 'Legendary', value: 'legendary' },
-]
+const RARITY_OPTIONS = computed(() => [
+  { label: t('marketplace.filters.allRarities'), value: '' },
+  { label: t('marketplace.filters.rarityCommon'), value: 'common' },
+  { label: t('marketplace.filters.rarityUncommon'), value: 'uncommon' },
+  { label: t('marketplace.filters.rarityRare'), value: 'rare' },
+  { label: t('marketplace.filters.rarityVeryRare'), value: 'very_rare' },
+  { label: t('marketplace.filters.rarityLegendary'), value: 'legendary' },
+])
 
 const categoryOptions = computed(() => {
-  const cats = [...new Set(items.value.map(i => i.category).filter(Boolean))].sort()
-  return [{ label: 'All categories', value: '' }, ...cats.map(c => ({ label: c, value: c }))]
+  const cats = [...new Set(items.value.map((i) => i.category).filter(Boolean))].sort()
+  return [
+    { label: t('marketplace.filters.allCategories'), value: '' },
+    ...cats.map((c) => ({ label: c, value: c })),
+  ]
 })
 
 const filteredItems = computed(() => {
   let list = items.value
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase()
-    list = list.filter(i => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q))
+    list = list.filter(
+      (i) => i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q),
+    )
   }
-  if (selectedCategory.value) list = list.filter(i => i.category === selectedCategory.value)
-  if (selectedRarity.value) list = list.filter(i => i.rarity === selectedRarity.value)
+  if (selectedCategory.value) list = list.filter((i) => i.category === selectedCategory.value)
+  if (selectedRarity.value) list = list.filter((i) => i.rarity === selectedRarity.value)
   return list
 })
 
@@ -80,10 +97,15 @@ onMounted(async () => {
 })
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-const MARKETPLACE_URL = import.meta.env.VITE_MARKETPLACE_URL ?? 'https://spelslot-marketplace-dev.idohobbysservers.com'
+const MARKETPLACE_URL =
+  import.meta.env.VITE_MARKETPLACE_URL ?? 'https://spelslot-marketplace-dev.idohobbysservers.com'
 
-function rarityLabel(r: Rarity) { return RARITY_LABEL[r] ?? r }
-function raritySeverity(r: Rarity) { return RARITY_SEVERITY[r] ?? 'secondary' }
+function rarityLabel(r: Rarity) {
+  return RARITY_LABEL[r] ?? r
+}
+function raritySeverity(r: Rarity) {
+  return RARITY_SEVERITY[r] ?? 'secondary'
+}
 
 function formatGold(n: number) {
   return n.toLocaleString('en-GB') + ' gp'
@@ -98,8 +120,9 @@ function timeAgo(iso: string) {
   return `${Math.floor(h / 24)}d`
 }
 
-
-function openItem(item: MarketplaceItem) { selectedItem.value = item }
+function openItem(item: MarketplaceItem) {
+  selectedItem.value = item
+}
 </script>
 
 <template>
@@ -109,28 +132,33 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
       <div class="mp-header__left">
         <i class="pi pi-shopping-bag mp-header__icon" />
         <div>
-          <h1 class="mp-header__title">Marketplace</h1>
-          <p class="mp-header__subtitle">Magic items for adventurers</p>
+          <h1 class="mp-header__title">{{ $t('marketplace.title') }}</h1>
+          <p class="mp-header__subtitle">{{ $t('marketplace.subtitle') }}</p>
         </div>
       </div>
       <a :href="MARKETPLACE_URL" target="_blank" rel="noopener" class="mp-header__link">
-        <Button label="Full marketplace" icon="pi pi-external-link" text size="small" />
+        <Button
+          :label="$t('marketplace.fullMarketplaceButton')"
+          icon="pi pi-external-link"
+          text
+          size="small"
+        />
       </a>
     </div>
 
     <!-- Stats bar -->
     <div class="mp-stats" :class="{ 'mp-stats--loading': loadingOverview }">
       <template v-if="loadingOverview">
-        <Skeleton height="3.5rem" border-radius="var(--ss-radius)" v-for="i in 3" :key="i" />
+        <Skeleton v-for="i in 3" :key="i" height="3.5rem" border-radius="var(--ss-radius)" />
       </template>
       <template v-else-if="stats">
         <div class="mp-stat">
           <span class="mp-stat__value">{{ stats.totalItems }}</span>
-          <span class="mp-stat__label">Items available</span>
+          <span class="mp-stat__label">{{ $t('marketplace.stats.itemsAvailable') }}</span>
         </div>
         <div class="mp-stat">
           <span class="mp-stat__value">{{ formatGold(Math.round(stats.avgPrice)) }}</span>
-          <span class="mp-stat__label">Average price</span>
+          <span class="mp-stat__label">{{ $t('marketplace.stats.averagePrice') }}</span>
         </div>
         <div class="mp-stat">
           <Tag
@@ -138,7 +166,7 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
             :severity="raritySeverity(stats.mostPopularRarity as Rarity)"
             class="mp-stat__tag"
           />
-          <span class="mp-stat__label">Most popular rarity</span>
+          <span class="mp-stat__label">{{ $t('marketplace.stats.mostPopularRarity') }}</span>
         </div>
       </template>
     </div>
@@ -149,7 +177,7 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
         <!-- Best deals strip -->
         <template v-if="bestDeals.length && !loadingOverview">
           <h2 class="mp-section-heading">
-            <i class="pi pi-star-fill" /> Best deals
+            <i class="pi pi-star-fill" /> {{ $t('marketplace.bestDeals') }}
           </h2>
           <div class="mp-deals">
             <button
@@ -158,7 +186,11 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
               class="mp-deal-card"
               @click="openItem(deal)"
             >
-              <Tag :value="rarityLabel(deal.rarity)" :severity="raritySeverity(deal.rarity)" class="mp-deal-card__rarity" />
+              <Tag
+                :value="rarityLabel(deal.rarity)"
+                :severity="raritySeverity(deal.rarity)"
+                class="mp-deal-card__rarity"
+              />
               <p class="mp-deal-card__name">{{ deal.name }}</p>
               <div class="mp-deal-card__prices">
                 <span class="mp-deal-card__current">{{ formatGold(deal.currentPrice) }}</span>
@@ -175,7 +207,7 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
             <i class="pi pi-search mp-filters__search-icon" aria-hidden="true" />
             <InputText
               v-model="searchQuery"
-              placeholder="Search items…"
+              :placeholder="$t('marketplace.filters.searchPlaceholder')"
               class="mp-filters__search"
             />
           </div>
@@ -203,7 +235,7 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
         <p v-else-if="itemsError" class="mp-error">{{ itemsError }}</p>
 
         <p v-else-if="filteredItems.length === 0" class="mp-empty">
-          No items found for the current filters.
+          {{ $t('marketplace.empty') }}
         </p>
 
         <div v-else class="mp-grid">
@@ -221,9 +253,21 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
                 class="mp-item-card__rarity"
               />
               <div class="mp-item-card__badges">
-                <span v-if="item.attunement" class="mp-badge mp-badge--attune" title="Requires attunement">⚡</span>
-                <span v-if="item.consumable" class="mp-badge mp-badge--consume" title="Consumable">🔥</span>
-                <span v-if="item.stock !== null" class="mp-badge mp-badge--stock">{{ item.stock }}×</span>
+                <span
+                  v-if="item.attunement"
+                  class="mp-badge mp-badge--attune"
+                  :title="$t('common.requiresAttunement')"
+                  >⚡</span
+                >
+                <span
+                  v-if="item.consumable"
+                  class="mp-badge mp-badge--consume"
+                  :title="$t('common.consumable')"
+                  >🔥</span
+                >
+                <span v-if="item.stock !== null" class="mp-badge mp-badge--stock"
+                  >{{ item.stock }}×</span
+                >
               </div>
             </div>
             <p class="mp-item-card__name">{{ item.name }}</p>
@@ -239,30 +283,29 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
         <div class="mp-gold-card">
           <div class="mp-gold-card__header">
             <i class="pi pi-wallet mp-gold-card__icon" />
-            <span class="mp-gold-card__label">Your balance</span>
+            <span class="mp-gold-card__label">{{ $t('marketplace.gold.yourBalance') }}</span>
           </div>
-          <p class="mp-gold-card__hint">
-            Link your Marketplace account to see your gold balance.
-          </p>
+          <p class="mp-gold-card__hint">{{ $t('marketplace.gold.linkHint') }}</p>
           <a :href="MARKETPLACE_URL" target="_blank" rel="noopener">
-            <Button label="Go to Marketplace" icon="pi pi-external-link" size="small" outlined />
+            <Button
+              :label="$t('marketplace.gold.goToMarketplace')"
+              icon="pi pi-external-link"
+              size="small"
+              outlined
+            />
           </a>
         </div>
 
         <!-- Recent purchases -->
         <div class="mp-recent">
           <h2 class="mp-section-heading">
-            <i class="pi pi-history" /> Recent purchases
+            <i class="pi pi-history" /> {{ $t('marketplace.recentPurchases') }}
           </h2>
           <div v-if="loadingOverview" class="mp-recent__list">
             <Skeleton v-for="i in 6" :key="i" height="2.5rem" border-radius="4px" />
           </div>
           <ul v-else class="mp-recent__list">
-            <li
-              v-for="p in recentPurchases"
-              :key="p.id"
-              class="mp-recent__item"
-            >
+            <li v-for="p in recentPurchases" :key="p.id" class="mp-recent__item">
               <div class="mp-recent__item-body">
                 <span class="mp-recent__buyer">{{ p.buyerUsername }}</span>
                 <span class="mp-recent__item-name">{{ p.itemName }}</span>
@@ -293,9 +336,21 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
               :value="rarityLabel(selectedItem.rarity)"
               :severity="raritySeverity(selectedItem.rarity)"
             />
-            <Tag v-if="selectedItem.attunement" value="Requires attunement" severity="secondary" />
-            <Tag v-if="selectedItem.consumable" value="Consumable" severity="secondary" />
-            <Tag v-if="selectedItem.oneTime" value="One-time" severity="secondary" />
+            <Tag
+              v-if="selectedItem.attunement"
+              :value="$t('common.requiresAttunement')"
+              severity="secondary"
+            />
+            <Tag
+              v-if="selectedItem.consumable"
+              :value="$t('common.consumable')"
+              severity="secondary"
+            />
+            <Tag
+              v-if="selectedItem.oneTime"
+              :value="$t('marketplace.detail.oneTime')"
+              severity="secondary"
+            />
             <Tag :value="selectedItem.category" severity="secondary" />
           </div>
 
@@ -303,17 +358,22 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
 
           <div class="mp-detail__pricing">
             <div class="mp-detail__price-row">
-              <span class="mp-detail__price-label">Current price</span>
+              <span class="mp-detail__price-label">{{
+                $t('marketplace.detail.currentPrice')
+              }}</span>
               <span class="mp-detail__price-value mp-detail__price-value--current">
                 {{ formatGold(selectedItem.currentPrice) }}
               </span>
             </div>
-            <div v-if="selectedItem.currentPrice !== selectedItem.basePrice" class="mp-detail__price-row">
-              <span class="mp-detail__price-label">Base price</span>
+            <div
+              v-if="selectedItem.currentPrice !== selectedItem.basePrice"
+              class="mp-detail__price-row"
+            >
+              <span class="mp-detail__price-label">{{ $t('marketplace.detail.basePrice') }}</span>
               <span class="mp-detail__price-value">{{ formatGold(selectedItem.basePrice) }}</span>
             </div>
             <div v-if="selectedItem.stock !== null" class="mp-detail__price-row">
-              <span class="mp-detail__price-label">Stock</span>
+              <span class="mp-detail__price-label">{{ $t('marketplace.detail.stock') }}</span>
               <span class="mp-detail__price-value">{{ selectedItem.stock }}</span>
             </div>
           </div>
@@ -321,17 +381,17 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
       </template>
 
       <template #footer>
-        <Button label="Close" text @click="selectedItem = null" />
+        <Button :label="$t('marketplace.detail.closeButton')" text @click="selectedItem = null" />
         <a
           v-if="selectedItem?.sourceUrl"
           :href="selectedItem.sourceUrl"
           target="_blank"
           rel="noopener"
         >
-          <Button label="View source" icon="pi pi-external-link" text />
+          <Button :label="$t('marketplace.detail.viewSource')" icon="pi pi-external-link" text />
         </a>
         <a :href="MARKETPLACE_URL" target="_blank" rel="noopener">
-          <Button label="Buy on Marketplace" icon="pi pi-shopping-cart" />
+          <Button :label="$t('marketplace.detail.buyButton')" icon="pi pi-shopping-cart" />
         </a>
       </template>
     </Dialog>
@@ -458,7 +518,9 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .mp-deal-card:hover {
@@ -559,7 +621,9 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .mp-item-card:hover {
@@ -628,7 +692,9 @@ function openItem(item: MarketplaceItem) { selectedItem.value = item }
   color: var(--ss-text-muted);
 }
 
-.mp-error { color: var(--ss-danger); }
+.mp-error {
+  color: var(--ss-danger);
+}
 
 /* ── Sidebar ── */
 .mp-sidebar {

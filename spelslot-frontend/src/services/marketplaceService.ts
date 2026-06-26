@@ -64,13 +64,19 @@ export const RARITY_SEVERITY: Record<Rarity, string> = {
 }
 
 export const marketplaceService = {
-  async listItems(params?: { search?: string; category?: string; rarity?: string }): Promise<Result<MarketplaceItem[]>> {
+  async listItems(params?: {
+    search?: string
+    category?: string
+    rarity?: string
+  }): Promise<Result<MarketplaceItem[]>> {
     const qs = new URLSearchParams()
     if (params?.search) qs.set('search', params.search)
     if (params?.category) qs.set('category', params.category)
     if (params?.rarity) qs.set('rarity', params.rarity)
     const q = qs.toString()
-    const result = await api.get<{ items: MarketplaceItem[] }>(`/api/marketplace/items${q ? `?${q}` : ''}`)
+    const result = await api.get<{ items: MarketplaceItem[] }>(
+      `/api/marketplace/items${q ? `?${q}` : ''}`,
+    )
     if (result.type === 'error') return result
     return { type: 'ok', data: result.data.items }
   },

@@ -30,9 +30,7 @@ onMounted(() => fcm.initIfAlreadyGranted())
 
     <div class="app-layout__body">
       <TheSidebar />
-      <main
-        :class="['app-layout__content', { 'is-sidebar-collapsed': sidebar.collapsed }]"
-      >
+      <main :class="['app-layout__content', { 'is-sidebar-collapsed': sidebar.collapsed }]">
         <RouterView />
       </main>
     </div>

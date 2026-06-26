@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { notesService, type NoteMeta } from '@/services/notesService'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   sessionId: string | null
 }>()
+
+const { t } = useI18n()
 
 // ── State ─────────────────────────────────────────────────────────────────
 
@@ -37,7 +40,10 @@ async function openSession(sessionId: string | null) {
   }
   loading.value = true
   const listResult = await notesService.list(sessionId, 'dm')
-  if (listResult.type === 'error') { loading.value = false; return }
+  if (listResult.type === 'error') {
+    loading.value = false
+    return
+  }
 
   if (listResult.data.length === 0) {
     const created = await notesService.create(sessionId, 'dm')
@@ -56,9 +62,10 @@ async function activateNote(sessionId: string, noteId: string) {
   activeId.value = noteId
   const r = await notesService.load(sessionId, 'dm', noteId)
   if (r.type === 'ok') {
-    const content = r.data.content && Object.keys(r.data.content).length > 0
-      ? r.data.content
-      : { type: 'doc', content: [] }
+    const content =
+      r.data.content && Object.keys(r.data.content).length > 0
+        ? r.data.content
+        : { type: 'doc', content: [] }
     editor.value?.commands.setContent(content as object)
   }
 }
@@ -84,7 +91,13 @@ async function addNote() {
   }
 }
 
-watch(() => props.sessionId, (id) => { openSession(id) }, { immediate: true })
+watch(
+  () => props.sessionId,
+  (id) => {
+    openSession(id)
+  },
+  { immediate: true },
+)
 
 // ── Auto-save ─────────────────────────────────────────────────────────────
 
@@ -96,9 +109,16 @@ function scheduleAutoSave(content: object) {
     saveStatus.value = 'saving'
     const r = await notesService.save(props.sessionId, 'dm', activeId.value, content)
     saveStatus.value = r.type === 'ok' ? 'saved' : 'error'
-    if (saveStatus.value === 'saved') setTimeout(() => { saveStatus.value = 'idle' }, 2000)
+    if (saveStatus.value === 'saved')
+      setTimeout(() => {
+        saveStatus.value = 'idle'
+      }, 2000)
   }, 800)
 }
+
+const editorStyle = computed(() => ({
+  '--dm-notes-placeholder': `"${t('session.notes.dmNotesPlaceholder')}"`,
+}))
 
 onBeforeUnmount(() => {
   if (saveTimer.value) clearTimeout(saveTimer.value)
@@ -121,7 +141,7 @@ onBeforeUnmount(() => {
           {{ note.name }}
         </button>
       </div>
-      <button class="dm-notes__add" title="New note" @click="addNote">
+      <button class="dm-notes__add" :title="t('session.notes.newNote')" @click="addNote">
         <i class="pi pi-plus" />
       </button>
     </div>
@@ -129,19 +149,25 @@ onBeforeUnmount(() => {
     <!-- Status bar -->
     <div class="dm-notes__bar">
       <span class="dm-notes__label">
-        <i class="pi pi-lock" /> Private — DM only
+        <i class="pi pi-lock" /> {{ t('session.notes.dmNotesLabel') }}
       </span>
       <span class="dm-notes__autosave" :class="`dm-notes__autosave--${saveStatus}`">
-        <template v-if="saveStatus === 'saving'">Saving…</template>
-        <template v-else-if="saveStatus === 'saved'">Saved</template>
-        <template v-else-if="saveStatus === 'error'">Save failed</template>
-        <template v-else>Auto-saved</template>
+        <template v-if="saveStatus === 'saving'">{{
+          t('session.notes.savingStatus.saving')
+        }}</template>
+        <template v-else-if="saveStatus === 'saved'">{{
+          t('session.notes.savingStatus.saved')
+        }}</template>
+        <template v-else-if="saveStatus === 'error'">{{
+          t('session.notes.savingStatus.error')
+        }}</template>
+        <template v-else>{{ t('session.notes.savingStatus.idle') }}</template>
       </span>
     </div>
 
     <!-- Editor -->
-    <div v-if="loading" class="dm-notes__loading">Loading…</div>
-    <EditorContent v-else :editor="editor" class="dm-notes__editor" />
+    <div v-if="loading" class="dm-notes__loading">{{ t('common.loading') }}</div>
+    <EditorContent v-else :editor="editor" class="dm-notes__editor" :style="editorStyle" />
   </div>
 </template>
 
@@ -168,7 +194,9 @@ onBeforeUnmount(() => {
   flex: 1;
   scrollbar-width: none;
 }
-.dm-notes__tab-list::-webkit-scrollbar { display: none; }
+.dm-notes__tab-list::-webkit-scrollbar {
+  display: none;
+}
 
 .dm-notes__tab {
   padding: 0.3rem 0.75rem;
@@ -180,10 +208,14 @@ onBeforeUnmount(() => {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   flex-shrink: 0;
 }
-.dm-notes__tab:hover { color: var(--ss-text); }
+.dm-notes__tab:hover {
+  color: var(--ss-text);
+}
 .dm-notes__tab--active {
   color: var(--ss-primary);
   border-bottom-color: var(--ss-primary);
@@ -199,7 +231,9 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   transition: color 0.15s;
 }
-.dm-notes__add:hover { color: var(--ss-primary); }
+.dm-notes__add:hover {
+  color: var(--ss-primary);
+}
 
 /* Status bar */
 .dm-notes__bar {
@@ -219,18 +253,31 @@ onBeforeUnmount(() => {
   color: var(--ss-text-muted);
   font-weight: 600;
 }
-.dm-notes__label .pi { color: var(--ss-primary); font-size: 0.65rem; }
+.dm-notes__label .pi {
+  color: var(--ss-primary);
+  font-size: 0.65rem;
+}
 
 .dm-notes__autosave {
   margin-left: auto;
   font-size: 0.62rem;
   color: var(--ss-text-muted);
   opacity: 0.6;
-  transition: color 0.2s, opacity 0.2s;
+  transition:
+    color 0.2s,
+    opacity 0.2s;
 }
-.dm-notes__autosave--saving { opacity: 0.8; }
-.dm-notes__autosave--saved  { color: var(--ss-success, #22c55e); opacity: 1; }
-.dm-notes__autosave--error  { color: var(--ss-danger, #ef4444); opacity: 1; }
+.dm-notes__autosave--saving {
+  opacity: 0.8;
+}
+.dm-notes__autosave--saved {
+  color: var(--ss-success, #22c55e);
+  opacity: 1;
+}
+.dm-notes__autosave--error {
+  color: var(--ss-danger, #ef4444);
+  opacity: 1;
+}
 
 /* Editor */
 .dm-notes__loading {
@@ -255,15 +302,19 @@ onBeforeUnmount(() => {
   line-height: 1.7;
   font-size: 0.88rem;
 }
-.dm-notes__editor :deep(.ProseMirror p) { margin: 0 0 0.5em; }
+.dm-notes__editor :deep(.ProseMirror p) {
+  margin: 0 0 0.5em;
+}
 .dm-notes__editor :deep(.ProseMirror ul),
 .dm-notes__editor :deep(.ProseMirror ol) {
   padding-left: 1.4em;
   margin: 0 0 0.5em;
 }
-.dm-notes__editor :deep(.ProseMirror li) { margin-bottom: 0.15em; }
+.dm-notes__editor :deep(.ProseMirror li) {
+  margin-bottom: 0.15em;
+}
 .dm-notes__editor :deep(.ProseMirror.is-editor-empty:first-child::before) {
-  content: 'Private notes — visible only to you…';
+  content: var(--dm-notes-placeholder);
   float: left;
   color: var(--ss-text-muted);
   opacity: 0.5;

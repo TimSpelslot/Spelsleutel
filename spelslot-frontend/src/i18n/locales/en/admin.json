@@ -1,0 +1,34 @@
+{
+  "title": "Admin",
+  "worldbuilderRequests": {
+    "heading": "Worldbuilder Requests"
+  },
+  "users": {
+    "sectionHeading": "Users",
+    "columns": {
+      "user": "User",
+      "role": "Role",
+      "worldbuilder": "Worldbuilder",
+      "dndBeyond": "DnD Beyond"
+    },
+    "worldbuilderYes": "Yes",
+    "worldbuilderNo": "No",
+    "worldbuilderRequested": "Requested"
+  },
+  "edit": {
+    "roleLabel": "Role",
+    "worldbuilderLabel": "Worldbuilder",
+    "worldbuilderEnabled": "Can create and edit Codex entries",
+    "worldbuilderDisabled": "Read-only access",
+    "worldbuilderRequestHint": "Has requested worldbuilder access",
+    "dndBeyondLabel": "DnD Beyond Character ID",
+    "dndBeyondPlaceholder": "Character ID or full DnD Beyond URL",
+    "dndBeyondHint": "Paste the numeric ID or the full character URL — both work.",
+    "worldbuilderRequestedTag": "Requested"
+  },
+  "roles": {
+    "player": "Player",
+    "dm": "DM",
+    "admin": "Admin"
+  }
+}

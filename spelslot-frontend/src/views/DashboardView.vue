@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
@@ -13,6 +14,7 @@ import DragonHeadSvg from '@/assets/spiked-dragon-head.svg?raw'
 import DungeonGateSvg from '@/assets/dungeon-gate.svg?raw'
 import DramaMasksSvg from '@/assets/drama-masks.svg?raw'
 
+const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 
@@ -32,13 +34,22 @@ const worldbuilderRequestSent = ref(false)
 const showWorldbuilderBanner = computed(() => {
   const u = auth.effectiveUser
   if (!u) return false
-  return u.role === 'PLAYER' && !u.isWorldbuilder && !u.worldbuilderRequestPending && !worldbuilderRequestSent.value
+  return (
+    u.role === 'PLAYER' &&
+    !u.isWorldbuilder &&
+    !u.worldbuilderRequestPending &&
+    !worldbuilderRequestSent.value
+  )
 })
 
 const showWorldbuilderPending = computed(() => {
   const u = auth.effectiveUser
   if (!u) return false
-  return u.role === 'PLAYER' && !u.isWorldbuilder && (u.worldbuilderRequestPending || worldbuilderRequestSent.value)
+  return (
+    u.role === 'PLAYER' &&
+    !u.isWorldbuilder &&
+    (u.worldbuilderRequestPending || worldbuilderRequestSent.value)
+  )
 })
 
 async function requestWorldbuilder() {
@@ -56,16 +67,46 @@ async function requestWorldbuilder() {
 const quickLinks = computed(() => {
   const role = auth.effectiveUser?.role
   const links = [
-    { name: 'codex', label: 'Codex', icon: 'pi pi-book', desc: 'Worldbuilding & lore' },
-    { name: 'sessions', label: 'Sessions', icon: 'pi pi-calendar', desc: 'Upcoming adventures' },
-    { name: 'marketplace', label: 'Marketplace', icon: 'pi pi-shopping-bag', desc: 'Magic items' },
-    { name: 'session-player', label: 'Player Dashboard', icon: 'pi pi-play-circle', desc: 'Session view' },
+    {
+      name: 'codex',
+      label: t('dashboard.links.codex.label'),
+      icon: 'pi pi-book',
+      desc: t('dashboard.links.codex.desc'),
+    },
+    {
+      name: 'sessions',
+      label: t('dashboard.links.sessions.label'),
+      icon: 'pi pi-calendar',
+      desc: t('dashboard.links.sessions.desc'),
+    },
+    {
+      name: 'marketplace',
+      label: t('dashboard.links.marketplace.label'),
+      icon: 'pi pi-shopping-bag',
+      desc: t('dashboard.links.marketplace.desc'),
+    },
+    {
+      name: 'session-player',
+      label: t('dashboard.links.sessionPlayer.label'),
+      icon: 'pi pi-play-circle',
+      desc: t('dashboard.links.sessionPlayer.desc'),
+    },
   ]
   if (role === 'DM' || role === 'ADMIN') {
-    links.push({ name: 'session-dm', label: 'DM Dashboard', icon: 'pi pi-shield', desc: 'Combat & management' })
+    links.push({
+      name: 'session-dm',
+      label: t('dashboard.links.sessionDm.label'),
+      icon: 'pi pi-shield',
+      desc: t('dashboard.links.sessionDm.desc'),
+    })
   }
   if (role === 'ADMIN') {
-    links.push({ name: 'admin', label: 'Admin', icon: 'pi pi-sliders-h', desc: 'User management' })
+    links.push({
+      name: 'admin',
+      label: t('dashboard.links.admin.label'),
+      icon: 'pi pi-sliders-h',
+      desc: t('dashboard.links.admin.desc'),
+    })
   }
   return links
 })
@@ -89,11 +130,11 @@ function entryIcon(type: string) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}m ago`
+  if (mins < 60) return t('dashboard.timeAgo.minutesAgo', { n: mins })
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
+  if (hrs < 24) return t('dashboard.timeAgo.hoursAgo', { n: hrs })
   const days = Math.floor(hrs / 24)
-  return `${days}d ago`
+  return t('dashboard.timeAgo.daysAgo', { n: days })
 }
 
 // ── Formatting ────────────────────────────────────────────────────────────
@@ -107,13 +148,21 @@ function formatMonth(dateStr: string): string {
     .toUpperCase()
 }
 
-
 // ── Role display ──────────────────────────────────────────────────────────
-const ROLE_LABEL: Record<string, string> = { PLAYER: 'Player', DM: 'Dungeon Master', ADMIN: 'Admin' }
 const ROLE_SEVERITY: Record<string, string> = { PLAYER: 'secondary', DM: 'warn', ADMIN: 'danger' }
 
-const userRoleLabel = computed(() => ROLE_LABEL[auth.effectiveUser?.role ?? 'PLAYER'] ?? 'Player')
-const userRoleSeverity = computed(() => ROLE_SEVERITY[auth.effectiveUser?.role ?? 'PLAYER'] ?? 'secondary')
+const userRoleLabel = computed(() => {
+  const role = auth.effectiveUser?.role ?? 'PLAYER'
+  const map: Record<string, string> = {
+    PLAYER: t('dashboard.roles.player'),
+    DM: t('dashboard.roles.dm'),
+    ADMIN: t('dashboard.roles.admin'),
+  }
+  return map[role] ?? t('dashboard.roles.player')
+})
+const userRoleSeverity = computed(
+  () => ROLE_SEVERITY[auth.effectiveUser?.role ?? 'PLAYER'] ?? 'secondary',
+)
 
 // ── Load ──────────────────────────────────────────────────────────────────
 onMounted(async () => {
@@ -131,7 +180,7 @@ onMounted(async () => {
 
     if (codexResult.type === 'ok') recentEntries.value = codexResult.data
   } catch (err) {
-    sessionsError.value = err instanceof Error ? err.message : 'Unknown error'
+    sessionsError.value = err instanceof Error ? err.message : t('errors.unexpectedServerResponse')
   } finally {
     sessionsLoading.value = false
     codexLoading.value = false
@@ -141,17 +190,25 @@ onMounted(async () => {
 
 <template>
   <div class="dashboard">
-
     <!-- Welcome card -->
     <section class="welcome">
       <div class="welcome__body">
         <div class="welcome__info">
           <h1 class="welcome__name">
-            Welcome back, {{ auth.user?.displayName ?? auth.user?.name ?? 'adventurer' }}!
+            {{
+              $t('dashboard.welcome', {
+                name:
+                  auth.user?.displayName ?? auth.user?.name ?? $t('dashboard.adventurerFallback'),
+              })
+            }}
           </h1>
           <div class="welcome__tags">
             <Tag :value="userRoleLabel" :severity="userRoleSeverity" />
-            <Tag v-if="auth.effectiveUser?.isWorldbuilder" value="Worldbuilder" severity="info" />
+            <Tag
+              v-if="auth.effectiveUser?.isWorldbuilder"
+              :value="$t('dashboard.worldbuilder.tag')"
+              severity="info"
+            />
           </div>
         </div>
       </div>
@@ -160,11 +217,11 @@ onMounted(async () => {
       <div v-if="showWorldbuilderBanner" class="worldbuilder-banner">
         <i class="pi pi-pencil worldbuilder-banner__icon" />
         <div class="worldbuilder-banner__text">
-          <strong>Want to contribute to the Codex?</strong>
-          Request worldbuilder access to create and edit new pages.
+          <strong>{{ $t('dashboard.worldbuilder.bannerTitle') }}</strong>
+          {{ $t('dashboard.worldbuilder.bannerBody') }}
         </div>
         <Button
-          label="Request access"
+          :label="$t('dashboard.worldbuilder.requestAccess')"
           size="small"
           :loading="requestingWorldbuilder"
           @click="requestWorldbuilder"
@@ -174,20 +231,19 @@ onMounted(async () => {
       <div v-if="showWorldbuilderPending" class="worldbuilder-banner worldbuilder-banner--pending">
         <i class="pi pi-clock worldbuilder-banner__icon" />
         <div class="worldbuilder-banner__text">
-          <strong>Request submitted.</strong>
-          An admin will review your worldbuilder access request.
+          <strong>{{ $t('dashboard.worldbuilder.pendingTitle') }}</strong>
+          {{ $t('dashboard.worldbuilder.pendingBody') }}
         </div>
       </div>
     </section>
 
     <!-- Main grid -->
     <div class="dashboard__grid">
-
       <!-- Left: Upcoming sessions -->
       <section class="sessions">
         <h2 class="section-heading">
           <i class="pi pi-calendar" aria-hidden="true" />
-          Upcoming sessions
+          {{ $t('dashboard.sessions.heading') }}
         </h2>
 
         <div v-if="sessionsLoading" class="sessions__list" aria-busy="true">
@@ -202,12 +258,14 @@ onMounted(async () => {
 
         <div v-else-if="sessionsError" class="state-empty state-empty--error">
           <i class="pi pi-exclamation-circle state-empty__icon" />
-          <p class="state-empty__text">Failed to load sessions — {{ sessionsError }}</p>
+          <p class="state-empty__text">
+            {{ $t('dashboard.sessions.loadError', { error: sessionsError }) }}
+          </p>
         </div>
 
         <div v-else-if="sessions.length === 0" class="state-empty">
           <i class="pi pi-shield state-empty__icon" />
-          <p class="state-empty__text">No upcoming sessions. Enjoy the downtime, adventurer.</p>
+          <p class="state-empty__text">{{ $t('dashboard.sessions.empty') }}</p>
         </div>
 
         <div v-else class="sessions__list">
@@ -230,24 +288,37 @@ onMounted(async () => {
                 <span class="session-card__title">{{ session.title }}</span>
                 <div class="session-card__badges">
                   <Tag
-                    :value="session.status === 'assigned' ? 'Assigned' : 'Upcoming'"
+                    :value="
+                      session.status === 'assigned'
+                        ? $t('common.assigned')
+                        : $t('dashboard.sessions.statusUpcoming')
+                    "
                     :severity="session.status === 'assigned' ? 'success' : 'secondary'"
                     class="session-card__tag"
                   />
-                  <Tag v-if="session.isStoryAdventure" value="Story" severity="warn" class="session-card__tag" />
+                  <Tag
+                    v-if="session.isStoryAdventure"
+                    :value="$t('common.story')"
+                    severity="warn"
+                    class="session-card__tag"
+                  />
                 </div>
               </div>
 
               <div class="session-card__meta">
                 <span class="session-card__dm">
                   <i class="pi pi-shield" />
-                  {{ session.dmName ?? 'Unknown DM' }}
+                  {{ session.dmName ?? $t('dashboard.sessions.unknownDm') }}
                 </span>
                 <span class="session-card__spots">
                   <i class="pi pi-users" />
                   {{ session.partySize }}/{{ session.maxPlayers }}
-                  <span v-if="session.spotsLeft > 0" class="session-card__spots-free"> · {{ session.spotsLeft }} free</span>
-                  <span v-else class="session-card__spots-full"> · full</span>
+                  <span v-if="session.spotsLeft > 0" class="session-card__spots-free">
+                    {{ $t('dashboard.sessions.spotsFree', { n: session.spotsLeft }) }}</span
+                  >
+                  <span v-else class="session-card__spots-full">{{
+                    $t('dashboard.sessions.spotsFull')
+                  }}</span>
                 </span>
               </div>
 
@@ -257,18 +328,48 @@ onMounted(async () => {
 
               <div class="session-card__footer">
                 <div v-if="session.tags.length" class="session-card__tags">
-                  <span v-for="tag in session.tags.slice(0, 2)" :key="tag" class="session-card__chip">{{ tag }}</span>
+                  <span
+                    v-for="tag in session.tags.slice(0, 2)"
+                    :key="tag"
+                    class="session-card__chip"
+                    >{{ tag }}</span
+                  >
                 </div>
                 <div class="session-card__ranks">
-                  <span v-if="session.ranks.combat" class="session-card__rank" :style="{ color: rankColor(session.ranks.combat) }" :title="`Combat: ${rankLabel(session.ranks.combat)}`">
+                  <span
+                    v-if="session.ranks.combat"
+                    class="session-card__rank"
+                    :style="{ color: rankColor(session.ranks.combat) }"
+                    :title="
+                      $t('dashboard.rankTitle.combat', { label: rankLabel(session.ranks.combat) })
+                    "
+                  >
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <span class="session-card__rank-icon" v-html="DragonHeadSvg" />
                   </span>
-                  <span v-if="session.ranks.exploration" class="session-card__rank" :style="{ color: rankColor(session.ranks.exploration) }" :title="`Exploration: ${rankLabel(session.ranks.exploration)}`">
+                  <span
+                    v-if="session.ranks.exploration"
+                    class="session-card__rank"
+                    :style="{ color: rankColor(session.ranks.exploration) }"
+                    :title="
+                      $t('dashboard.rankTitle.exploration', {
+                        label: rankLabel(session.ranks.exploration),
+                      })
+                    "
+                  >
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <span class="session-card__rank-icon" v-html="DungeonGateSvg" />
                   </span>
-                  <span v-if="session.ranks.roleplaying" class="session-card__rank" :style="{ color: rankColor(session.ranks.roleplaying) }" :title="`Roleplaying: ${rankLabel(session.ranks.roleplaying)}`">
+                  <span
+                    v-if="session.ranks.roleplaying"
+                    class="session-card__rank"
+                    :style="{ color: rankColor(session.ranks.roleplaying) }"
+                    :title="
+                      $t('dashboard.rankTitle.roleplaying', {
+                        label: rankLabel(session.ranks.roleplaying),
+                      })
+                    "
+                  >
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <span class="session-card__rank-icon" v-html="DramaMasksSvg" />
                   </span>
@@ -278,19 +379,18 @@ onMounted(async () => {
           </div>
 
           <button class="link-btn" @click="router.push({ name: 'sessions' })">
-            View all sessions →
+            {{ $t('dashboard.sessions.viewAll') }}
           </button>
         </div>
       </section>
 
       <!-- Right column -->
       <aside class="dashboard__aside">
-
         <!-- Quick links -->
         <section class="quick-links">
           <h2 class="section-heading">
             <i class="pi pi-th-large" />
-            Quick links
+            {{ $t('dashboard.quickLinks.heading') }}
           </h2>
           <div class="quick-links__grid">
             <button
@@ -310,20 +410,20 @@ onMounted(async () => {
         <section class="recent-codex">
           <h2 class="section-heading">
             <i class="pi pi-book" />
-            Recent Codex
+            {{ $t('dashboard.recentCodex.heading') }}
           </h2>
 
           <div v-if="codexLoading" class="recent-codex__list">
             <div v-for="n in 4" :key="n" class="codex-row codex-row--skeleton">
               <Skeleton width="1rem" height="1rem" border-radius="50%" />
-              <div style="flex:1">
+              <div style="flex: 1">
                 <Skeleton height="0.85rem" width="80%" />
               </div>
             </div>
           </div>
 
           <div v-else-if="recentEntries.length === 0" class="state-empty state-empty--sm">
-            <p class="state-empty__text">No Codex entries yet.</p>
+            <p class="state-empty__text">{{ $t('dashboard.recentCodex.empty') }}</p>
           </div>
 
           <div v-else class="recent-codex__list">
@@ -342,15 +442,19 @@ onMounted(async () => {
                 <span class="codex-row__name">{{ entry.name }}</span>
                 <span class="codex-row__meta">{{ timeAgo(entry.updatedAt) }}</span>
               </div>
-              <Tag v-if="entry.permission === 'DM_ONLY'" value="DM" severity="warn" class="codex-row__tag" />
+              <Tag
+                v-if="entry.permission === 'DM_ONLY'"
+                :value="$t('common.dm')"
+                severity="warn"
+                class="codex-row__tag"
+              />
             </button>
 
             <button class="link-btn" @click="router.push({ name: 'codex' })">
-              Open Codex →
+              {{ $t('dashboard.recentCodex.openCodex') }}
             </button>
           </div>
         </section>
-
       </aside>
     </div>
   </div>
@@ -494,8 +598,12 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.session-card:hover { box-shadow: var(--ss-shadow); }
-.session-card--skeleton { border-left-color: var(--ss-border); }
+.session-card:hover {
+  box-shadow: var(--ss-shadow);
+}
+.session-card--skeleton {
+  border-left-color: var(--ss-border);
+}
 
 .session-card__date {
   display: flex;
@@ -550,9 +658,20 @@ onMounted(async () => {
   text-overflow: ellipsis;
 }
 
-.session-card__tag { font-size: 0.67rem; flex-shrink: 0; }
-.session-card__badges { display: flex; gap: 0.2rem; flex-shrink: 0; }
-.session-card__meta { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.session-card__tag {
+  font-size: 0.67rem;
+  flex-shrink: 0;
+}
+.session-card__badges {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+.session-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
 
 .session-card__dm,
 .session-card__spots {
@@ -564,10 +683,16 @@ onMounted(async () => {
 }
 
 .session-card__dm .pi,
-.session-card__spots .pi { font-size: 0.7rem; }
+.session-card__spots .pi {
+  font-size: 0.7rem;
+}
 
-.session-card__spots-free { color: var(--ss-success); }
-.session-card__spots-full { color: var(--ss-danger); }
+.session-card__spots-free {
+  color: var(--ss-success);
+}
+.session-card__spots-full {
+  color: var(--ss-danger);
+}
 
 .session-card__desc {
   margin: 0;
@@ -580,8 +705,17 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.session-card__footer { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.session-card__tags { display: flex; gap: 0.2rem; flex: 1; }
+.session-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.session-card__tags {
+  display: flex;
+  gap: 0.2rem;
+  flex: 1;
+}
 
 .session-card__chip {
   background: color-mix(in srgb, var(--ss-primary) 10%, transparent);
@@ -593,7 +727,11 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-.session-card__ranks { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.session-card__ranks {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
 .session-card__rank-icon {
   display: inline-flex;
   align-items: center;
@@ -632,7 +770,9 @@ onMounted(async () => {
   border-radius: var(--ss-radius);
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .quick-link:hover {
@@ -687,9 +827,15 @@ onMounted(async () => {
   transition: background-color 0.12s;
 }
 
-.codex-row:hover { background-color: color-mix(in srgb, var(--ss-primary) 7%, transparent); }
-.codex-row--skeleton { cursor: default; }
-.codex-row--skeleton:hover { background: none; }
+.codex-row:hover {
+  background-color: color-mix(in srgb, var(--ss-primary) 7%, transparent);
+}
+.codex-row--skeleton {
+  cursor: default;
+}
+.codex-row--skeleton:hover {
+  background: none;
+}
 
 .codex-row__icon {
   font-size: 0.85rem;
@@ -721,7 +867,10 @@ onMounted(async () => {
   color: var(--ss-text-muted);
 }
 
-.codex-row__tag { font-size: 0.6rem; flex-shrink: 0; }
+.codex-row__tag {
+  font-size: 0.6rem;
+  flex-shrink: 0;
+}
 
 /* ── Shared utility ── */
 .link-btn {
@@ -739,7 +888,9 @@ onMounted(async () => {
   margin-top: 0.25rem;
 }
 
-.link-btn:hover { opacity: 1; }
+.link-btn:hover {
+  opacity: 1;
+}
 
 /* ── Empty/error states ── */
 .state-empty {
@@ -753,20 +904,39 @@ onMounted(async () => {
   text-align: center;
 }
 
-.state-empty--sm { padding: 1rem; }
-.state-empty--error .state-empty__icon { color: var(--ss-danger); }
+.state-empty--sm {
+  padding: 1rem;
+}
+.state-empty--error .state-empty__icon {
+  color: var(--ss-danger);
+}
 
-.state-empty__icon { font-size: 1.75rem; color: var(--ss-text-muted); }
-.state-empty__text { margin: 0; font-size: 0.85rem; color: var(--ss-text-muted); }
+.state-empty__icon {
+  font-size: 1.75rem;
+  color: var(--ss-text-muted);
+}
+.state-empty__text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ss-text-muted);
+}
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .dashboard__grid { grid-template-columns: 1fr; }
+  .dashboard__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 767px) {
-  .dashboard { max-width: 100%; }
-  .quick-links__grid { grid-template-columns: 1fr 1fr; }
-  .welcome__name { font-size: 1.1rem; }
+  .dashboard {
+    max-width: 100%;
+  }
+  .quick-links__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .welcome__name {
+    font-size: 1.1rem;
+  }
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   id: string
@@ -62,7 +63,14 @@ function startResize(e: MouseEvent, edge: string) {
   if (e.button !== 0) return
   resizeActive = true
   resizeEdge = edge
-  resStart = { mx: e.clientX, my: e.clientY, x: props.x, y: props.y, w: props.width, h: props.height }
+  resStart = {
+    mx: e.clientX,
+    my: e.clientY,
+    x: props.x,
+    y: props.y,
+    w: props.width,
+    h: props.height,
+  }
   emit('focus')
   document.addEventListener('mousemove', onResizeMove)
   document.addEventListener('mouseup', stopResize)
@@ -75,7 +83,10 @@ function onResizeMove(e: MouseEvent) {
   const dx = e.clientX - resStart.mx
   const dy = e.clientY - resStart.my
 
-  let x = resStart.x, y = resStart.y, w = resStart.w, h = resStart.h
+  let x = resStart.x,
+    y = resStart.y,
+    w = resStart.w,
+    h = resStart.h
 
   if (resizeEdge.includes('e')) w = Math.max(MIN_W, resStart.w + dx)
   if (resizeEdge.includes('s')) h = Math.max(MIN_H, resStart.h + dy)
@@ -102,6 +113,8 @@ onBeforeUnmount(() => {
   stopResize()
 })
 
+const { t } = useI18n()
+
 const panelStyle = computed(() => ({
   left: `${props.x}px`,
   top: `${props.y}px`,
@@ -125,13 +138,20 @@ const panelStyle = computed(() => ({
       <div class="fp__controls">
         <button
           class="fp__ctrl"
-          :title="minimized ? 'Restore' : 'Minimize'"
+          :title="
+            minimized ? t('session.floatingPanel.restore') : t('session.floatingPanel.minimize')
+          "
           @mousedown.stop
           @click="emit('minimize')"
         >
           <i :class="['pi', minimized ? 'pi-window-maximize' : 'pi-minus']" />
         </button>
-        <button class="fp__ctrl fp__ctrl--close" title="Close panel" @mousedown.stop @click="emit('close')">
+        <button
+          class="fp__ctrl fp__ctrl--close"
+          :title="t('session.floatingPanel.closePanel')"
+          @mousedown.stop
+          @click="emit('close')"
+        >
           <i class="pi pi-times" />
         </button>
       </div>
@@ -144,13 +164,13 @@ const panelStyle = computed(() => ({
 
     <!-- Resize handles (only when not minimized) -->
     <template v-if="!minimized">
-      <div class="fp__resize fp__resize--n"  @mousedown.stop="startResize($event, 'n')" />
+      <div class="fp__resize fp__resize--n" @mousedown.stop="startResize($event, 'n')" />
       <div class="fp__resize fp__resize--ne" @mousedown.stop="startResize($event, 'ne')" />
-      <div class="fp__resize fp__resize--e"  @mousedown.stop="startResize($event, 'e')" />
+      <div class="fp__resize fp__resize--e" @mousedown.stop="startResize($event, 'e')" />
       <div class="fp__resize fp__resize--se" @mousedown.stop="startResize($event, 'se')" />
-      <div class="fp__resize fp__resize--s"  @mousedown.stop="startResize($event, 's')" />
+      <div class="fp__resize fp__resize--s" @mousedown.stop="startResize($event, 's')" />
       <div class="fp__resize fp__resize--sw" @mousedown.stop="startResize($event, 'sw')" />
-      <div class="fp__resize fp__resize--w"  @mousedown.stop="startResize($event, 'w')" />
+      <div class="fp__resize fp__resize--w" @mousedown.stop="startResize($event, 'w')" />
       <div class="fp__resize fp__resize--nw" @mousedown.stop="startResize($event, 'nw')" />
     </template>
   </div>
@@ -164,13 +184,17 @@ const panelStyle = computed(() => ({
   background: var(--ss-surface);
   border: 1px solid var(--ss-border);
   border-radius: var(--ss-radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   transition: box-shadow 0.15s;
 }
 
 .fp:hover {
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Header ── */
@@ -239,7 +263,9 @@ const panelStyle = computed(() => ({
   justify-content: center;
   width: 22px;
   height: 22px;
-  transition: color 0.1s, background 0.1s;
+  transition:
+    color 0.1s,
+    background 0.1s;
 }
 
 .fp__ctrl:hover {
@@ -269,12 +295,60 @@ const panelStyle = computed(() => ({
   z-index: 10;
 }
 
-.fp__resize--n  { top: -4px;    left: 10px;   right: 10px;  height: 8px;  cursor: n-resize;  }
-.fp__resize--s  { bottom: -4px; left: 10px;   right: 10px;  height: 8px;  cursor: s-resize;  }
-.fp__resize--e  { right: -4px;  top: 10px;    bottom: 10px; width: 8px;   cursor: e-resize;  }
-.fp__resize--w  { left: -4px;   top: 10px;    bottom: 10px; width: 8px;   cursor: w-resize;  }
-.fp__resize--ne { top: -4px;    right: -4px;  width: 14px;  height: 14px; cursor: ne-resize; }
-.fp__resize--nw { top: -4px;    left: -4px;   width: 14px;  height: 14px; cursor: nw-resize; }
-.fp__resize--se { bottom: -4px; right: -4px;  width: 14px;  height: 14px; cursor: se-resize; }
-.fp__resize--sw { bottom: -4px; left: -4px;   width: 14px;  height: 14px; cursor: sw-resize; }
+.fp__resize--n {
+  top: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: n-resize;
+}
+.fp__resize--s {
+  bottom: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: s-resize;
+}
+.fp__resize--e {
+  right: -4px;
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
+  cursor: e-resize;
+}
+.fp__resize--w {
+  left: -4px;
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
+  cursor: w-resize;
+}
+.fp__resize--ne {
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: ne-resize;
+}
+.fp__resize--nw {
+  top: -4px;
+  left: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: nw-resize;
+}
+.fp__resize--se {
+  bottom: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+}
+.fp__resize--sw {
+  bottom: -4px;
+  left: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: sw-resize;
+}
 </style>

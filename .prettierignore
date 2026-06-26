@@ -1,0 +1,9 @@
+**/dist/**
+**/node_modules/**
+**/*.tsbuildinfo
+spelslot-frontend/public/**
+spelslot-frontend/dev-dist/**
+package-lock.json
+
+# Docs keep their hand-tuned tables/prose — formatted by hand, not Prettier.
+**/*.md

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -8,6 +9,7 @@ import { notificationService } from '@/services/notificationService'
 import { useFcm } from '@/composables/useFcm'
 import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const store = useNotificationsStore()
 const auth = useAuthStore()
 const router = useRouter()
@@ -46,7 +48,9 @@ function savePrefs() {
     savingPrefs.value = false
     if (result.type === 'ok') {
       prefsSaved.value = true
-      setTimeout(() => { prefsSaved.value = false }, 2000)
+      setTimeout(() => {
+        prefsSaved.value = false
+      }, 2000)
     }
   }, 400)
 }
@@ -69,13 +73,13 @@ function typeIcon(type: string) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60_000)
-  if (m < 1) return 'Just now'
-  if (m < 60) return `${m} min ago`
+  if (m < 1) return t('common.justNow')
+  if (m < 60) return t('notifications.timeAgo.minutesAgo', { m })
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h} h ago`
+  if (h < 24) return t('notifications.timeAgo.hoursAgo', { h })
   const d = Math.floor(h / 24)
-  if (d === 1) return 'Yesterday'
-  if (d < 7) return `${d} days ago`
+  if (d === 1) return t('notifications.timeAgo.yesterday')
+  if (d < 7) return t('notifications.timeAgo.daysAgo', { d })
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
@@ -88,10 +92,10 @@ async function handleClick(id: string, href?: string) {
 <template>
   <div class="notif-view">
     <div class="notif-view__header">
-      <h1 class="notif-view__title">Notifications</h1>
+      <h1 class="notif-view__title">{{ $t('notifications.title') }}</h1>
       <Button
         v-if="store.unreadCount > 0"
-        label="Mark all as read"
+        :label="$t('common.markAllRead')"
         icon="pi pi-check-square"
         text
         size="small"
@@ -102,12 +106,12 @@ async function handleClick(id: string, href?: string) {
     <!-- Notification list -->
     <section class="notif-section">
       <div v-if="store.loading && store.notifications.length === 0" class="notif-state">
-        <i class="pi pi-spin pi-spinner" /> Loading…
+        <i class="pi pi-spin pi-spinner" /> {{ $t('common.loading') }}
       </div>
 
       <div v-else-if="store.notifications.length === 0" class="notif-state notif-state--empty">
         <i class="pi pi-bell-slash notif-state__icon" />
-        <p>No notifications</p>
+        <p>{{ $t('common.noNotifications') }}</p>
       </div>
 
       <ul v-else class="notif-list">
@@ -133,7 +137,7 @@ async function handleClick(id: string, href?: string) {
             rounded
             size="small"
             class="notif-item__delete"
-            aria-label="Delete"
+            :aria-label="$t('notifications.deleteAriaLabel')"
             @click.stop="store.remove(n._id)"
           />
         </li>
@@ -144,34 +148,31 @@ async function handleClick(id: string, href?: string) {
     <section class="notif-section notif-push">
       <h2 class="notif-section__heading">
         <i class="pi pi-mobile notif-section__icon" />
-        Push notifications
+        {{ $t('notifications.push.heading') }}
       </h2>
       <div class="notif-push__body">
         <template v-if="pushPermission === 'granted'">
           <i class="pi pi-check-circle notif-push__icon notif-push__icon--ok" />
           <div class="notif-push__text">
-            <span class="notif-push__label">Enabled on this device</span>
-            <span class="notif-push__hint">You'll receive push notifications in your browser.</span>
+            <span class="notif-push__label">{{ $t('notifications.push.enabledLabel') }}</span>
+            <span class="notif-push__hint">{{ $t('notifications.push.enabledHint') }}</span>
           </div>
         </template>
         <template v-else-if="pushPermission === 'denied'">
           <i class="pi pi-ban notif-push__icon notif-push__icon--blocked" />
           <div class="notif-push__text">
-            <span class="notif-push__label">Blocked in your browser</span>
-            <span class="notif-push__hint">
-              To re-enable, click the lock icon in your browser's address bar,
-              find the Notifications setting, and change it to Allow.
-            </span>
+            <span class="notif-push__label">{{ $t('notifications.push.blockedLabel') }}</span>
+            <span class="notif-push__hint">{{ $t('notifications.push.blockedHint') }}</span>
           </div>
         </template>
         <template v-else>
           <i class="pi pi-bell notif-push__icon" />
           <div class="notif-push__text">
-            <span class="notif-push__label">Not enabled on this device</span>
-            <span class="notif-push__hint">Enable to receive notifications even when the app is not open.</span>
+            <span class="notif-push__label">{{ $t('notifications.push.notEnabledLabel') }}</span>
+            <span class="notif-push__hint">{{ $t('notifications.push.notEnabledHint') }}</span>
           </div>
           <Button
-            label="Enable"
+            :label="$t('notifications.push.enable')"
             icon="pi pi-bell"
             size="small"
             :loading="enablingPush"
@@ -185,45 +186,45 @@ async function handleClick(id: string, href?: string) {
     <section class="notif-section notif-prefs">
       <h2 class="notif-section__heading">
         <i class="pi pi-sliders-h notif-section__icon" />
-        Notification preferences
+        {{ $t('notifications.prefs.heading') }}
       </h2>
 
       <div class="notif-prefs__list">
         <div class="notif-prefs__row">
           <div class="notif-prefs__info">
-            <span class="notif-prefs__label">Sign-ups</span>
-            <span class="notif-prefs__hint">When a session you signed up for changes</span>
+            <span class="notif-prefs__label">{{ $t('notifications.prefs.signupsLabel') }}</span>
+            <span class="notif-prefs__hint">{{ $t('notifications.prefs.signupsHint') }}</span>
           </div>
           <ToggleSwitch v-model="prefs.notifySignup" @change="savePrefs" />
         </div>
 
         <div class="notif-prefs__row">
           <div class="notif-prefs__info">
-            <span class="notif-prefs__label">Assignment</span>
-            <span class="notif-prefs__hint">When you are assigned to a session</span>
+            <span class="notif-prefs__label">{{ $t('notifications.prefs.assignmentLabel') }}</span>
+            <span class="notif-prefs__hint">{{ $t('notifications.prefs.assignmentHint') }}</span>
           </div>
           <ToggleSwitch v-model="prefs.notifyAssignment" @change="savePrefs" />
         </div>
 
         <div class="notif-prefs__row">
           <div class="notif-prefs__info">
-            <span class="notif-prefs__label">Marketplace</span>
-            <span class="notif-prefs__hint">Updates about items and transactions</span>
+            <span class="notif-prefs__label">{{ $t('notifications.prefs.marketplaceLabel') }}</span>
+            <span class="notif-prefs__hint">{{ $t('notifications.prefs.marketplaceHint') }}</span>
           </div>
           <ToggleSwitch v-model="prefs.notifyMarketplace" @change="savePrefs" />
         </div>
 
         <div class="notif-prefs__row">
           <div class="notif-prefs__info">
-            <span class="notif-prefs__label">Sessions</span>
-            <span class="notif-prefs__hint">Session notes creation and updates</span>
+            <span class="notif-prefs__label">{{ $t('notifications.prefs.sessionsLabel') }}</span>
+            <span class="notif-prefs__hint">{{ $t('notifications.prefs.sessionsHint') }}</span>
           </div>
           <ToggleSwitch v-model="prefs.notifySession" @change="savePrefs" />
         </div>
       </div>
 
       <p v-if="prefsSaved" class="notif-prefs__saved">
-        <i class="pi pi-check" /> Saved
+        <i class="pi pi-check" /> {{ $t('common.saved') }}
       </p>
     </section>
   </div>
@@ -414,8 +415,12 @@ async function handleClick(id: string, href?: string) {
   flex-shrink: 0;
 }
 
-.notif-push__icon--ok { color: var(--ss-success, #22c55e); }
-.notif-push__icon--blocked { color: var(--ss-danger); }
+.notif-push__icon--ok {
+  color: var(--ss-success, #22c55e);
+}
+.notif-push__icon--blocked {
+  color: var(--ss-danger);
+}
 
 .notif-push__text {
   display: flex;

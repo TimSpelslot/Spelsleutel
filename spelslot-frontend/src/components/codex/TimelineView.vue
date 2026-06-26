@@ -127,7 +127,10 @@ const renderLanes = computed((): RenderLane[] => {
     const layers = renderEvents.map((e) => e.renderLayer)
     const minLayer = layers.length ? Math.min(...layers) : 0
     const maxLayer = layers.length ? Math.max(...layers) : 0
-    const height = Math.max(EVENT_H + LANE_PAD * 2, (maxLayer - minLayer + 1) * EVENT_H + LANE_PAD * 2)
+    const height = Math.max(
+      EVENT_H + LANE_PAD * 2,
+      (maxLayer - minLayer + 1) * EVENT_H + LANE_PAD * 2,
+    )
 
     return { ...lane, events: renderEvents, minLayer, maxLayer, height }
   })
@@ -149,13 +152,28 @@ const visibleTicks = computed((): Tick[] => {
   let tickEvery: number
   let majorEvery: number
 
-  if (visibleYears > 800) { tickEvery = 200; majorEvery = 1000 }
-  else if (visibleYears > 300) { tickEvery = 100; majorEvery = 500 }
-  else if (visibleYears > 100) { tickEvery = 50; majorEvery = 100 }
-  else if (visibleYears > 40) { tickEvery = 10; majorEvery = 50 }
-  else if (visibleYears > 15) { tickEvery = 5; majorEvery = 25 }
-  else if (visibleYears > 5) { tickEvery = 2; majorEvery = 10 }
-  else { tickEvery = 1; majorEvery = 5 }
+  if (visibleYears > 800) {
+    tickEvery = 200
+    majorEvery = 1000
+  } else if (visibleYears > 300) {
+    tickEvery = 100
+    majorEvery = 500
+  } else if (visibleYears > 100) {
+    tickEvery = 50
+    majorEvery = 100
+  } else if (visibleYears > 40) {
+    tickEvery = 10
+    majorEvery = 50
+  } else if (visibleYears > 15) {
+    tickEvery = 5
+    majorEvery = 25
+  } else if (visibleYears > 5) {
+    tickEvery = 2
+    majorEvery = 10
+  } else {
+    tickEvery = 1
+    majorEvery = 5
+  }
 
   const startYear = minutesToYearNumber(viewStart, cal)
   const endYear = minutesToYearNumber(viewEnd, cal) + tickEvery
@@ -215,7 +233,7 @@ function fitToView() {
   if (span <= 0 || containerW.value <= 0) return
   const target = (containerW.value - 40) / span
   const clamped = Math.max(Math.pow(10, LOG_MIN), Math.min(Math.pow(10, LOG_MAX), target))
-  zoom.value = Math.round(100 * (Math.log10(clamped) - LOG_MIN) / (LOG_MAX - LOG_MIN))
+  zoom.value = Math.round((100 * (Math.log10(clamped) - LOG_MIN)) / (LOG_MAX - LOG_MIN))
   nextTick(() => {
     if (canvasRef.value) canvasRef.value.scrollLeft = 0
     scrollLeft.value = 0
@@ -279,7 +297,6 @@ const zoomLabel = computed(() => {
 
 <template>
   <div class="tl">
-
     <!-- Controls bar -->
     <div class="tl__controls">
       <label class="tl__zoom-label">
@@ -290,31 +307,30 @@ const zoomLabel = computed(() => {
           min="0"
           max="100"
           class="tl__zoom-slider"
-          title="Zoom"
+          :title="$t('codex.timeline.zoomTitle')"
         />
         <i class="pi pi-search-plus tl__zoom-icon" />
       </label>
       <span class="tl__zoom-value">{{ zoomLabel }}</span>
-      <button class="tl__fit-btn" @click="fitToView" title="Fit all events in view">
-        <i class="pi pi-arrows-h" /> Fit
+      <button class="tl__fit-btn" :title="$t('codex.timeline.fitTitle')" @click="fitToView">
+        <i class="pi pi-arrows-h" /> {{ $t('codex.timeline.fitLabel') }}
       </button>
       <span v-if="calLoading" class="tl__cal-loading">
-        <i class="pi pi-spin pi-spinner" /> Loading calendar…
+        <i class="pi pi-spin pi-spinner" /> {{ $t('codex.timeline.loadingCalendar') }}
       </span>
       <span v-else-if="!calendar && calendarId" class="tl__cal-missing">
-        <i class="pi pi-exclamation-triangle" /> Calendar not found
+        <i class="pi pi-exclamation-triangle" /> {{ $t('codex.timeline.calendarNotFound') }}
       </span>
     </div>
 
     <!-- Empty state -->
     <div v-if="!rawEvents.length" class="tl__empty">
       <i class="pi pi-clock" />
-      No timeline events found.
+      {{ $t('codex.timeline.noEvents') }}
     </div>
 
     <!-- Body -->
     <div v-else class="tl__body">
-
       <!-- Lane labels (fixed left column) -->
       <div class="tl__labels">
         <div class="tl__ruler-spacer" :style="{ height: RULER_H + 'px' }" />
@@ -329,9 +345,8 @@ const zoomLabel = computed(() => {
       </div>
 
       <!-- Scrollable timeline canvas -->
-      <div class="tl__canvas" ref="canvasRef" @scroll="onCanvasScroll">
+      <div ref="canvasRef" class="tl__canvas" @scroll="onCanvasScroll">
         <div class="tl__inner" :style="{ width: totalW + 'px' }">
-
           <!-- Ruler -->
           <div class="tl__ruler" :style="{ height: RULER_H + 'px' }">
             <div
@@ -366,7 +381,6 @@ const zoomLabel = computed(() => {
               <span class="tl__event-label">{{ ev.name }}</span>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -428,10 +442,17 @@ const zoomLabel = computed(() => {
   font-size: 0.72rem;
   color: var(--ss-text-muted);
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
 }
-.tl__fit-btn:hover { color: var(--ss-primary); border-color: var(--ss-primary); }
-.tl__fit-btn .pi { font-size: 0.65rem; }
+.tl__fit-btn:hover {
+  color: var(--ss-primary);
+  border-color: var(--ss-primary);
+}
+.tl__fit-btn .pi {
+  font-size: 0.65rem;
+}
 
 .tl__cal-loading,
 .tl__cal-missing {
@@ -442,7 +463,9 @@ const zoomLabel = computed(() => {
   color: var(--ss-text-muted);
 }
 
-.tl__cal-missing { color: var(--ss-warning, #f59e0b); }
+.tl__cal-missing {
+  color: var(--ss-warning, #f59e0b);
+}
 
 /* Empty */
 .tl__empty {

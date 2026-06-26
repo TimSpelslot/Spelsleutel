@@ -50,9 +50,8 @@ export function useFcm() {
     if (!('Notification' in window)) return 'denied'
     if (Notification.permission === 'denied') return 'denied'
 
-    const permission = Notification.permission === 'granted'
-      ? 'granted'
-      : await Notification.requestPermission()
+    const permission =
+      Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
 
     if (permission === 'granted') await register()
     return permission

@@ -1,5 +1,6 @@
 import { firebaseAuth } from '@/firebase'
 import type { Result } from '@/types'
+import { t } from '@/i18n'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? ''
 const MAX_SIZE_MB = 5
@@ -10,14 +11,14 @@ export async function uploadImage(
   onProgress?: (percent: number) => void,
 ): Promise<Result<string>> {
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return { type: 'error', message: 'Only JPEG, PNG, WebP and GIF images are allowed.' }
+    return { type: 'error', message: t('errors.invalidFileType') }
   }
   if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-    return { type: 'error', message: `Image must be smaller than ${MAX_SIZE_MB} MB.` }
+    return { type: 'error', message: t('errors.fileTooLarge', { max: MAX_SIZE_MB }) }
   }
 
   const token = await firebaseAuth.currentUser?.getIdToken()
-  if (!token) return { type: 'error', message: 'Not authenticated.' }
+  if (!token) return { type: 'error', message: t('errors.notAuthenticated') }
 
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
@@ -34,20 +35,27 @@ export async function uploadImage(
           const { url } = JSON.parse(xhr.responseText) as { url: string }
           resolve({ type: 'ok', data: `${BASE_URL}${url}` })
         } catch {
-          resolve({ type: 'error', message: 'Unexpected server response.' })
+          resolve({ type: 'error', message: t('errors.unexpectedServerResponse') })
         }
       } else {
         try {
           const { message } = JSON.parse(xhr.responseText) as { message?: string }
-          resolve({ type: 'error', message: message ?? `Upload failed (HTTP ${xhr.status})` })
+          resolve({
+            type: 'error',
+            message: message ?? t('errors.uploadFailedHttp', { status: xhr.status }),
+          })
         } catch {
-          resolve({ type: 'error', message: `Upload failed (HTTP ${xhr.status})` })
+          resolve({ type: 'error', message: t('errors.uploadFailedHttp', { status: xhr.status }) })
         }
       }
     })
 
-    xhr.addEventListener('error', () => resolve({ type: 'error', message: 'Network error during upload.' }))
-    xhr.addEventListener('abort', () => resolve({ type: 'error', message: 'Upload cancelled.' }))
+    xhr.addEventListener('error', () =>
+      resolve({ type: 'error', message: t('errors.networkErrorDuringUpload') }),
+    )
+    xhr.addEventListener('abort', () =>
+      resolve({ type: 'error', message: t('errors.uploadCancelled') }),
+    )
 
     xhr.open('POST', `${BASE_URL}/api/upload/image`)
     xhr.setRequestHeader('Authorization', `Bearer ${token}`)

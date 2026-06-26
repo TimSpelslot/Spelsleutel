@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 // Placeholder — Session dashboard built in step 7
+const { t } = useI18n()
 </script>
 
 <template>
   <div class="placeholder">
     <div class="placeholder__card">
       <i class="pi pi-calendar placeholder__icon" aria-hidden="true" />
-      <h1 class="placeholder__title">Sessions</h1>
-      <p class="placeholder__text">Coming soon — live session dashboard with combat tracker.</p>
+      <h1 class="placeholder__title">{{ t('session.placeholder.title') }}</h1>
+      <p class="placeholder__text">{{ t('session.placeholder.text') }}</p>
     </div>
   </div>
 </template>

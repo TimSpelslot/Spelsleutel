@@ -1,5 +1,6 @@
 import { firebaseAuth } from '@/firebase'
 import type { Result } from '@/types'
+import { t } from '@/i18n'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? ''
 
@@ -22,26 +23,25 @@ async function handleResponse<T>(res: Response): Promise<Result<T>> {
       const msg = body.message
       return {
         type: 'error',
-        message:
-          msg && msg !== 'Unauthorized'
-            ? msg
-            : 'You are not logged in. Please log in and try again.',
+        message: msg && msg !== 'Unauthorized' ? msg : t('errors.notLoggedIn'),
       }
     } catch {
-      return { type: 'error', message: 'You are not logged in. Please log in and try again.' }
+      return { type: 'error', message: t('errors.notLoggedIn') }
     }
   }
 
   if (res.status === 403) {
-    return { type: 'error', message: 'You do not have permission to perform this action.' }
+    return { type: 'error', message: t('errors.noPermission') }
   }
 
   try {
     const body = (await res.json()) as { message?: string }
     if (body.message) return { type: 'error', message: body.message }
-  } catch { /* body not JSON */ }
+  } catch {
+    /* body not JSON */
+  }
 
-  return { type: 'error', message: `HTTP ${res.status}` }
+  return { type: 'error', message: t('errors.httpStatus', { status: res.status }) }
 }
 
 export const api = {
@@ -51,7 +51,10 @@ export const api = {
       const res = await fetch(`${BASE_URL}${path}`, { headers: authHeader })
       return handleResponse<T>(res)
     } catch {
-      return { type: 'error', message: 'Network error — check your internet connection and try again.' }
+      return {
+        type: 'error',
+        message: t('errors.networkError'),
+      }
     }
   },
 
@@ -65,7 +68,10 @@ export const api = {
       })
       return handleResponse<T>(res)
     } catch {
-      return { type: 'error', message: 'Network error — check your internet connection and try again.' }
+      return {
+        type: 'error',
+        message: t('errors.networkError'),
+      }
     }
   },
 
@@ -79,7 +85,10 @@ export const api = {
       })
       return handleResponse<T>(res)
     } catch {
-      return { type: 'error', message: 'Network error — check your internet connection and try again.' }
+      return {
+        type: 'error',
+        message: t('errors.networkError'),
+      }
     }
   },
 
@@ -93,7 +102,10 @@ export const api = {
       })
       return handleResponse<T>(res)
     } catch {
-      return { type: 'error', message: 'Network error — check your internet connection and try again.' }
+      return {
+        type: 'error',
+        message: t('errors.networkError'),
+      }
     }
   },
 
@@ -102,14 +114,15 @@ export const api = {
       const authHeader = await getAuthHeader()
       const res = await fetch(`${BASE_URL}${path}`, {
         method: 'DELETE',
-        headers: body
-          ? { 'Content-Type': 'application/json', ...authHeader }
-          : authHeader,
+        headers: body ? { 'Content-Type': 'application/json', ...authHeader } : authHeader,
         body: body ? JSON.stringify(body) : undefined,
       })
       return handleResponse<T>(res)
     } catch {
-      return { type: 'error', message: 'Network error — check your internet connection and try again.' }
+      return {
+        type: 'error',
+        message: t('errors.networkError'),
+      }
     }
   },
 }

@@ -1,0 +1,37 @@
+{
+  "title": "Marketplace",
+  "subtitle": "Magic items for adventurers",
+  "fullMarketplaceButton": "Full marketplace",
+  "stats": {
+    "itemsAvailable": "Items available",
+    "averagePrice": "Average price",
+    "mostPopularRarity": "Most popular rarity"
+  },
+  "bestDeals": "Best deals",
+  "filters": {
+    "searchPlaceholder": "Search items…",
+    "allRarities": "All rarities",
+    "allCategories": "All categories",
+    "rarityCommon": "Common",
+    "rarityUncommon": "Uncommon",
+    "rarityRare": "Rare",
+    "rarityVeryRare": "Very rare",
+    "rarityLegendary": "Legendary"
+  },
+  "empty": "No items found for the current filters.",
+  "gold": {
+    "yourBalance": "Your balance",
+    "linkHint": "Link your Marketplace account to see your gold balance.",
+    "goToMarketplace": "Go to Marketplace"
+  },
+  "recentPurchases": "Recent purchases",
+  "detail": {
+    "oneTime": "One-time",
+    "currentPrice": "Current price",
+    "basePrice": "Base price",
+    "stock": "Stock",
+    "closeButton": "Close",
+    "viewSource": "View source",
+    "buyButton": "Buy on Marketplace"
+  }
+}

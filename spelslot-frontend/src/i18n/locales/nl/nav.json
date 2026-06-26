@@ -1,0 +1,32 @@
+{
+  "brand": "Spelslot",
+  "toggleSidebar": "Zijbalk in-/uitklappen",
+  "sidebar": {
+    "mainNavigation": "Hoofdnavigatie",
+    "dashboard": "Dashboard",
+    "codex": "Codex",
+    "sessions": "Sessies",
+    "session": "Sessie",
+    "marketplace": "Marketplace",
+    "dmDashboard": "DM-dashboard",
+    "admin": "Beheer"
+  },
+  "switchToLanguage": "Wissel naar {language}",
+  "switchToLight": "Naar lichte modus",
+  "switchToDark": "Naar donkere modus",
+  "lightMode": "Lichte modus",
+  "darkMode": "Donkere modus",
+  "notifications": "Meldingen",
+  "profile": "Profiel",
+  "signOut": "Uitloggen",
+  "devSimulate": "Dev: simuleer een andere rol",
+  "popover": {
+    "heading": "Meldingen",
+    "viewAll": "Alle meldingen bekijken"
+  },
+  "timeAgo": {
+    "minutes": "{m} min",
+    "hours": "{h} u",
+    "days": "{d} d"
+  }
+}

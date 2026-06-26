@@ -10,7 +10,8 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const authReq = req as AuthRequest
   const mongoUser = await User.findOne({ uid: authReq.user!.uid }).lean()
   if (!mongoUser || mongoUser.role !== 'ADMIN') {
-    res.status(403).json({ message: 'Admin access required' }); return
+    res.status(403).json({ message: 'Admin access required' })
+    return
   }
   next()
 }
@@ -47,10 +48,16 @@ adminRouter.get('/users', async (_req, res, next) => {
 // Updatable fields: role, isWorldbuilder, worldbuilderRequestPending, dndbeyondCharacterId
 adminRouter.patch('/users/:id', async (req, res, next) => {
   if (!isValidObjectId(req.params.id)) {
-    res.status(400).json({ message: 'Invalid user ID' }); return
+    res.status(400).json({ message: 'Invalid user ID' })
+    return
   }
   try {
-    const allowed = ['role', 'isWorldbuilder', 'worldbuilderRequestPending', 'dndbeyondCharacterId'] as const
+    const allowed = [
+      'role',
+      'isWorldbuilder',
+      'worldbuilderRequestPending',
+      'dndbeyondCharacterId',
+    ] as const
     type AllowedKey = (typeof allowed)[number]
     const updates: Partial<Record<AllowedKey, unknown>> = {}
 
@@ -59,16 +66,16 @@ adminRouter.patch('/users/:id', async (req, res, next) => {
     }
 
     if (Object.keys(updates).length === 0) {
-      res.status(400).json({ message: 'No updatable fields provided' }); return
+      res.status(400).json({ message: 'No updatable fields provided' })
+      return
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: updates },
-      { new: true },
-    )
+    const user = await User.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true })
 
-    if (!user) { res.status(404).json({ message: 'User not found' }); return }
+    if (!user) {
+      res.status(404).json({ message: 'User not found' })
+      return
+    }
 
     res.json({ user: serializeUser(user) })
   } catch (err) {

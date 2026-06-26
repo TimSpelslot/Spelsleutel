@@ -1,0 +1,53 @@
+{
+  "welcome": "Welkom terug, {name}!",
+  "adventurerFallback": "avonturier",
+  "worldbuilder": {
+    "tag": "Worldbuilder",
+    "bannerTitle": "Wil je bijdragen aan de Codex?",
+    "bannerBody": "Vraag worldbuilder-toegang aan om nieuwe pagina's aan te maken en te bewerken.",
+    "requestAccess": "Toegang aanvragen",
+    "pendingTitle": "Aanvraag verstuurd.",
+    "pendingBody": "Een beheerder beoordeelt je aanvraag voor worldbuilder-toegang."
+  },
+  "sessions": {
+    "heading": "Aankomende sessies",
+    "loadError": "Sessies laden mislukt — {error}",
+    "empty": "Geen aankomende sessies. Geniet van de rust, avonturier.",
+    "statusUpcoming": "Aankomend",
+    "unknownDm": "Onbekende DM",
+    "spotsFree": "· {n} vrij",
+    "spotsFull": "· vol",
+    "viewAll": "Alle sessies bekijken →"
+  },
+  "quickLinks": {
+    "heading": "Snelkoppelingen"
+  },
+  "recentCodex": {
+    "heading": "Recente Codex",
+    "empty": "Nog geen Codex-pagina's.",
+    "openCodex": "Codex openen →"
+  },
+  "links": {
+    "codex": { "label": "Codex", "desc": "Worldbuilding & lore" },
+    "sessions": { "label": "Sessies", "desc": "Aankomende avonturen" },
+    "marketplace": { "label": "Marketplace", "desc": "Magische items" },
+    "sessionPlayer": { "label": "Spelersdashboard", "desc": "Sessieweergave" },
+    "sessionDm": { "label": "DM-dashboard", "desc": "Combat & beheer" },
+    "admin": { "label": "Beheer", "desc": "Gebruikersbeheer" }
+  },
+  "timeAgo": {
+    "minutesAgo": "{n} min geleden",
+    "hoursAgo": "{n} u geleden",
+    "daysAgo": "{n} d geleden"
+  },
+  "roles": {
+    "player": "Speler",
+    "dm": "Dungeon Master",
+    "admin": "Beheerder"
+  },
+  "rankTitle": {
+    "combat": "Combat: {label}",
+    "exploration": "Verkenning: {label}",
+    "roleplaying": "Roleplay: {label}"
+  }
+}

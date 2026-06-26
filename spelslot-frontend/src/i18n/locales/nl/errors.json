@@ -1,0 +1,13 @@
+{
+  "networkError": "Netwerkfout — controleer je internetverbinding en probeer het opnieuw.",
+  "notLoggedIn": "Je bent niet ingelogd. Log in en probeer het opnieuw.",
+  "noPermission": "Je hebt geen toestemming om deze actie uit te voeren.",
+  "httpStatus": "HTTP {status}",
+  "invalidFileType": "Alleen JPEG-, PNG-, WebP- en GIF-afbeeldingen zijn toegestaan.",
+  "fileTooLarge": "De afbeelding moet kleiner zijn dan {max} MB.",
+  "notAuthenticated": "Niet geauthenticeerd.",
+  "unexpectedServerResponse": "Onverwacht antwoord van de server.",
+  "uploadFailedHttp": "Uploaden mislukt (HTTP {status})",
+  "networkErrorDuringUpload": "Netwerkfout tijdens het uploaden.",
+  "uploadCancelled": "Uploaden geannuleerd."
+}

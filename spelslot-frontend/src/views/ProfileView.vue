@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/authService'
 import { ddbService, type DdbCharacter } from '@/services/ddbService'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const user = computed(() => auth.user)
 
@@ -90,14 +92,19 @@ if (auth.user?.dndbeyondCharacterId) {
 
 const userInitials = computed(() => {
   const name = user.value?.displayName ?? user.value?.name ?? ''
-  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 })
 
-const ROLE_LABEL: Record<string, string> = {
-  PLAYER: 'Player',
-  DM: 'Dungeon Master',
-  ADMIN: 'Admin',
-}
+const ROLE_LABEL = computed<Record<string, string>>(() => ({
+  PLAYER: t('profile.roles.player'),
+  DM: t('profile.roles.dm'),
+  ADMIN: t('profile.roles.admin'),
+}))
 
 const ROLE_SEVERITY: Record<string, string> = {
   PLAYER: 'secondary',
@@ -108,13 +115,12 @@ const ROLE_SEVERITY: Record<string, string> = {
 
 <template>
   <div class="profile-view">
-    <h1 class="profile-view__title">Profile</h1>
+    <h1 class="profile-view__title">{{ $t('profile.title') }}</h1>
 
     <div v-if="user" class="profile-sections">
-
       <!-- ── Identity ── -->
       <section class="profile-card">
-        <h2 class="profile-card__heading">Account</h2>
+        <h2 class="profile-card__heading">{{ $t('profile.account.heading') }}</h2>
 
         <div class="profile-identity">
           <Avatar
@@ -128,11 +134,11 @@ const ROLE_SEVERITY: Record<string, string> = {
           <div class="profile-identity__info">
             <!-- Display name -->
             <div class="profile-field">
-              <span class="profile-field__label">Display name</span>
+              <span class="profile-field__label">{{ $t('profile.account.displayNameLabel') }}</span>
               <div v-if="!editingName" class="profile-field__value-row">
                 <span class="profile-field__value">{{ user.displayName || user.name }}</span>
                 <button class="profile-inline-btn" @click="startEditName">
-                  <i class="pi pi-pencil" /> Edit
+                  <i class="pi pi-pencil" /> {{ $t('common.edit') }}
                 </button>
               </div>
               <div v-else class="profile-field__edit-row">
@@ -144,13 +150,13 @@ const ROLE_SEVERITY: Record<string, string> = {
                   @keyup.escape="cancelEditName"
                 />
                 <Button
-                  label="Save"
+                  :label="$t('common.save')"
                   size="small"
                   :loading="nameSaving"
                   @click="saveName"
                 />
                 <Button
-                  label="Cancel"
+                  :label="$t('common.cancel')"
                   size="small"
                   text
                   severity="secondary"
@@ -159,14 +165,13 @@ const ROLE_SEVERITY: Record<string, string> = {
               </div>
               <p v-if="nameError" class="profile-field__error">{{ nameError }}</p>
               <p class="profile-field__hint">
-                This name is shown to other players. Your Google account name is
-                <strong>{{ user.name }}</strong>.
+                {{ $t('profile.account.displayNameHint', { name: user.name }) }}
               </p>
             </div>
 
             <!-- Email -->
             <div class="profile-field">
-              <span class="profile-field__label">Email</span>
+              <span class="profile-field__label">{{ $t('profile.account.emailLabel') }}</span>
               <span class="profile-field__value profile-field__value--muted">{{ user.email }}</span>
             </div>
           </div>
@@ -175,10 +180,10 @@ const ROLE_SEVERITY: Record<string, string> = {
 
       <!-- ── Role & access ── -->
       <section class="profile-card">
-        <h2 class="profile-card__heading">Role &amp; access</h2>
+        <h2 class="profile-card__heading">{{ $t('profile.roleAccess.heading') }}</h2>
 
         <div class="profile-field">
-          <span class="profile-field__label">Role</span>
+          <span class="profile-field__label">{{ $t('profile.roleAccess.roleLabel') }}</span>
           <Tag
             :value="ROLE_LABEL[user.role] ?? user.role"
             :severity="ROLE_SEVERITY[user.role] ?? 'secondary'"
@@ -186,31 +191,34 @@ const ROLE_SEVERITY: Record<string, string> = {
         </div>
 
         <div class="profile-field">
-          <span class="profile-field__label">Worldbuilder</span>
+          <span class="profile-field__label">{{ $t('profile.roleAccess.worldbuilderLabel') }}</span>
 
           <!-- Already a worldbuilder -->
           <div v-if="user.isWorldbuilder" class="profile-wb profile-wb--active">
             <i class="pi pi-check-circle" />
-            <span>Worldbuilder access granted — you can create and edit Codex entries.</span>
+            <span>{{ $t('profile.roleAccess.wbActive') }}</span>
           </div>
 
           <!-- Request pending -->
           <div v-else-if="user.worldbuilderRequestPending" class="profile-wb profile-wb--pending">
             <i class="pi pi-clock" />
-            <span>Request pending — a DM or Admin will review it soon.</span>
+            <span>{{ $t('profile.roleAccess.wbPending') }}</span>
           </div>
 
           <!-- DM/Admin bypass notice -->
-          <div v-else-if="user.role === 'DM' || user.role === 'ADMIN'" class="profile-wb profile-wb--active">
+          <div
+            v-else-if="user.role === 'DM' || user.role === 'ADMIN'"
+            class="profile-wb profile-wb--active"
+          >
             <i class="pi pi-check-circle" />
-            <span>Full Codex access as {{ ROLE_LABEL[user.role] }}.</span>
+            <span>{{ $t('profile.roleAccess.wbDmBypass', { role: ROLE_LABEL[user.role] }) }}</span>
           </div>
 
           <!-- Can request -->
           <div v-else class="profile-wb profile-wb--none">
-            <span>Players can request Worldbuilder access to create and edit Codex entries.</span>
+            <span>{{ $t('profile.roleAccess.wbNone') }}</span>
             <Button
-              label="Request access"
+              :label="$t('profile.roleAccess.requestAccess')"
               size="small"
               outlined
               :loading="wbRequesting"
@@ -223,21 +231,21 @@ const ROLE_SEVERITY: Record<string, string> = {
 
       <!-- ── DnD Beyond ── -->
       <section class="profile-card">
-        <h2 class="profile-card__heading">DnD Beyond Character</h2>
+        <h2 class="profile-card__heading">{{ $t('profile.dndBeyond.heading') }}</h2>
 
         <div v-if="!user.dndbeyondCharacterId" class="profile-ddb-none">
           <i class="pi pi-info-circle" />
-          No character linked. Ask an admin to add your DnD Beyond character ID.
+          {{ $t('profile.dndBeyond.noCharacter') }}
         </div>
 
         <template v-else>
           <div class="profile-ddb-id">
-            <span class="profile-field__label">Character ID</span>
+            <span class="profile-field__label">{{ $t('profile.dndBeyond.characterIdLabel') }}</span>
             <span class="profile-field__value">{{ user.dndbeyondCharacterId }}</span>
           </div>
 
           <div v-if="ddbLoading" class="profile-ddb-loading">
-            <i class="pi pi-spin pi-spinner" /> Loading character data…
+            <i class="pi pi-spin pi-spinner" /> {{ $t('profile.dndBeyond.loadingCharacter') }}
           </div>
 
           <div v-else-if="ddbCharacter" class="profile-ddb-character">
@@ -250,8 +258,8 @@ const ROLE_SEVERITY: Record<string, string> = {
             <div class="profile-ddb-info">
               <span class="profile-ddb-name">{{ ddbCharacter.name }}</span>
               <span class="profile-ddb-class">
-                {{ ddbCharacter.classes.map(c => `${c.name} ${c.level}`).join(' / ') }}
-                · Level {{ ddbCharacter.totalLevel }}
+                {{ ddbCharacter.classes.map((c) => `${c.name} ${c.level}`).join(' / ') }}
+                · {{ $t('profile.dndBeyond.level', { n: ddbCharacter.totalLevel }) }}
               </span>
             </div>
             <Button
@@ -260,14 +268,19 @@ const ROLE_SEVERITY: Record<string, string> = {
               rounded
               size="small"
               :loading="ddbLoading"
-              title="Sync from DnD Beyond"
+              :title="$t('profile.dndBeyond.syncTitle')"
               @click="syncDdb"
             />
           </div>
 
           <div v-else class="profile-ddb-none">
-            Character data not yet loaded.
-            <Button label="Sync now" size="small" outlined @click="syncDdb" />
+            {{ $t('profile.dndBeyond.notLoaded') }}
+            <Button
+              :label="$t('profile.dndBeyond.syncNow')"
+              size="small"
+              outlined
+              @click="syncDdb"
+            />
           </div>
 
           <p v-if="ddbError" class="profile-field__error">{{ ddbError }}</p>
@@ -278,15 +291,16 @@ const ROLE_SEVERITY: Record<string, string> = {
       <section class="profile-card profile-card--link">
         <div class="profile-notif-link">
           <div>
-            <h2 class="profile-card__heading profile-card__heading--inline">Notifications</h2>
-            <p class="profile-card__sub">Manage which events send you a notification.</p>
+            <h2 class="profile-card__heading profile-card__heading--inline">
+              {{ $t('profile.notifications.heading') }}
+            </h2>
+            <p class="profile-card__sub">{{ $t('profile.notifications.sub') }}</p>
           </div>
           <RouterLink to="/notifications" class="profile-link-btn">
-            Notification settings <i class="pi pi-arrow-right" />
+            {{ $t('profile.notifications.settingsLink') }} <i class="pi pi-arrow-right" />
           </RouterLink>
         </div>
       </section>
-
     </div>
   </div>
 </template>
@@ -329,7 +343,9 @@ const ROLE_SEVERITY: Record<string, string> = {
   margin: 0 0 0.25rem;
 }
 
-.profile-card__heading--inline { margin: 0; }
+.profile-card__heading--inline {
+  margin: 0;
+}
 
 .profile-card__sub {
   margin: 0;
@@ -344,7 +360,9 @@ const ROLE_SEVERITY: Record<string, string> = {
   align-items: flex-start;
 }
 
-.profile-identity__avatar { flex-shrink: 0; }
+.profile-identity__avatar {
+  flex-shrink: 0;
+}
 
 .profile-identity__info {
   flex: 1;
@@ -392,7 +410,9 @@ const ROLE_SEVERITY: Record<string, string> = {
   flex-wrap: wrap;
 }
 
-.profile-name-input { width: 220px; }
+.profile-name-input {
+  width: 220px;
+}
 
 .profile-field__hint {
   margin: 0.2rem 0 0;
@@ -418,8 +438,12 @@ const ROLE_SEVERITY: Record<string, string> = {
   gap: 0.25rem;
   padding: 0;
 }
-.profile-inline-btn:hover { opacity: 0.8; }
-.profile-inline-btn .pi { font-size: 0.65rem; }
+.profile-inline-btn:hover {
+  opacity: 0.8;
+}
+.profile-inline-btn .pi {
+  font-size: 0.65rem;
+}
 
 /* Worldbuilder status */
 .profile-wb {
@@ -433,12 +457,20 @@ const ROLE_SEVERITY: Record<string, string> = {
 .profile-wb--active {
   color: var(--ss-success, #22c55e);
 }
-.profile-wb--active .pi { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+.profile-wb--active .pi {
+  font-size: 1rem;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
 
 .profile-wb--pending {
   color: var(--ss-text-muted);
 }
-.profile-wb--pending .pi { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+.profile-wb--pending .pi {
+  font-size: 1rem;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
 
 .profile-wb--none {
   color: var(--ss-text-muted);
@@ -465,8 +497,12 @@ const ROLE_SEVERITY: Record<string, string> = {
   font-weight: 500;
   flex-shrink: 0;
 }
-.profile-link-btn:hover { opacity: 0.8; }
-.profile-link-btn .pi { font-size: 0.7rem; }
+.profile-link-btn:hover {
+  opacity: 0.8;
+}
+.profile-link-btn .pi {
+  font-size: 0.7rem;
+}
 
 /* DnD Beyond */
 .profile-ddb-none {
@@ -534,8 +570,14 @@ const ROLE_SEVERITY: Record<string, string> = {
 }
 
 @media (max-width: 767px) {
-  .profile-view { max-width: 100%; }
-  .profile-identity { flex-direction: column; }
-  .profile-name-input { width: 100%; }
+  .profile-view {
+    max-width: 100%;
+  }
+  .profile-identity {
+    flex-direction: column;
+  }
+  .profile-name-input {
+    width: 100%;
+  }
 }
 </style>

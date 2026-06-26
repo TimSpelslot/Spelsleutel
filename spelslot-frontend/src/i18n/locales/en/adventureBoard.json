@@ -1,0 +1,34 @@
+{
+  "title": "Sessions",
+  "subtitle": "Upcoming D&D adventures via AdventureBoard",
+  "playerFallback": "Player {id}",
+  "filters": {
+    "searchPlaceholder": "Search by title, DM or tag…",
+    "openSpotsChip": "Open spots"
+  },
+  "sessionCount": "{filtered} van {total}",
+  "empty": "No sessions found. Adjust the filters.",
+  "card": {
+    "spotsFree": "· {count} free",
+    "spotsFull": "· full"
+  },
+  "detail": {
+    "waitlistSection": "Waiting list",
+    "noPlayersAssigned": "No players assigned yet",
+    "metaDm": "DM: {name}",
+    "metaRoom": "Room: {room}",
+    "noKarma": "Does not count towards karma",
+    "tagStoryAdventure": "Story Adventure",
+    "tagWaitingList": "Waiting list",
+    "tagSessions": "{count} sessions",
+    "spotsOpen": "· {count} open",
+    "spotsFull": "· full",
+    "rankCombat": "Combat",
+    "rankExploration": "Exploration",
+    "rankRoleplaying": "Roleplaying",
+    "rankTitleCombat": "Combat: {label}",
+    "rankTitleExploration": "Exploration: {label}",
+    "rankTitleRoleplaying": "Roleplaying: {label}",
+    "createSessionPageButton": "Create session page"
+  }
+}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -22,11 +23,13 @@ const editDndId = ref('')
 const saving = ref(false)
 const saveError = ref<string | null>(null)
 
-const ROLE_OPTIONS = [
-  { label: 'Player', value: 'PLAYER' },
-  { label: 'DM', value: 'DM' },
-  { label: 'Admin', value: 'ADMIN' },
-]
+const { t } = useI18n()
+
+const ROLE_OPTIONS = computed(() => [
+  { label: t('admin.roles.player'), value: 'PLAYER' },
+  { label: t('admin.roles.dm'), value: 'DM' },
+  { label: t('admin.roles.admin'), value: 'ADMIN' },
+])
 
 onMounted(async () => {
   loading.value = true
@@ -55,7 +58,7 @@ async function saveEdit() {
   // Accept full DnD Beyond URL or plain numeric ID
   const rawDndId = editDndId.value.trim()
   const urlMatch = rawDndId.match(/^https?:\/\/(www\.)?dndbeyond\.com\/characters\/(\d+)/i)
-  const normalizedDndId = urlMatch ? urlMatch[2] : (/^\d+$/.test(rawDndId) ? rawDndId : null)
+  const normalizedDndId = urlMatch ? urlMatch[2] : /^\d+$/.test(rawDndId) ? rawDndId : null
 
   const result = await adminService.updateUser(editTarget.value.id, {
     role: editRole.value,
@@ -68,7 +71,7 @@ async function saveEdit() {
     return
   }
   // Patch local list
-  const idx = users.value.findIndex(u => u.id === result.data.id)
+  const idx = users.value.findIndex((u) => u.id === result.data.id)
   if (idx !== -1) users.value[idx] = result.data
   closeEdit()
 }
@@ -79,7 +82,7 @@ async function approveWorldbuilder(user: AdminUser) {
     worldbuilderRequestPending: false,
   })
   if (result.type === 'ok') {
-    const idx = users.value.findIndex(u => u.id === result.data.id)
+    const idx = users.value.findIndex((u) => u.id === result.data.id)
     if (idx !== -1) users.value[idx] = result.data
     if (editTarget.value?.id === user.id) {
       editTarget.value = result.data
@@ -93,7 +96,7 @@ async function rejectWorldbuilder(user: AdminUser) {
     worldbuilderRequestPending: false,
   })
   if (result.type === 'ok') {
-    const idx = users.value.findIndex(u => u.id === result.data.id)
+    const idx = users.value.findIndex((u) => u.id === result.data.id)
     if (idx !== -1) users.value[idx] = result.data
     if (editTarget.value?.id === user.id) {
       editTarget.value = result.data
@@ -108,35 +111,31 @@ function roleSeverity(role: string): 'warn' | 'danger' | 'secondary' {
 }
 
 function roleLabel(role: string) {
-  if (role === 'ADMIN') return 'Admin'
-  if (role === 'DM') return 'DM'
-  return 'Player'
+  if (role === 'ADMIN') return t('admin.roles.admin')
+  if (role === 'DM') return t('admin.roles.dm')
+  return t('admin.roles.player')
 }
 
 function initials(user: AdminUser) {
   return (user.displayName || user.name).charAt(0).toUpperCase() || '?'
 }
 
-const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderRequestPending))
+const pendingRequests = computed(() => users.value.filter((u) => u.worldbuilderRequestPending))
 </script>
 
 <template>
   <div class="admin-view">
-    <h1 class="admin-view__title">Admin</h1>
+    <h1 class="admin-view__title">{{ $t('admin.title') }}</h1>
 
     <!-- Worldbuilder pending requests -->
     <section v-if="pendingRequests.length" class="admin-requests">
       <h2 class="admin-requests__heading">
         <i class="pi pi-bell admin-requests__icon" />
-        Worldbuilder Requests
+        {{ $t('admin.worldbuilderRequests.heading') }}
         <span class="admin-requests__count">{{ pendingRequests.length }}</span>
       </h2>
       <ul class="admin-requests__list">
-        <li
-          v-for="user in pendingRequests"
-          :key="user.id"
-          class="admin-requests__item"
-        >
+        <li v-for="user in pendingRequests" :key="user.id" class="admin-requests__item">
           <Avatar
             :image="user.avatarUrl ?? undefined"
             :label="user.avatarUrl ? undefined : initials(user)"
@@ -149,14 +148,14 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
           </div>
           <div class="admin-requests__actions">
             <Button
-              label="Approve"
+              :label="$t('common.approve')"
               icon="pi pi-check"
               size="small"
               severity="success"
               @click="approveWorldbuilder(user)"
             />
             <Button
-              label="Reject"
+              :label="$t('common.reject')"
               icon="pi pi-times"
               size="small"
               severity="secondary"
@@ -171,11 +170,11 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
     <section class="admin-section">
       <h2 class="admin-section__heading">
         <i class="pi pi-users admin-section__icon" />
-        Users
+        {{ $t('admin.users.sectionHeading') }}
       </h2>
 
       <div v-if="loading" class="admin-loading">
-        <i class="pi pi-spin pi-spinner" /> Loading…
+        <i class="pi pi-spin pi-spinner" /> {{ $t('common.loading') }}
       </div>
       <div v-else-if="error" class="admin-error">{{ error }}</div>
 
@@ -187,7 +186,7 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
         striped-rows
         :global-filter-fields="['displayName', 'email', 'role']"
       >
-        <Column header="User" :sortable="false" style="min-width: 200px">
+        <Column :header="$t('admin.users.columns.user')" :sortable="false" style="min-width: 200px">
           <template #body="{ data }">
             <div class="admin-table__user">
               <Avatar
@@ -204,24 +203,24 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
           </template>
         </Column>
 
-        <Column header="Role" style="width: 100px">
+        <Column :header="$t('admin.users.columns.role')" style="width: 100px">
           <template #body="{ data }">
             <Tag :value="roleLabel(data.role)" :severity="roleSeverity(data.role)" />
           </template>
         </Column>
 
-        <Column header="Worldbuilder" style="width: 120px">
+        <Column :header="$t('admin.users.columns.worldbuilder')" style="width: 120px">
           <template #body="{ data }">
             <div class="admin-table__wb">
               <Tag
                 v-if="data.isWorldbuilder"
-                value="Yes"
+                :value="$t('admin.users.worldbuilderYes')"
                 severity="success"
               />
-              <Tag v-else value="No" severity="secondary" />
+              <Tag v-else :value="$t('admin.users.worldbuilderNo')" severity="secondary" />
               <Tag
                 v-if="data.worldbuilderRequestPending"
-                value="Requested"
+                :value="$t('admin.users.worldbuilderRequested')"
                 severity="warn"
                 class="admin-table__pending-tag"
               />
@@ -229,7 +228,7 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
           </template>
         </Column>
 
-        <Column header="DnD Beyond" style="width: 130px">
+        <Column :header="$t('admin.users.columns.dndBeyond')" style="width: 130px">
           <template #body="{ data }">
             <span v-if="data.dndbeyondCharacterId" class="admin-table__dndbeyond">
               <i class="pi pi-link" />
@@ -246,7 +245,7 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
               text
               rounded
               size="small"
-              aria-label="Edit"
+              :aria-label="$t('common.edit')"
               @click="openEdit(data)"
             />
           </template>
@@ -257,7 +256,7 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
     <!-- Edit dialog -->
     <Dialog
       :visible="!!editTarget"
-      :header="editTarget ? (editTarget.displayName || editTarget.name) : ''"
+      :header="editTarget ? editTarget.displayName || editTarget.name : ''"
       modal
       :draggable="false"
       class="admin-edit-dialog"
@@ -267,7 +266,7 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
         <div class="admin-edit__fields">
           <!-- Role -->
           <div class="admin-edit__field">
-            <label class="admin-edit__label">Role</label>
+            <label class="admin-edit__label">{{ $t('admin.edit.roleLabel') }}</label>
             <Select
               v-model="editRole"
               :options="ROLE_OPTIONS"
@@ -279,31 +278,40 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
 
           <!-- Worldbuilder toggle -->
           <div class="admin-edit__field">
-            <label class="admin-edit__label">Worldbuilder</label>
+            <label class="admin-edit__label">{{ $t('admin.edit.worldbuilderLabel') }}</label>
             <div class="admin-edit__toggle-row">
               <ToggleSwitch v-model="editWorldbuilder" />
               <span class="admin-edit__toggle-hint">
-                {{ editWorldbuilder ? 'Can create and edit Codex entries' : 'Read-only access' }}
+                {{
+                  editWorldbuilder
+                    ? $t('admin.edit.worldbuilderEnabled')
+                    : $t('admin.edit.worldbuilderDisabled')
+                }}
               </span>
             </div>
           </div>
 
           <!-- Worldbuilder request pending -->
-          <div v-if="editTarget.worldbuilderRequestPending" class="admin-edit__field admin-edit__wb-request">
+          <div
+            v-if="editTarget.worldbuilderRequestPending"
+            class="admin-edit__field admin-edit__wb-request"
+          >
             <div class="admin-edit__wb-request-row">
-              <Tag value="Requested" severity="warn" />
-              <span class="admin-edit__wb-request-hint">Has requested worldbuilder access</span>
+              <Tag :value="$t('admin.edit.worldbuilderRequestedTag')" severity="warn" />
+              <span class="admin-edit__wb-request-hint">{{
+                $t('admin.edit.worldbuilderRequestHint')
+              }}</span>
             </div>
             <div class="admin-edit__wb-actions">
               <Button
-                label="Approve"
+                :label="$t('common.approve')"
                 icon="pi pi-check"
                 size="small"
                 severity="success"
                 @click="approveWorldbuilder(editTarget)"
               />
               <Button
-                label="Reject"
+                :label="$t('common.reject')"
                 icon="pi pi-times"
                 size="small"
                 severity="secondary"
@@ -315,13 +323,13 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
 
           <!-- DnD Beyond character ID -->
           <div class="admin-edit__field">
-            <label class="admin-edit__label">DnD Beyond Character ID</label>
+            <label class="admin-edit__label">{{ $t('admin.edit.dndBeyondLabel') }}</label>
             <InputText
               v-model="editDndId"
-              placeholder="166911576 or full DnD Beyond URL"
+              :placeholder="$t('admin.edit.dndBeyondPlaceholder')"
               class="admin-edit__input"
             />
-            <span class="admin-edit__hint">Paste the numeric ID or the full character URL — both work.</span>
+            <span class="admin-edit__hint">{{ $t('admin.edit.dndBeyondHint') }}</span>
           </div>
 
           <p v-if="saveError" class="admin-edit__error">{{ saveError }}</p>
@@ -329,13 +337,8 @@ const pendingRequests = computed(() => users.value.filter(u => u.worldbuilderReq
       </template>
 
       <template #footer>
-        <Button label="Cancel" text @click="closeEdit" />
-        <Button
-          label="Save"
-          icon="pi pi-check"
-          :loading="saving"
-          @click="saveEdit"
-        />
+        <Button :label="$t('common.cancel')" text @click="closeEdit" />
+        <Button :label="$t('common.save')" icon="pi pi-check" :loading="saving" @click="saveEdit" />
       </template>
     </Dialog>
   </div>

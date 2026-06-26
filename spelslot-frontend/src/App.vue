@@ -15,7 +15,10 @@ import { RouterView } from 'vue-router'
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   background-color: var(--ss-parchment);
   color: var(--ss-text);
 }

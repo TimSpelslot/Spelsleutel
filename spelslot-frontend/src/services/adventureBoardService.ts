@@ -1,4 +1,5 @@
 import { api } from './api'
+import { t } from '@/i18n'
 import type { Result } from '@/types'
 
 // ── Raw API types (matching AbAdventure from the backend) ─────────────────
@@ -113,7 +114,7 @@ function normaliseSession(raw: RawAdventure): AbSession {
     title: raw.title,
     shortDescription: raw.short_description,
     date: raw.date,
-    dmName: raw.creator?.display_name ?? 'Unknown DM',
+    dmName: raw.creator?.display_name ?? t('dashboard.sessions.unknownDm'),
     maxPlayers: raw.max_players,
     spotsLeft: Math.max(0, raw.max_players - (raw.assignments?.length ?? 0)),
     tags: parseTags(raw.tags),
@@ -130,7 +131,7 @@ function normaliseSession(raw: RawAdventure): AbSession {
     numSessions: raw.num_sessions,
     party: (raw.assignments ?? []).map((a) => ({
       id: a.user.id,
-      displayName: a.user.display_name ?? `Player ${a.user.id}`,
+      displayName: a.user.display_name ?? t('adventureBoard.playerFallback', { id: a.user.id }),
       appeared: a.appeared,
       joinedAt: a.creation_date,
     })),
@@ -138,7 +139,7 @@ function normaliseSession(raw: RawAdventure): AbSession {
       .sort((a, b) => a.priority - b.priority)
       .map((s) => ({
         id: s.user.id,
-        displayName: s.user.display_name ?? `Player ${s.user.id}`,
+        displayName: s.user.display_name ?? t('adventureBoard.playerFallback', { id: s.user.id }),
         priority: s.priority,
       })),
   }

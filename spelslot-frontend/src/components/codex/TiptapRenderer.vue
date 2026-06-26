@@ -18,26 +18,45 @@ const emit = defineEmits<{
 
 // Node types native to Tiptap's StarterKit + our extensions.
 const NATIVE_NODES = new Set([
-  'doc', 'paragraph', 'text', 'heading', 'blockquote',
-  'bulletList', 'bullet_list', 'orderedList', 'ordered_list',
-  'listItem', 'list_item', 'codeBlock', 'code_block',
-  'horizontalRule', 'horizontal_rule', 'hardBreak', 'hard_break',
-  'table', 'tableRow', 'tableCell', 'tableHeader',
+  'doc',
+  'paragraph',
+  'text',
+  'heading',
+  'blockquote',
+  'bulletList',
+  'bullet_list',
+  'orderedList',
+  'ordered_list',
+  'listItem',
+  'list_item',
+  'codeBlock',
+  'code_block',
+  'horizontalRule',
+  'horizontal_rule',
+  'hardBreak',
+  'hard_break',
+  'table',
+  'tableRow',
+  'tableCell',
+  'tableHeader',
   'mention',
 ])
 
 // LK (Atlassian Editor) block nodes that can be downgraded to blockquote
 // so their children remain visible instead of being silently stripped.
 const DEGRADE_TO_BLOCKQUOTE = new Set([
-  'panel', 'expand', 'nestedExpand', 'bodiedExtension',
-  'layoutSection', 'layoutColumn',
-  'taskList', 'decisionList',
+  'panel',
+  'expand',
+  'nestedExpand',
+  'bodiedExtension',
+  'layoutSection',
+  'layoutColumn',
+  'taskList',
+  'decisionList',
 ])
 
 // LK block nodes whose children we lift directly (transparent wrappers).
-const TRANSPARENT_NODES = new Set([
-  'taskItem', 'decisionItem',
-])
+const TRANSPARENT_NODES = new Set(['taskItem', 'decisionItem'])
 
 interface PmNode {
   type: string
@@ -149,9 +168,15 @@ function handleClick(e: MouseEvent) {
   line-height: 1.3;
 }
 
-.tiptap-renderer :deep(.ProseMirror h1) { font-size: 1.5rem; }
-.tiptap-renderer :deep(.ProseMirror h2) { font-size: 1.2rem; }
-.tiptap-renderer :deep(.ProseMirror h3) { font-size: 1rem; }
+.tiptap-renderer :deep(.ProseMirror h1) {
+  font-size: 1.5rem;
+}
+.tiptap-renderer :deep(.ProseMirror h2) {
+  font-size: 1.2rem;
+}
+.tiptap-renderer :deep(.ProseMirror h3) {
+  font-size: 1rem;
+}
 
 .tiptap-renderer :deep(.ProseMirror p) {
   margin: 0 0 0.75em;

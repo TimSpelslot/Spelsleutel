@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Collaboration from '@tiptap/extension-collaboration'
@@ -14,6 +15,7 @@ const props = defineProps<{
   readonly: boolean
 }>()
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const COLLAB_URL = import.meta.env.VITE_COLLAB_URL ?? 'ws://localhost:3001'
 
@@ -86,6 +88,10 @@ async function persistNotes(content: object) {
   saving.value = false
 }
 
+const editorStyle = computed(() => ({
+  '--session-notes-placeholder': `"${t('session.notes.sharedNotesPlaceholder')}"`,
+}))
+
 onBeforeUnmount(() => {
   if (saveTimer.value) clearTimeout(saveTimer.value)
   provider?.destroy()
@@ -97,22 +103,28 @@ onBeforeUnmount(() => {
   <div class="session-notes">
     <div v-if="!sessionId" class="session-notes__empty">
       <i class="pi pi-file-edit session-notes__empty-icon" />
-      <p>Select a session to view shared notes.</p>
+      <p>{{ $t('session.notes.sharedNotesEmpty') }}</p>
     </div>
 
     <template v-else>
       <div class="session-notes__bar">
         <span class="session-notes__label">
-          <i class="pi pi-users" /> Shared notes
+          <i class="pi pi-users" /> {{ $t('session.notes.sharedNotesLabel') }}
         </span>
-        <span class="session-notes__collab-dot" :class="`session-notes__collab-dot--${collabStatus}`" :title="`Collaboration: ${collabStatus}`" />
+        <span
+          class="session-notes__collab-dot"
+          :class="`session-notes__collab-dot--${collabStatus}`"
+          :title="$t('session.notes.collabTitle', { status: collabStatus })"
+        />
         <span v-if="saving" class="session-notes__saving">
-          <i class="pi pi-spin pi-spinner" /> Saving…
+          <i class="pi pi-spin pi-spinner" /> {{ $t('session.notes.savingStatus.saving') }}
         </span>
-        <span v-else-if="readonly" class="session-notes__readonly-tag">Read-only</span>
+        <span v-else-if="readonly" class="session-notes__readonly-tag">{{
+          $t('session.notes.readOnly')
+        }}</span>
       </div>
 
-      <EditorContent :editor="editor" class="session-notes__editor" />
+      <EditorContent :editor="editor" class="session-notes__editor" :style="editorStyle" />
     </template>
   </div>
 </template>
@@ -136,8 +148,14 @@ onBeforeUnmount(() => {
   padding: 1rem;
 }
 
-.session-notes__empty-icon { font-size: 2rem; opacity: 0.3; }
-.session-notes__empty p { margin: 0; font-size: 0.82rem; }
+.session-notes__empty-icon {
+  font-size: 2rem;
+  opacity: 0.3;
+}
+.session-notes__empty p {
+  margin: 0;
+  font-size: 0.82rem;
+}
 
 .session-notes__bar {
   display: flex;
@@ -157,7 +175,10 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-.session-notes__label .pi { color: var(--ss-primary); font-size: 0.7rem; }
+.session-notes__label .pi {
+  color: var(--ss-primary);
+  font-size: 0.7rem;
+}
 
 /* Collaboration status dot */
 .session-notes__collab-dot {
@@ -167,13 +188,25 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   background: var(--ss-border);
 }
-.session-notes__collab-dot--connected { background: var(--ss-success); }
-.session-notes__collab-dot--connecting { background: var(--ss-warning); animation: sn-pulse 1s ease-in-out infinite; }
-.session-notes__collab-dot--disconnected { background: var(--ss-danger); }
+.session-notes__collab-dot--connected {
+  background: var(--ss-success);
+}
+.session-notes__collab-dot--connecting {
+  background: var(--ss-warning);
+  animation: sn-pulse 1s ease-in-out infinite;
+}
+.session-notes__collab-dot--disconnected {
+  background: var(--ss-danger);
+}
 
 @keyframes sn-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .session-notes__saving {
@@ -209,10 +242,24 @@ onBeforeUnmount(() => {
   font-size: 0.88rem;
 }
 
-.session-notes__editor :deep(.ProseMirror p) { margin: 0 0 0.5em; }
-.session-notes__editor :deep(.ProseMirror h1) { font-size: 1.25rem; margin: 1em 0 0.4em; font-weight: 700; }
-.session-notes__editor :deep(.ProseMirror h2) { font-size: 1.05rem; margin: 0.9em 0 0.35em; font-weight: 700; }
-.session-notes__editor :deep(.ProseMirror h3) { font-size: 0.9rem; margin: 0.8em 0 0.3em; font-weight: 700; }
+.session-notes__editor :deep(.ProseMirror p) {
+  margin: 0 0 0.5em;
+}
+.session-notes__editor :deep(.ProseMirror h1) {
+  font-size: 1.25rem;
+  margin: 1em 0 0.4em;
+  font-weight: 700;
+}
+.session-notes__editor :deep(.ProseMirror h2) {
+  font-size: 1.05rem;
+  margin: 0.9em 0 0.35em;
+  font-weight: 700;
+}
+.session-notes__editor :deep(.ProseMirror h3) {
+  font-size: 0.9rem;
+  margin: 0.8em 0 0.3em;
+  font-weight: 700;
+}
 
 .session-notes__editor :deep(.ProseMirror ul),
 .session-notes__editor :deep(.ProseMirror ol) {
@@ -220,11 +267,15 @@ onBeforeUnmount(() => {
   margin: 0 0 0.5em;
 }
 
-.session-notes__editor :deep(.ProseMirror li) { margin-bottom: 0.15em; }
-.session-notes__editor :deep(.ProseMirror strong) { font-weight: 700; }
+.session-notes__editor :deep(.ProseMirror li) {
+  margin-bottom: 0.15em;
+}
+.session-notes__editor :deep(.ProseMirror strong) {
+  font-weight: 700;
+}
 
 .session-notes__editor :deep(.ProseMirror.is-editor-empty:first-child::before) {
-  content: 'Shared session notes appear here…';
+  content: var(--session-notes-placeholder);
   float: left;
   color: var(--ss-text-muted);
   opacity: 0.5;

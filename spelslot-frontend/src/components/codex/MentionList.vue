@@ -9,7 +9,12 @@ const props = defineProps<{
 
 const selectedIndex = ref(0)
 
-watch(() => props.items, () => { selectedIndex.value = 0 })
+watch(
+  () => props.items,
+  () => {
+    selectedIndex.value = 0
+  },
+)
 
 function select(index: number) {
   const item = props.items[index]
@@ -48,7 +53,9 @@ defineExpose({ onKeyDown })
       <span class="mention-list__name">{{ item.name }}</span>
       <span class="mention-list__type">{{ item.type }}</span>
     </button>
-    <div v-if="items.length === 0" class="mention-list__empty">No results</div>
+    <div v-if="items.length === 0" class="mention-list__empty">
+      {{ $t('codex.mention.noResults') }}
+    </div>
   </div>
 </template>
 
@@ -57,7 +64,7 @@ defineExpose({ onKeyDown })
   background: var(--ss-surface, #fff);
   border: 1px solid var(--ss-border, #ddd);
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   min-width: 200px;
   max-height: 220px;
@@ -83,7 +90,7 @@ defineExpose({ onKeyDown })
 
 .mention-list__item:hover,
 .mention-list__item--selected {
-  background: color-mix(in srgb, var(--ss-primary, #D97706) 10%, transparent);
+  background: color-mix(in srgb, var(--ss-primary, #d97706) 10%, transparent);
 }
 
 .mention-list__name {
@@ -92,7 +99,7 @@ defineExpose({ onKeyDown })
 }
 
 .mention-list__item--selected .mention-list__name {
-  color: var(--ss-primary, #D97706);
+  color: var(--ss-primary, #d97706);
 }
 
 .mention-list__type {

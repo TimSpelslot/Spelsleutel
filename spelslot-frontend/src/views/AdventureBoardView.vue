@@ -22,9 +22,8 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 
 const syncingSession = ref(false)
-const canCreateSessionPage = computed(() =>
-  !!selectedSession.value?.releaseAssignments &&
-  auth.hasPermission(['DM', 'ADMIN']),
+const canCreateSessionPage = computed(
+  () => !!selectedSession.value?.releaseAssignments && auth.hasPermission(['DM', 'ADMIN']),
 )
 
 async function syncSessionPage() {
@@ -96,8 +95,6 @@ function formatMonth(dateStr: string): string {
     .toLocaleDateString('en-GB', { month: 'short' })
     .toUpperCase()
 }
-
-
 </script>
 
 <template>
@@ -106,9 +103,9 @@ function formatMonth(dateStr: string): string {
       <div>
         <h1 class="ab-view__title">
           <i class="pi pi-calendar" />
-          Sessions
+          {{ $t('adventureBoard.title') }}
         </h1>
-        <p class="ab-view__subtitle">Upcoming D&amp;D adventures via AdventureBoard</p>
+        <p class="ab-view__subtitle">{{ $t('adventureBoard.subtitle') }}</p>
       </div>
     </div>
 
@@ -118,7 +115,7 @@ function formatMonth(dateStr: string): string {
         <i class="pi pi-search ab-filters__search-icon" aria-hidden="true" />
         <InputText
           v-model="searchQuery"
-          placeholder="Search by title, DM or tag…"
+          :placeholder="$t('adventureBoard.filters.searchPlaceholder')"
           class="ab-filters__search"
         />
       </div>
@@ -129,7 +126,7 @@ function formatMonth(dateStr: string): string {
         @click="filterStoryOnly = !filterStoryOnly"
       >
         <i class="pi pi-star-fill" />
-        Story
+        {{ $t('common.story') }}
       </button>
 
       <button
@@ -138,11 +135,16 @@ function formatMonth(dateStr: string): string {
         @click="filterHasSpots = !filterHasSpots"
       >
         <i class="pi pi-user-plus" />
-        Open spots
+        {{ $t('adventureBoard.filters.openSpotsChip') }}
       </button>
 
       <span v-if="!loading" class="ab-filters__count">
-        {{ filteredSessions.length }} van {{ sessions.length }}
+        {{
+          $t('adventureBoard.sessionCount', {
+            filtered: filteredSessions.length,
+            total: sessions.length,
+          })
+        }}
       </span>
     </div>
 
@@ -151,7 +153,7 @@ function formatMonth(dateStr: string): string {
       <div v-for="n in 6" :key="n" class="ab-card ab-card--skeleton">
         <Skeleton width="3.5rem" height="3.75rem" />
         <div class="ab-card__body">
-          <Skeleton height="1rem" style="margin-bottom:0.4rem" />
+          <Skeleton height="1rem" style="margin-bottom: 0.4rem" />
           <Skeleton height="0.75rem" width="60%" />
         </div>
       </div>
@@ -166,7 +168,7 @@ function formatMonth(dateStr: string): string {
     <!-- Empty filter result -->
     <div v-else-if="filteredSessions.length === 0" class="ab-empty">
       <i class="pi pi-filter-slash ab-empty__icon" />
-      <p>No sessions found. Adjust the filters.</p>
+      <p>{{ $t('adventureBoard.empty') }}</p>
     </div>
 
     <!-- Session grid -->
@@ -190,13 +192,13 @@ function formatMonth(dateStr: string): string {
             <div class="ab-card__badges">
               <Tag
                 v-if="session.isStoryAdventure"
-                value="Story"
+                :value="$t('common.story')"
                 severity="warn"
                 class="ab-card__badge"
               />
               <Tag
                 v-if="session.releaseAssignments"
-                value="Assigned"
+                :value="$t('common.assigned')"
                 severity="success"
                 class="ab-card__badge"
               />
@@ -208,11 +210,16 @@ function formatMonth(dateStr: string): string {
               <i class="pi pi-shield" />
               {{ session.dmName }}
             </span>
-            <span class="ab-card__spots" :class="{ 'ab-card__spots--full': session.spotsLeft === 0 }">
+            <span
+              class="ab-card__spots"
+              :class="{ 'ab-card__spots--full': session.spotsLeft === 0 }"
+            >
               <i class="pi pi-users" />
               {{ session.party.length }}/{{ session.maxPlayers }}
-              <span v-if="session.spotsLeft > 0"> · {{ session.spotsLeft }} free</span>
-              <span v-else> · full</span>
+              <span v-if="session.spotsLeft > 0">
+                {{ $t('adventureBoard.card.spotsFree', { count: session.spotsLeft }) }}</span
+              >
+              <span v-else> {{ $t('adventureBoard.card.spotsFull') }}</span>
             </span>
           </div>
 
@@ -223,7 +230,9 @@ function formatMonth(dateStr: string): string {
           <div class="ab-card__footer">
             <!-- Tags -->
             <div v-if="session.tags.length" class="ab-card__tags">
-              <span v-for="tag in session.tags.slice(0, 3)" :key="tag" class="ab-tag">{{ tag }}</span>
+              <span v-for="tag in session.tags.slice(0, 3)" :key="tag" class="ab-tag">{{
+                tag
+              }}</span>
             </div>
 
             <!-- Rank indicators -->
@@ -232,7 +241,11 @@ function formatMonth(dateStr: string): string {
                 v-if="session.ranks.combat"
                 class="ab-rank"
                 :style="{ color: rankColor(session.ranks.combat) }"
-                :title="`Combat: ${rankLabel(session.ranks.combat)}`"
+                :title="
+                  $t('adventureBoard.detail.rankTitleCombat', {
+                    label: rankLabel(session.ranks.combat),
+                  })
+                "
               >
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span class="ab-rank__icon" v-html="DragonHeadSvg" />
@@ -242,7 +255,11 @@ function formatMonth(dateStr: string): string {
                 v-if="session.ranks.exploration"
                 class="ab-rank"
                 :style="{ color: rankColor(session.ranks.exploration) }"
-                :title="`Exploration: ${rankLabel(session.ranks.exploration)}`"
+                :title="
+                  $t('adventureBoard.detail.rankTitleExploration', {
+                    label: rankLabel(session.ranks.exploration),
+                  })
+                "
               >
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span class="ab-rank__icon" v-html="DungeonGateSvg" />
@@ -252,7 +269,11 @@ function formatMonth(dateStr: string): string {
                 v-if="session.ranks.roleplaying"
                 class="ab-rank"
                 :style="{ color: rankColor(session.ranks.roleplaying) }"
-                :title="`Roleplaying: ${rankLabel(session.ranks.roleplaying)}`"
+                :title="
+                  $t('adventureBoard.detail.rankTitleRoleplaying', {
+                    label: rankLabel(session.ranks.roleplaying),
+                  })
+                "
               >
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span class="ab-rank__icon" v-html="DramaMasksSvg" />
@@ -275,33 +296,30 @@ function formatMonth(dateStr: string): string {
       @update:visible="closeDetail"
     >
       <template v-if="selectedSession">
-
         <!-- Party roster — first, it's the main reason to click -->
         <div class="ab-detail__section">
           <h3 class="ab-detail__section-title">
-            <i class="pi pi-users" /> Party
+            <i class="pi pi-users" /> {{ $t('common.party') }}
             <span class="ab-detail__section-count">
               {{ selectedSession.party.length }}/{{ selectedSession.maxPlayers }}
               <span v-if="selectedSession.spotsLeft > 0" class="ab-detail__spots-free">
-                · {{ selectedSession.spotsLeft }} open
+                {{ $t('adventureBoard.detail.spotsOpen', { count: selectedSession.spotsLeft }) }}
               </span>
-              <span v-else class="ab-detail__spots-full">· full</span>
+              <span v-else class="ab-detail__spots-full">{{
+                $t('adventureBoard.detail.spotsFull')
+              }}</span>
             </span>
           </h3>
           <div v-if="selectedSession.party.length === 0" class="ab-detail__empty-list">
-            No players assigned yet
+            {{ $t('adventureBoard.detail.noPlayersAssigned') }}
           </div>
           <ul v-else class="ab-detail__player-list">
-            <li
-              v-for="player in selectedSession.party"
-              :key="player.id"
-              class="ab-detail__player"
-            >
+            <li v-for="player in selectedSession.party" :key="player.id" class="ab-detail__player">
               <i class="pi pi-user ab-detail__player-icon" />
               <span class="ab-detail__player-name">{{ player.displayName }}</span>
               <Tag
                 v-if="player.appeared"
-                value="Present"
+                :value="$t('common.present')"
                 severity="success"
                 class="ab-detail__player-badge"
               />
@@ -312,7 +330,7 @@ function formatMonth(dateStr: string): string {
         <!-- Waitlist -->
         <div v-if="selectedSession.waitlist.length" class="ab-detail__section">
           <h3 class="ab-detail__section-title">
-            <i class="pi pi-clock" /> Waiting list
+            <i class="pi pi-clock" /> {{ $t('adventureBoard.detail.waitlistSection') }}
             <span class="ab-detail__section-count">{{ selectedSession.waitlist.length }}</span>
           </h3>
           <ul class="ab-detail__player-list">
@@ -335,24 +353,42 @@ function formatMonth(dateStr: string): string {
           </div>
           <div class="ab-detail__meta-row">
             <i class="pi pi-shield ab-detail__meta-icon" />
-            <span>DM: <strong>{{ selectedSession.dmName }}</strong></span>
+            <span>{{ $t('adventureBoard.detail.metaDm', { name: selectedSession.dmName }) }}</span>
           </div>
           <div v-if="selectedSession.requestedRoom" class="ab-detail__meta-row">
             <i class="pi pi-building ab-detail__meta-icon" />
-            <span>Room: {{ selectedSession.requestedRoom }}</span>
+            <span>{{
+              $t('adventureBoard.detail.metaRoom', { room: selectedSession.requestedRoom })
+            }}</span>
           </div>
           <div v-if="selectedSession.excludeFromKarma" class="ab-detail__meta-row">
             <i class="pi pi-info-circle ab-detail__meta-icon" />
-            <span class="ab-detail__no-karma">Does not count towards karma</span>
+            <span class="ab-detail__no-karma">{{ $t('adventureBoard.detail.noKarma') }}</span>
           </div>
         </div>
 
         <!-- Badges -->
         <div class="ab-detail__badges">
-          <Tag v-if="selectedSession.isStoryAdventure" value="Story Adventure" severity="warn" />
-          <Tag v-if="selectedSession.releaseAssignments" value="Assigned" severity="success" />
-          <Tag v-if="selectedSession.isWaitingList" value="Waiting list" severity="secondary" />
-          <Tag v-if="selectedSession.numSessions > 1" :value="`${selectedSession.numSessions} sessions`" severity="info" />
+          <Tag
+            v-if="selectedSession.isStoryAdventure"
+            :value="$t('adventureBoard.detail.tagStoryAdventure')"
+            severity="warn"
+          />
+          <Tag
+            v-if="selectedSession.releaseAssignments"
+            :value="$t('common.assigned')"
+            severity="success"
+          />
+          <Tag
+            v-if="selectedSession.isWaitingList"
+            :value="$t('adventureBoard.detail.tagWaitingList')"
+            severity="secondary"
+          />
+          <Tag
+            v-if="selectedSession.numSessions > 1"
+            :value="$t('adventureBoard.detail.tagSessions', { count: selectedSession.numSessions })"
+            severity="info"
+          />
         </div>
 
         <!-- Description -->
@@ -366,51 +402,94 @@ function formatMonth(dateStr: string): string {
         </div>
 
         <!-- Rank bars -->
-        <div v-if="selectedSession.ranks.combat || selectedSession.ranks.exploration || selectedSession.ranks.roleplaying" class="ab-detail__ranks">
+        <div
+          v-if="
+            selectedSession.ranks.combat ||
+            selectedSession.ranks.exploration ||
+            selectedSession.ranks.roleplaying
+          "
+          class="ab-detail__ranks"
+        >
           <div class="ab-detail__rank-row">
             <span class="ab-detail__rank-label">
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="ab-rank__icon" v-html="DragonHeadSvg" /> Combat
+              <span class="ab-rank__icon" v-html="DragonHeadSvg" />
+              {{ $t('adventureBoard.detail.rankCombat') }}
             </span>
             <div class="ab-detail__rank-bar">
-              <div v-for="n in 3" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.combat }" :style="n <= selectedSession.ranks.combat ? { background: rankColor(selectedSession.ranks.combat) } : {}" />
+              <div
+                v-for="n in 3"
+                :key="n"
+                class="ab-detail__rank-pip"
+                :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.combat }"
+                :style="
+                  n <= selectedSession.ranks.combat
+                    ? { background: rankColor(selectedSession.ranks.combat) }
+                    : {}
+                "
+              />
             </div>
             <span class="ab-detail__rank-text">{{ rankLabel(selectedSession.ranks.combat) }}</span>
           </div>
           <div class="ab-detail__rank-row">
             <span class="ab-detail__rank-label">
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="ab-rank__icon" v-html="DungeonGateSvg" /> Exploration
+              <span class="ab-rank__icon" v-html="DungeonGateSvg" />
+              {{ $t('adventureBoard.detail.rankExploration') }}
             </span>
             <div class="ab-detail__rank-bar">
-              <div v-for="n in 3" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.exploration }" :style="n <= selectedSession.ranks.exploration ? { background: rankColor(selectedSession.ranks.exploration) } : {}" />
+              <div
+                v-for="n in 3"
+                :key="n"
+                class="ab-detail__rank-pip"
+                :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.exploration }"
+                :style="
+                  n <= selectedSession.ranks.exploration
+                    ? { background: rankColor(selectedSession.ranks.exploration) }
+                    : {}
+                "
+              />
             </div>
-            <span class="ab-detail__rank-text">{{ rankLabel(selectedSession.ranks.exploration) }}</span>
+            <span class="ab-detail__rank-text">{{
+              rankLabel(selectedSession.ranks.exploration)
+            }}</span>
           </div>
           <div class="ab-detail__rank-row">
             <span class="ab-detail__rank-label">
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="ab-rank__icon" v-html="DramaMasksSvg" /> Roleplaying
+              <span class="ab-rank__icon" v-html="DramaMasksSvg" />
+              {{ $t('adventureBoard.detail.rankRoleplaying') }}
             </span>
             <div class="ab-detail__rank-bar">
-              <div v-for="n in 3" :key="n" class="ab-detail__rank-pip" :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.roleplaying }" :style="n <= selectedSession.ranks.roleplaying ? { background: rankColor(selectedSession.ranks.roleplaying) } : {}" />
+              <div
+                v-for="n in 3"
+                :key="n"
+                class="ab-detail__rank-pip"
+                :class="{ 'ab-detail__rank-pip--on': n <= selectedSession.ranks.roleplaying }"
+                :style="
+                  n <= selectedSession.ranks.roleplaying
+                    ? { background: rankColor(selectedSession.ranks.roleplaying) }
+                    : {}
+                "
+              />
             </div>
-            <span class="ab-detail__rank-text">{{ rankLabel(selectedSession.ranks.roleplaying) }}</span>
+            <span class="ab-detail__rank-text">{{
+              rankLabel(selectedSession.ranks.roleplaying)
+            }}</span>
           </div>
         </div>
-
       </template>
 
       <template #footer>
         <Button
           v-if="canCreateSessionPage"
-          label="Create session page"
+          :label="$t('adventureBoard.detail.createSessionPageButton')"
           icon="pi pi-book"
           :loading="syncingSession"
           severity="secondary"
           @click="syncSessionPage"
         />
-        <Button label="Close" text @click="closeDetail" />
+        <Button :label="$t('common.close')" text @click="closeDetail" />
       </template>
     </Dialog>
   </div>
@@ -435,7 +514,9 @@ function formatMonth(dateStr: string): string {
   color: var(--ss-text);
 }
 
-.ab-view__title .pi { color: var(--ss-primary); }
+.ab-view__title .pi {
+  color: var(--ss-primary);
+}
 
 .ab-view__subtitle {
   margin: 0;
@@ -526,7 +607,9 @@ function formatMonth(dateStr: string): string {
   box-shadow: var(--ss-shadow-sm);
   cursor: pointer;
   text-align: left;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
   width: 100%;
 }
 
@@ -620,9 +703,13 @@ function formatMonth(dateStr: string): string {
 }
 
 .ab-card__dm .pi,
-.ab-card__spots .pi { font-size: 0.65rem; }
+.ab-card__spots .pi {
+  font-size: 0.65rem;
+}
 
-.ab-card__spots--full { color: var(--ss-danger); }
+.ab-card__spots--full {
+  color: var(--ss-danger);
+}
 
 .ab-card__desc {
   margin: 0;
@@ -703,9 +790,18 @@ function formatMonth(dateStr: string): string {
   color: var(--ss-text-muted);
 }
 
-.ab-empty__icon { font-size: 2rem; opacity: 0.4; }
-.ab-empty p { margin: 0; font-size: 0.9rem; }
-.ab-empty--error .ab-empty__icon { color: var(--ss-danger); opacity: 1; }
+.ab-empty__icon {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+.ab-empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.ab-empty--error .ab-empty__icon {
+  color: var(--ss-danger);
+  opacity: 1;
+}
 
 /* ── Detail dialog ── */
 :global(.ab-detail-dialog) {
@@ -742,10 +838,21 @@ function formatMonth(dateStr: string): string {
   flex-shrink: 0;
 }
 
-.ab-detail__spots-free { color: var(--ss-success); margin-left: 0.25em; font-size: 0.8em; }
-.ab-detail__spots-full { color: var(--ss-danger); margin-left: 0.25em; font-size: 0.8em; }
+.ab-detail__spots-free {
+  color: var(--ss-success);
+  margin-left: 0.25em;
+  font-size: 0.8em;
+}
+.ab-detail__spots-full {
+  color: var(--ss-danger);
+  margin-left: 0.25em;
+  font-size: 0.8em;
+}
 
-.ab-detail__no-karma { color: var(--ss-text-muted); font-size: 0.85em; }
+.ab-detail__no-karma {
+  color: var(--ss-text-muted);
+  font-size: 0.85em;
+}
 
 .ab-detail__badges {
   display: flex;
@@ -838,7 +945,9 @@ function formatMonth(dateStr: string): string {
   margin: 0 0 0.6rem;
 }
 
-.ab-detail__section-title .pi { color: var(--ss-primary); }
+.ab-detail__section-title .pi {
+  color: var(--ss-primary);
+}
 
 .ab-detail__section-count {
   font-weight: 400;
@@ -908,7 +1017,11 @@ function formatMonth(dateStr: string): string {
 }
 
 @media (max-width: 767px) {
-  .ab-view { max-width: 100%; }
-  .ab-grid { grid-template-columns: 1fr; }
+  .ab-view {
+    max-width: 100%;
+  }
+  .ab-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

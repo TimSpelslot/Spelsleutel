@@ -1,6 +1,14 @@
 import { Schema, model, Types } from 'mongoose'
 
-export type EntryType = 'lore' | 'location' | 'npc' | 'faction' | 'item' | 'event' | 'rule' | 'session'
+export type EntryType =
+  | 'lore'
+  | 'location'
+  | 'npc'
+  | 'faction'
+  | 'item'
+  | 'event'
+  | 'rule'
+  | 'session'
 export type EntryStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 export type EntryPermission = 'PUBLIC' | 'PLAYERS' | 'DM_ONLY' | 'PRIVATE'
 
@@ -30,7 +38,11 @@ export interface IWorldEntry {
 }
 
 const BannerSchema = new Schema(
-  { enabled: { type: Boolean, default: false }, url: { type: String, default: '' }, yPosition: { type: Number, default: 50 } },
+  {
+    enabled: { type: Boolean, default: false },
+    url: { type: String, default: '' },
+    yPosition: { type: Number, default: 50 },
+  },
   { _id: false },
 )
 
@@ -46,7 +58,11 @@ const WorldEntrySchema = new Schema<IWorldEntry>(
       required: true,
     },
     status: { type: String, enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'], default: 'PUBLISHED' },
-    permission: { type: String, enum: ['PUBLIC', 'PLAYERS', 'DM_ONLY', 'PRIVATE'], default: 'PLAYERS' },
+    permission: {
+      type: String,
+      enum: ['PUBLIC', 'PLAYERS', 'DM_ONLY', 'PRIVATE'],
+      default: 'PLAYERS',
+    },
     isLocked: { type: Boolean, default: false },
     parentId: { type: Schema.Types.ObjectId, ref: 'WorldEntry' },
     pos: { type: String, default: '' },

@@ -17,66 +17,66 @@
 
 :root {
   /* ── Parchment ── warm background scale */
-  --ss-parchment:        var(--p-parchment-base);
-  --ss-parchment-dark:   var(--p-parchment-shade);
+  --ss-parchment: var(--p-parchment-base);
+  --ss-parchment-dark: var(--p-parchment-shade);
   --ss-parchment-deeper: var(--p-parchment-deeper);
 
   /* ── Primary ── amber/rust accent */
-  --ss-primary:       var(--p-primary-color);
+  --ss-primary: var(--p-primary-color);
   --ss-primary-hover: var(--p-primary-hover-color);
   --ss-primary-light: var(--p-primary-100);
-  --ss-primary-fg:    var(--p-primary-contrast-color);
+  --ss-primary-fg: var(--p-primary-contrast-color);
 
   /* ── Shell ── sidebar and top nav */
-  --ss-shell:          var(--p-shell-base);
-  --ss-shell-lighter:  var(--p-shell-lighter);
-  --ss-shell-fg:       var(--p-shell-fg);
+  --ss-shell: var(--p-shell-base);
+  --ss-shell-lighter: var(--p-shell-lighter);
+  --ss-shell-fg: var(--p-shell-fg);
   --ss-shell-fg-muted: var(--p-shell-fg-muted);
 
   /* ── Text */
-  --ss-text:         var(--p-text-color);
-  --ss-text-muted:   var(--p-text-muted-color);
-  --ss-text-subtle:  var(--p-app-text-subtle);
+  --ss-text: var(--p-text-color);
+  --ss-text-muted: var(--p-text-muted-color);
+  --ss-text-subtle: var(--p-app-text-subtle);
   --ss-text-inverse: var(--p-app-text-inverse);
 
   /* ── Surface */
-  --ss-surface:         var(--p-content-background);
-  --ss-surface-raised:  var(--p-app-surface-raised);
+  --ss-surface: var(--p-content-background);
+  --ss-surface-raised: var(--p-app-surface-raised);
   --ss-surface-overlay: var(--p-app-surface-overlay);
 
   /* ── Border */
-  --ss-border:        var(--p-content-border-color);
+  --ss-border: var(--p-content-border-color);
   --ss-border-subtle: var(--p-app-border-subtle);
 
   /* ── Feedback */
-  --ss-success:    var(--p-feedback-success);
+  --ss-success: var(--p-feedback-success);
   --ss-success-bg: var(--p-feedback-success-bg);
-  --ss-warning:    var(--p-feedback-warning);
+  --ss-warning: var(--p-feedback-warning);
   --ss-warning-bg: var(--p-feedback-warning-bg);
-  --ss-danger:     var(--p-feedback-danger);
-  --ss-danger-bg:  var(--p-feedback-danger-bg);
-  --ss-info:       var(--p-feedback-info);
-  --ss-info-bg:    var(--p-feedback-info-bg);
+  --ss-danger: var(--p-feedback-danger);
+  --ss-danger-bg: var(--p-feedback-danger-bg);
+  --ss-info: var(--p-feedback-info);
+  --ss-info-bg: var(--p-feedback-info-bg);
 
   /* ── Rank colors (AdventureBoard session difficulty indicators) */
-  --ss-rank-low:  var(--p-rank-low);
-  --ss-rank-ok:   var(--p-rank-ok);
-  --ss-rank-mid:  var(--p-rank-mid);
+  --ss-rank-low: var(--p-rank-low);
+  --ss-rank-ok: var(--p-rank-ok);
+  --ss-rank-mid: var(--p-rank-mid);
   --ss-rank-high: var(--p-rank-high);
-  --ss-rank-max:  var(--p-rank-max);
+  --ss-rank-max: var(--p-rank-max);
 
   /* ── Shadow (depth shifts between light/dark via the preset) */
   --ss-shadow-sm: var(--p-elevation-sm);
-  --ss-shadow:    var(--p-elevation-base);
+  --ss-shadow: var(--p-elevation-base);
   --ss-shadow-lg: var(--p-elevation-lg);
 
   /* ── Radius ── mode-agnostic, not part of the colour theme */
   --ss-radius-sm: 4px;
-  --ss-radius:    8px;
+  --ss-radius: 8px;
   --ss-radius-lg: 12px;
 
   /* ── Layout ── app structural sizes, not theme */
-  --ss-navbar-height:           56px;
-  --ss-sidebar-width:           220px;
+  --ss-navbar-height: 56px;
+  --ss-sidebar-width: 220px;
   --ss-sidebar-collapsed-width: 60px;
 }

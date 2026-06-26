@@ -1,0 +1,158 @@
+{
+  "panels": {
+    "combatTracker": "Combat tracker",
+    "partyRoster": "Party-overzicht",
+    "sessionNotes": "Sessienotities",
+    "dmNotes": "DM-notities",
+    "monsterStatBlock": "Monster-statblock",
+    "myNotes": "Mijn notities",
+    "characterSheet": "Personagebladzijde"
+  },
+  "tabs": {
+    "combat": "Combat",
+    "roster": "Overzicht",
+    "notes": "Notities",
+    "dmNotes": "DM-notities",
+    "monsters": "Monsters",
+    "character": "Personage",
+    "session": "Sessie",
+    "myNotes": "Mijn notities"
+  },
+  "view": {
+    "dmView": "DM-weergave",
+    "playerView": "Spelersweergave",
+    "playerBadge": "Speler",
+    "dashboard": "Dashboard"
+  },
+  "session": {
+    "label": "Sessie:",
+    "selectPlaceholder": "Selecteer een sessie…",
+    "selectPlaceholderShort": "Selecteer sessie…"
+  },
+  "layout": {
+    "panels": "Panelen",
+    "allPanelsOpen": "Alle panelen open",
+    "closed": "Gesloten:",
+    "resetLayout": "Lay-out herstellen",
+    "resetLayoutTitle": "Panelenlay-out naar standaard herstellen",
+    "restorePanel": "{title} herstellen",
+    "resetConfirm": "Alle panelen naar hun standaardposities herstellen?"
+  },
+  "floatingPanel": {
+    "restore": "Herstellen",
+    "minimize": "Minimaliseren",
+    "closePanel": "Paneel sluiten"
+  },
+  "placeholder": {
+    "title": "Sessies",
+    "text": "Binnenkort beschikbaar — live sessiedashboard met combat tracker."
+  },
+  "combat": {
+    "combatantCount": "{count} strijder",
+    "combatantCountPlural": "{count} strijders",
+    "add": "Toevoegen",
+    "clearAll": "Alle monsters wissen?",
+    "pinned": "Vastgezet:",
+    "pinnedTitle": "HP {hp} · AC {ac}",
+    "addMonster": "Monster toevoegen",
+    "addFirstMonster": "Eerste monster toevoegen",
+    "noCombatants": "Nog geen strijders.",
+    "namePlaceholder": "Naam…",
+    "initiativePlaceholder": "Ini",
+    "hpPlaceholder": "HP",
+    "acPlaceholder": "AC",
+    "adjustAmountPlaceholder": "Aantal",
+    "initiativeTitle": "Initiatief: {initiative}",
+    "armorClass": "AC {ac}",
+    "removeTitle": "Verwijderen",
+    "clickToSetHp": "Klik om HP in te stellen",
+    "dealDamage": "Schade toebrengen",
+    "heal": "Genezen",
+    "dmg": "Schade",
+    "removeCondition": "{condition} verwijderen"
+  },
+  "characterSheet": {
+    "noCharacterLinked": "Geen DnD Beyond-personage gekoppeld.",
+    "noCharacterHint": "Vraag een beheerder om je personage-ID in het beheerpaneel toe te voegen.",
+    "loadingCharacter": "Personage laden…",
+    "characterIdLabel": "Personage-ID: {id}",
+    "retry": "Opnieuw",
+    "openFullSheet": "Volledige bladzijde op DnD Beyond openen",
+    "syncFromDdb": "Synchroniseren vanaf DnD Beyond",
+    "staleWarning": "Gecachte gegevens worden getoond — DnD Beyond is mogelijk niet beschikbaar.",
+    "vitals": {
+      "ac": "AC",
+      "maxHp": "Max HP",
+      "speed": "Snelheid",
+      "speedValue": "{speed} ft"
+    },
+    "badges": {
+      "level": "Lvl {level}",
+      "proficiency": "Prof {bonus}"
+    }
+  },
+  "roster": {
+    "chooseSession": "Kies een sessie…",
+    "noSessionsFound": "Geen sessies gevonden",
+    "chooseSessionHint": "Kies een sessie om de party te zien.",
+    "max": "Max",
+    "free": "Vrij",
+    "waiting": "Wachtend",
+    "waitingList": "Wachtlijst ({count})",
+    "noPlayersAssigned": "Geen spelers toegewezen"
+  },
+  "notes": {
+    "newNote": "Nieuwe notitie",
+    "savingStatus": {
+      "saving": "Opslaan…",
+      "saved": "Opgeslagen",
+      "error": "Opslaan mislukt",
+      "idle": "Automatisch opgeslagen"
+    },
+    "dmNotesLabel": "Privé — alleen DM",
+    "myNotesLabel": "Privénotities",
+    "sharedNotesLabel": "Gedeelde notities",
+    "sharedNotesEmpty": "Selecteer een sessie om gedeelde notities te bekijken.",
+    "readOnly": "Alleen-lezen",
+    "collabTitle": "Samenwerking: {status}",
+    "dmNotesPlaceholder": "Privénotities — alleen voor jou zichtbaar…",
+    "myNotesPlaceholder": "Je privé-sessienotities…",
+    "sharedNotesPlaceholder": "Gedeelde sessienotities verschijnen hier…"
+  },
+  "statBlock": {
+    "addMonster": "Monster toevoegen",
+    "addMonsterTitle": "Monster toevoegen",
+    "noStatBlocks": "Geen statblocks geladen",
+    "addMonsterBtn": "Monster toevoegen",
+    "tip": "Tip: Ctrl+V plakt direct een screenshot",
+    "pastedScreenshot": "Geplakte screenshot",
+    "searchPlaceholder": "Monsternaam…",
+    "urlPlaceholder": "https://www.dndbeyond.com/monsters/goblin",
+    "urlHint": "Werkt met dndbeyond.com- en 5e.tools-URL's. Vindt de dichtstbijzijnde match in de database van Open5e — niet-SRD-homebrew wordt niet gevonden.",
+    "dropTarget": "Sleep, plak (Ctrl+V) of klik om te bladeren",
+    "addModes": {
+      "search": "Zoeken",
+      "url": "URL",
+      "image": "Afbeelding"
+    },
+    "traits": {
+      "armorClass": "Armor Class",
+      "hitPoints": "Hit Points",
+      "speed": "Snelheid",
+      "skills": "Skills",
+      "damageVulnerabilities": "Damage Vulnerabilities",
+      "damageResistances": "Damage Resistances",
+      "damageImmunities": "Damage Immunities",
+      "conditionImmunities": "Condition Immunities",
+      "senses": "Senses",
+      "languages": "Talen",
+      "challenge": "Challenge"
+    },
+    "sections": {
+      "actions": "Actions",
+      "bonusActions": "Bonus Actions",
+      "reactions": "Reactions",
+      "legendaryActions": "Legendary Actions"
+    }
+  }
+}

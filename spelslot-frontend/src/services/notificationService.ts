@@ -28,7 +28,10 @@ export const notificationService = {
   },
 
   async markRead(id: string): Promise<Result<AppNotification>> {
-    const result = await api.patch<{ notification: AppNotification }>(`/api/notifications/${id}/read`, {})
+    const result = await api.patch<{ notification: AppNotification }>(
+      `/api/notifications/${id}/read`,
+      {},
+    )
     if (result.type === 'error') return result
     return { type: 'ok', data: result.data.notification }
   },

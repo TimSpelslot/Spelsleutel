@@ -1,0 +1,31 @@
+{
+  "title": "Meldingen",
+  "deleteAriaLabel": "Verwijderen",
+  "push": {
+    "heading": "Pushmeldingen",
+    "enabledLabel": "Ingeschakeld op dit apparaat",
+    "enabledHint": "Je ontvangt pushmeldingen in je browser.",
+    "blockedLabel": "Geblokkeerd in je browser",
+    "blockedHint": "Om dit weer in te schakelen: klik op het slotpictogram in de adresbalk van je browser, zoek de instelling Meldingen en zet deze op Toestaan.",
+    "notEnabledLabel": "Niet ingeschakeld op dit apparaat",
+    "notEnabledHint": "Schakel in om meldingen te ontvangen, ook als de app niet open is.",
+    "enable": "Inschakelen"
+  },
+  "prefs": {
+    "heading": "Meldingsvoorkeuren",
+    "signupsLabel": "Aanmeldingen",
+    "signupsHint": "Wanneer een sessie waarvoor je je hebt aangemeld verandert",
+    "assignmentLabel": "Toewijzing",
+    "assignmentHint": "Wanneer je aan een sessie wordt toegewezen",
+    "marketplaceLabel": "Marketplace",
+    "marketplaceHint": "Updates over items en transacties",
+    "sessionsLabel": "Sessies",
+    "sessionsHint": "Aanmaken en bijwerken van sessienotities"
+  },
+  "timeAgo": {
+    "minutesAgo": "{m} min geleden",
+    "hoursAgo": "{h} u geleden",
+    "daysAgo": "{d} dagen geleden",
+    "yesterday": "Gisteren"
+  }
+}

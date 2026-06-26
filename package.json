@@ -8,9 +8,24 @@
   "scripts": {
     "dev:backend": "npm run dev --workspace=spelslot-backend",
     "dev:frontend": "npm run dev --workspace=spelslot-frontend",
-    "dev": "concurrently -n backend,frontend -c cyan,magenta \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev": "concurrently -n backend,frontend -c cyan,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspace=spelslot-backend && npm run test --workspace=spelslot-frontend",
+    "test:backend": "npm run test --workspace=spelslot-backend",
+    "test:frontend": "npm run test --workspace=spelslot-frontend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.9.2",
+    "globals": "^17.7.0",
+    "prettier": "^3.8.4",
+    "typescript-eslint": "^8.62.0",
+    "vue-eslint-parser": "^10.4.1"
   }
 }

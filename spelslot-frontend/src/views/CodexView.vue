@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { generateKeyBetween } from 'fractional-indexing'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
@@ -10,6 +11,8 @@ import CodexTreeNode, { type TreeNode } from '@/components/codex/CodexTreeNode.v
 import CodexDetailPanel from '@/components/codex/CodexDetailPanel.vue'
 import { codexService, type CodexEntry, type EntryType } from '@/services/codexService'
 import { useAuthStore } from '@/stores/auth'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -37,7 +40,9 @@ const treeCollapsed = ref(false)
 const selectedSlug = ref<string | null>((route.query.entry as string) || null)
 
 // Which type groups are expanded (all open by default)
-const expandedTypes = ref(new Set<string>(['lore', 'location', 'npc', 'faction', 'item', 'event', 'rule', 'session']))
+const expandedTypes = ref(
+  new Set<string>(['lore', 'location', 'npc', 'faction', 'item', 'event', 'rule', 'session']),
+)
 
 onMounted(async () => {
   loading.value = true
@@ -53,9 +58,7 @@ const treeGroups = computed(() => {
   const q = search.value.toLowerCase()
   const filtered = q
     ? entries.value.filter(
-        (e) =>
-          e.name.toLowerCase().includes(q) ||
-          e.tags.some((t) => t.toLowerCase().includes(q)),
+        (e) => e.name.toLowerCase().includes(q) || e.tags.some((t) => t.toLowerCase().includes(q)),
       )
     : entries.value
 
@@ -97,17 +100,26 @@ const treeGroups = computed(() => {
 // ── Type meta ─────────────────────────────────────────────────────────────
 
 const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
-  lore:     { label: 'Lore',     icon: 'pi-book' },
-  location: { label: 'Location', icon: 'pi-map-marker' },
-  npc:      { label: 'NPC',      icon: 'pi-user' },
-  faction:  { label: 'Faction',  icon: 'pi-users' },
-  item:     { label: 'Item',     icon: 'pi-star' },
-  event:    { label: 'Event',    icon: 'pi-calendar' },
-  rule:     { label: 'Rule',     icon: 'pi-file' },
-  session:  { label: 'Session',  icon: 'pi-play' },
+  lore: { label: t('codex.types.lore'), icon: 'pi-book' },
+  location: { label: t('codex.types.location'), icon: 'pi-map-marker' },
+  npc: { label: t('codex.types.npc'), icon: 'pi-user' },
+  faction: { label: t('codex.types.faction'), icon: 'pi-users' },
+  item: { label: t('codex.types.item'), icon: 'pi-star' },
+  event: { label: t('codex.types.event'), icon: 'pi-calendar' },
+  rule: { label: t('codex.types.rule'), icon: 'pi-file' },
+  session: { label: t('codex.types.session'), icon: 'pi-play' },
 }
 
-const TYPE_ORDER: EntryType[] = ['lore', 'location', 'npc', 'faction', 'item', 'event', 'rule', 'session']
+const TYPE_ORDER: EntryType[] = [
+  'lore',
+  'location',
+  'npc',
+  'faction',
+  'item',
+  'event',
+  'rule',
+  'session',
+]
 
 const orderedGroups = computed(() =>
   TYPE_ORDER.filter((t) => treeGroups.value.has(t)).map((t) => ({
@@ -143,7 +155,7 @@ async function handleReorder({
   position: 'before' | 'after'
 }) {
   const dragged = entries.value.find((e) => e.id === draggedId)
-  const target  = entries.value.find((e) => e.id === targetId)
+  const target = entries.value.find((e) => e.id === targetId)
   if (!dragged || !target || dragged.parentId !== target.parentId) return
 
   // Sorted siblings excluding the dragged entry
@@ -154,11 +166,10 @@ async function handleReorder({
   const targetIdx = siblings.findIndex((e) => e.id === targetId)
 
   // Empty strings are not valid fractional-indexing keys — treat as null
-  const safePos = (p: string | null | undefined): string | null =>
-    p && p.length > 0 ? p : null
+  const safePos = (p: string | null | undefined): string | null => (p && p.length > 0 ? p : null)
 
   const beforePos = safePos(position === 'before' ? siblings[targetIdx - 1]?.pos : target.pos)
-  const afterPos  = safePos(position === 'before' ? target.pos : siblings[targetIdx + 1]?.pos)
+  const afterPos = safePos(position === 'before' ? target.pos : siblings[targetIdx + 1]?.pos)
 
   const originalPos = dragged.pos
   try {
@@ -167,32 +178,35 @@ async function handleReorder({
     await codexService.updateEntry(draggedId, { pos: newPos })
   } catch {
     dragged.pos = originalPos
-    toast.add({ severity: 'error', summary: 'Reorder failed', detail: 'Could not save the new position. Try again.', life: 4000 })
+    toast.add({
+      severity: 'error',
+      summary: t('codex.toast.reorderFailed'),
+      detail: t('codex.toast.reorderFailedDetail'),
+      life: 4000,
+    })
   }
 }
 </script>
 
 <template>
   <div class="codex-layout" :class="{ 'codex-layout--tree-collapsed': treeCollapsed }">
-
     <!-- ── Tree panel ── -->
     <aside class="codex-tree">
-
       <!-- Tree header + collapse toggle -->
       <div class="codex-tree__header">
-        <span v-if="!treeCollapsed" class="codex-tree__title">Codex</span>
+        <span v-if="!treeCollapsed" class="codex-tree__title">{{ $t('codex.title') }}</span>
         <Button
           v-if="!treeCollapsed && canCreateEntry"
           icon="pi pi-plus"
           text
           size="small"
           class="codex-tree__new-btn"
-          title="New entry"
+          :title="$t('codex.newEntry')"
           @click="router.push({ name: 'codex-new' })"
         />
         <button
           class="codex-tree__toggle"
-          :title="treeCollapsed ? 'Expand tree' : 'Collapse tree'"
+          :title="treeCollapsed ? $t('codex.expandTree') : $t('codex.collapseTree')"
           @click="treeCollapsed = !treeCollapsed"
         >
           <i :class="['pi', treeCollapsed ? 'pi-chevron-right' : 'pi-chevron-left']" />
@@ -204,7 +218,7 @@ async function handleReorder({
         <i class="pi pi-search codex-tree__search-icon" aria-hidden="true" />
         <InputText
           v-model="search"
-          placeholder="Search…"
+          :placeholder="$t('codex.searchPlaceholder')"
           class="codex-tree__search-input"
           size="small"
         />
@@ -212,7 +226,6 @@ async function handleReorder({
 
       <!-- Tree content -->
       <div v-if="!treeCollapsed" class="codex-tree__scroll">
-
         <!-- Loading -->
         <div v-if="loading" class="codex-tree__skeletons">
           <Skeleton v-for="n in 12" :key="n" height="22px" border-radius="4px" />
@@ -226,7 +239,7 @@ async function handleReorder({
 
         <!-- Empty -->
         <div v-else-if="orderedGroups.length === 0" class="codex-tree__message">
-          {{ search ? 'No results.' : 'No entries.' }}
+          {{ search ? $t('codex.noResults') : $t('codex.noEntries') }}
         </div>
 
         <!-- Groups -->
@@ -237,7 +250,11 @@ async function handleReorder({
               <span>{{ group.meta.label }}</span>
               <span class="codex-group__count">{{ group.nodes.length }}</span>
               <i
-                :class="['pi', 'codex-group__chevron', expandedTypes.has(group.type) ? 'pi-chevron-down' : 'pi-chevron-right']"
+                :class="[
+                  'pi',
+                  'codex-group__chevron',
+                  expandedTypes.has(group.type) ? 'pi-chevron-down' : 'pi-chevron-right',
+                ]"
                 aria-hidden="true"
               />
             </button>
@@ -273,12 +290,8 @@ async function handleReorder({
 
     <!-- ── Detail panel ── -->
     <main class="codex-detail">
-      <CodexDetailPanel
-        :slug="selectedSlug"
-        @navigate="navigateRelation"
-      />
+      <CodexDetailPanel :slug="selectedSlug" @navigate="navigateRelation" />
     </main>
-
   </div>
 </template>
 
@@ -299,7 +312,9 @@ async function handleReorder({
   flex-direction: column;
   background: var(--ss-shell-lighter);
   border-right: 1px solid color-mix(in srgb, var(--ss-border) 40%, transparent);
-  transition: width 0.22s ease, min-width 0.22s ease;
+  transition:
+    width 0.22s ease,
+    min-width 0.22s ease;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -342,7 +357,9 @@ async function handleReorder({
   transition: color 0.1s;
 }
 
-.codex-tree__toggle:hover { color: var(--ss-shell-fg); }
+.codex-tree__toggle:hover {
+  color: var(--ss-shell-fg);
+}
 
 .codex-tree__new-btn {
   color: var(--ss-shell-fg-muted) !important;
@@ -350,7 +367,9 @@ async function handleReorder({
   margin-left: auto;
   font-size: 0.7rem !important;
 }
-.codex-tree__new-btn:hover { color: var(--ss-primary) !important; }
+.codex-tree__new-btn:hover {
+  color: var(--ss-primary) !important;
+}
 
 /* Search */
 .codex-tree__search {
@@ -430,7 +449,9 @@ async function handleReorder({
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.1s, background 0.1s;
+  transition:
+    color 0.1s,
+    background 0.1s;
 }
 
 .codex-tree__icon-btn:hover {
@@ -462,9 +483,14 @@ async function handleReorder({
   transition: color 0.1s;
 }
 
-.codex-group__heading:hover { color: var(--ss-shell-fg); }
+.codex-group__heading:hover {
+  color: var(--ss-shell-fg);
+}
 
-.codex-group__heading .pi:first-child { color: var(--ss-primary); font-size: 0.7rem; }
+.codex-group__heading .pi:first-child {
+  color: var(--ss-primary);
+  font-size: 0.7rem;
+}
 
 .codex-group__count {
   background: color-mix(in srgb, var(--ss-shell-fg) 10%, transparent);

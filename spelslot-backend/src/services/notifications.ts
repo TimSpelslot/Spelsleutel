@@ -3,7 +3,12 @@ import { getMessaging } from 'firebase-admin/messaging'
 import { Notification, type NotificationType } from '../models/Notification'
 import { User } from '../models/User'
 
-const PREF_MAP: Partial<Record<NotificationType, 'notifySignup' | 'notifyAssignment' | 'notifyMarketplace' | 'notifySession'>> = {
+const PREF_MAP: Partial<
+  Record<
+    NotificationType,
+    'notifySignup' | 'notifyAssignment' | 'notifyMarketplace' | 'notifySession'
+  >
+> = {
   signup: 'notifySignup',
   assignment: 'notifyAssignment',
   marketplace: 'notifyMarketplace',
@@ -12,12 +17,7 @@ const PREF_MAP: Partial<Record<NotificationType, 'notifySignup' | 'notifyAssignm
 
 // Sends FCM push to all registered tokens for a user.
 // Cleans up invalid/expired tokens automatically.
-async function sendPush(
-  userId: Types.ObjectId,
-  title: string,
-  body: string,
-  href?: string,
-) {
+async function sendPush(userId: Types.ObjectId, title: string, body: string, href?: string) {
   const user = await User.findById(userId).select('fcmTokens').lean()
   if (!user?.fcmTokens?.length) return
 
@@ -40,8 +40,10 @@ async function sendPush(
     // Remove tokens that are no longer valid
     const stale = user.fcmTokens.filter((_, i) => {
       const code = result.responses[i]?.error?.code
-      return code === 'messaging/registration-token-not-registered' ||
-             code === 'messaging/invalid-registration-token'
+      return (
+        code === 'messaging/registration-token-not-registered' ||
+        code === 'messaging/invalid-registration-token'
+      )
     })
     if (stale.length) {
       await User.findByIdAndUpdate(userId, { $pullAll: { fcmTokens: stale } })

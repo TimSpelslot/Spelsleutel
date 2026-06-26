@@ -1,0 +1,39 @@
+{
+  "title": "Profile",
+  "account": {
+    "heading": "Account",
+    "displayNameLabel": "Display name",
+    "displayNameHint": "This name is shown to other players. Your Google account name is {name}.",
+    "emailLabel": "Email"
+  },
+  "roleAccess": {
+    "heading": "Role & access",
+    "roleLabel": "Role",
+    "worldbuilderLabel": "Worldbuilder",
+    "wbActive": "Worldbuilder access granted — you can create and edit Codex entries.",
+    "wbPending": "Request pending — a DM or Admin will review it soon.",
+    "wbDmBypass": "Full Codex access as {role}.",
+    "wbNone": "Players can request Worldbuilder access to create and edit Codex entries.",
+    "requestAccess": "Request access"
+  },
+  "dndBeyond": {
+    "heading": "DnD Beyond Character",
+    "noCharacter": "No character linked. Ask an admin to add your DnD Beyond character ID.",
+    "characterIdLabel": "Character ID",
+    "loadingCharacter": "Loading character data…",
+    "notLoaded": "Character data not yet loaded.",
+    "syncNow": "Sync now",
+    "syncTitle": "Sync from DnD Beyond",
+    "level": "Level {n}"
+  },
+  "notifications": {
+    "heading": "Notifications",
+    "sub": "Manage which events send you a notification.",
+    "settingsLink": "Notification settings"
+  },
+  "roles": {
+    "player": "Player",
+    "dm": "Dungeon Master",
+    "admin": "Admin"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "panels": {
+    "combatTracker": "Combat Tracker",
+    "partyRoster": "Party Roster",
+    "sessionNotes": "Session Notes",
+    "dmNotes": "DM Notes",
+    "monsterStatBlock": "Monster Stat Block",
+    "myNotes": "My Notes",
+    "characterSheet": "Character Sheet"
+  },
+  "tabs": {
+    "combat": "Combat",
+    "roster": "Roster",
+    "notes": "Notes",
+    "dmNotes": "DM Notes",
+    "monsters": "Monsters",
+    "character": "Character",
+    "session": "Session",
+    "myNotes": "My Notes"
+  },
+  "view": {
+    "dmView": "DM View",
+    "playerView": "Player View",
+    "playerBadge": "Player",
+    "dashboard": "Dashboard"
+  },
+  "session": {
+    "label": "Session:",
+    "selectPlaceholder": "Select a session…",
+    "selectPlaceholderShort": "Select session…"
+  },
+  "layout": {
+    "panels": "Panels",
+    "allPanelsOpen": "All panels open",
+    "closed": "Closed:",
+    "resetLayout": "Reset layout",
+    "resetLayoutTitle": "Reset panel layout to defaults",
+    "restorePanel": "Restore {title}",
+    "resetConfirm": "Reset all panels to their default positions?"
+  },
+  "floatingPanel": {
+    "restore": "Restore",
+    "minimize": "Minimize",
+    "closePanel": "Close panel"
+  },
+  "placeholder": {
+    "title": "Sessions",
+    "text": "Coming soon — live session dashboard with combat tracker."
+  },
+  "combat": {
+    "combatantCount": "{count} combatant",
+    "combatantCountPlural": "{count} combatants",
+    "add": "Add",
+    "clearAll": "Clear all monsters?",
+    "pinned": "Pinned:",
+    "pinnedTitle": "HP {hp} · AC {ac}",
+    "addMonster": "Add monster",
+    "addFirstMonster": "Add first monster",
+    "noCombatants": "No combatants yet.",
+    "namePlaceholder": "Name…",
+    "initiativePlaceholder": "Ini",
+    "hpPlaceholder": "HP",
+    "acPlaceholder": "AC",
+    "adjustAmountPlaceholder": "Amt",
+    "initiativeTitle": "Initiative: {initiative}",
+    "armorClass": "AC {ac}",
+    "removeTitle": "Remove",
+    "clickToSetHp": "Click to set HP",
+    "dealDamage": "Deal damage",
+    "heal": "Heal",
+    "dmg": "Dmg",
+    "removeCondition": "Remove {condition}"
+  },
+  "characterSheet": {
+    "noCharacterLinked": "No DnD Beyond character linked.",
+    "noCharacterHint": "Ask an admin to add your character ID in the admin panel.",
+    "loadingCharacter": "Loading character…",
+    "characterIdLabel": "Character ID: {id}",
+    "retry": "Retry",
+    "openFullSheet": "Open full sheet on DnD Beyond",
+    "syncFromDdb": "Sync from DnD Beyond",
+    "staleWarning": "Showing cached data — DnD Beyond may be unavailable.",
+    "vitals": {
+      "ac": "AC",
+      "maxHp": "Max HP",
+      "speed": "Speed",
+      "speedValue": "{speed} ft"
+    },
+    "badges": {
+      "level": "Lvl {level}",
+      "proficiency": "Prof {bonus}"
+    }
+  },
+  "roster": {
+    "chooseSession": "Choose a session…",
+    "noSessionsFound": "No sessions found",
+    "chooseSessionHint": "Choose a session to see the party.",
+    "max": "Max",
+    "free": "Free",
+    "waiting": "Waiting",
+    "waitingList": "Waiting list ({count})",
+    "noPlayersAssigned": "No players assigned"
+  },
+  "notes": {
+    "newNote": "New note",
+    "savingStatus": {
+      "saving": "Saving…",
+      "saved": "Saved",
+      "error": "Save failed",
+      "idle": "Auto-saved"
+    },
+    "dmNotesLabel": "Private — DM only",
+    "myNotesLabel": "Private notes",
+    "sharedNotesLabel": "Shared notes",
+    "sharedNotesEmpty": "Select a session to view shared notes.",
+    "readOnly": "Read-only",
+    "collabTitle": "Collaboration: {status}",
+    "dmNotesPlaceholder": "Private notes — visible only to you…",
+    "myNotesPlaceholder": "Your private session notes…",
+    "sharedNotesPlaceholder": "Shared session notes appear here…"
+  },
+  "statBlock": {
+    "addMonster": "Add monster",
+    "addMonsterTitle": "Add monster",
+    "noStatBlocks": "No stat blocks loaded",
+    "addMonsterBtn": "Add monster",
+    "tip": "Tip: Ctrl+V pastes a screenshot directly",
+    "pastedScreenshot": "Pasted screenshot",
+    "searchPlaceholder": "Monster name…",
+    "urlPlaceholder": "https://www.dndbeyond.com/monsters/goblin",
+    "urlHint": "Works with dndbeyond.com and 5e.tools URLs. Finds the closest match in Open5e's database — non-SRD homebrew won't be found.",
+    "dropTarget": "Drop, paste (Ctrl+V), or click to browse",
+    "addModes": {
+      "search": "Search",
+      "url": "URL",
+      "image": "Image"
+    },
+    "traits": {
+      "armorClass": "Armor Class",
+      "hitPoints": "Hit Points",
+      "speed": "Speed",
+      "skills": "Skills",
+      "damageVulnerabilities": "Damage Vulnerabilities",
+      "damageResistances": "Damage Resistances",
+      "damageImmunities": "Damage Immunities",
+      "conditionImmunities": "Condition Immunities",
+      "senses": "Senses",
+      "languages": "Languages",
+      "challenge": "Challenge"
+    },
+    "sections": {
+      "actions": "Actions",
+      "bonusActions": "Bonus Actions",
+      "reactions": "Reactions",
+      "legendaryActions": "Legendary Actions"
+    }
+  }
+}

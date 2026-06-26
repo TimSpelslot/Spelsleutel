@@ -18,7 +18,8 @@ function uid(req: Parameters<typeof requireAuth>[0]) {
 sessionNotesRouter.get('/:sessionId/:noteType', async (req, res, next) => {
   try {
     if (!VALID_TYPES.has(req.params.noteType as NoteType)) {
-      res.status(400).json({ message: 'Invalid note type' }); return
+      res.status(400).json({ message: 'Invalid note type' })
+      return
     }
     const notes = await SessionNote.find({
       uid: uid(req),
@@ -30,7 +31,9 @@ sessionNotesRouter.get('/:sessionId/:noteType', async (req, res, next) => {
       .lean()
 
     res.json({ notes })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // ── GET /api/session-notes/:sessionId/:noteType/:noteId
@@ -38,7 +41,8 @@ sessionNotesRouter.get('/:sessionId/:noteType', async (req, res, next) => {
 sessionNotesRouter.get('/:sessionId/:noteType/:noteId', async (req, res, next) => {
   try {
     if (!isValidObjectId(req.params.noteId)) {
-      res.status(400).json({ message: 'Invalid note ID' }); return
+      res.status(400).json({ message: 'Invalid note ID' })
+      return
     }
     const note = await SessionNote.findOne({
       _id: req.params.noteId,
@@ -47,9 +51,14 @@ sessionNotesRouter.get('/:sessionId/:noteType/:noteId', async (req, res, next) =
       noteType: req.params.noteType,
     }).lean()
 
-    if (!note) { res.status(404).json({ message: 'Note not found' }); return }
+    if (!note) {
+      res.status(404).json({ message: 'Note not found' })
+      return
+    }
     res.json({ note })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // ── POST /api/session-notes/:sessionId/:noteType
@@ -57,7 +66,8 @@ sessionNotesRouter.get('/:sessionId/:noteType/:noteId', async (req, res, next) =
 sessionNotesRouter.post('/:sessionId/:noteType', async (req, res, next) => {
   try {
     if (!VALID_TYPES.has(req.params.noteType as NoteType)) {
-      res.status(400).json({ message: 'Invalid note type' }); return
+      res.status(400).json({ message: 'Invalid note type' })
+      return
     }
     const count = await SessionNote.countDocuments({
       uid: uid(req),
@@ -75,7 +85,9 @@ sessionNotesRouter.post('/:sessionId/:noteType', async (req, res, next) => {
     })
 
     res.status(201).json({ note })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })
 
 // ── PUT /api/session-notes/:sessionId/:noteType/:noteId
@@ -83,11 +95,13 @@ sessionNotesRouter.post('/:sessionId/:noteType', async (req, res, next) => {
 sessionNotesRouter.put('/:sessionId/:noteType/:noteId', async (req, res, next) => {
   try {
     if (!isValidObjectId(req.params.noteId)) {
-      res.status(400).json({ message: 'Invalid note ID' }); return
+      res.status(400).json({ message: 'Invalid note ID' })
+      return
     }
     const { content, name } = req.body as { content?: object; name?: string }
     if (!content && !name) {
-      res.status(400).json({ message: 'Provide content or name' }); return
+      res.status(400).json({ message: 'Provide content or name' })
+      return
     }
 
     const update: Record<string, unknown> = {}
@@ -100,7 +114,12 @@ sessionNotesRouter.put('/:sessionId/:noteType/:noteId', async (req, res, next) =
       { new: true, select: 'name order updatedAt' },
     ).lean()
 
-    if (!note) { res.status(404).json({ message: 'Note not found' }); return }
+    if (!note) {
+      res.status(404).json({ message: 'Note not found' })
+      return
+    }
     res.json({ note })
-  } catch (err) { next(err) }
+  } catch (err) {
+    next(err)
+  }
 })

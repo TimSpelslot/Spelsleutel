@@ -44,15 +44,20 @@ export function startCollabServer() {
   // This must be set before listen() is called, since the error fires on the EventEmitter.
   collabServer.httpServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`[collab] Port ${COLLAB_PORT} already in use — stop the old process and restart`)
+      console.error(
+        `[collab] Port ${COLLAB_PORT} already in use — stop the old process and restart`,
+      )
     } else {
       console.error('[collab] Server error:', err.message)
     }
   })
 
-  collabServer.listen().then(() => {
-    console.log(`[collab] Hocuspocus running on port ${COLLAB_PORT}`)
-  }).catch((err: Error) => {
-    console.error('[collab] Failed to start:', err.message)
-  })
+  collabServer
+    .listen()
+    .then(() => {
+      console.log(`[collab] Hocuspocus running on port ${COLLAB_PORT}`)
+    })
+    .catch((err: Error) => {
+      console.error('[collab] Failed to start:', err.message)
+    })
 }

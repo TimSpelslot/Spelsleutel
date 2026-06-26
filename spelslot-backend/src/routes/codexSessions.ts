@@ -9,16 +9,23 @@ import { toSlug } from '../utils/slug'
 export const codexSessionsRouter = Router()
 
 const DUTCH_MONTHS = [
-  'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
-  'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December',
+  'Januari',
+  'Februari',
+  'Maart',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Augustus',
+  'September',
+  'Oktober',
+  'November',
+  'December',
 ]
 
 // Find or upsert an entry by slug. Uses $setOnInsert so existing entries
 // are never overwritten on repeated sync calls.
-async function findOrCreateBySlug(
-  slug: string,
-  fields: Record<string, unknown>,
-) {
+async function findOrCreateBySlug(slug: string, fields: Record<string, unknown>) {
   return WorldEntry.findOneAndUpdate(
     { slug },
     { $setOnInsert: { slug, ...fields } },
@@ -35,12 +42,14 @@ codexSessionsRouter.post('/sync', requireAuth, async (req, res, next) => {
     const authReq = req as AuthRequest
     const mongoUser = await User.findOne({ uid: authReq.user!.uid }).lean()
     if (!mongoUser || (mongoUser.role !== 'DM' && mongoUser.role !== 'ADMIN')) {
-      res.status(403).json({ message: 'DM or ADMIN required' }); return
+      res.status(403).json({ message: 'DM or ADMIN required' })
+      return
     }
 
     const abSessionId = Number(req.body.abSessionId)
     if (!Number.isFinite(abSessionId)) {
-      res.status(400).json({ message: 'abSessionId must be a number' }); return
+      res.status(400).json({ message: 'abSessionId must be a number' })
+      return
     }
 
     const current = await getAdventure(abSessionId)
@@ -56,7 +65,10 @@ codexSessionsRouter.post('/sync', requireAuth, async (req, res, next) => {
       status: 'PUBLISHED',
       permission: 'PLAYERS',
       pos: '~',
-      aliases: [], tags: [], editors: [], lkProperties: [],
+      aliases: [],
+      tags: [],
+      editors: [],
+      lkProperties: [],
       banner: { enabled: false, url: '', yPosition: 50 },
     })
 
@@ -69,7 +81,10 @@ codexSessionsRouter.post('/sync', requireAuth, async (req, res, next) => {
       permission: 'PLAYERS',
       parentId: diary._id,
       pos: `${yearStr}-${monthStr}`,
-      aliases: [], tags: [], editors: [], lkProperties: [],
+      aliases: [],
+      tags: [],
+      editors: [],
+      lkProperties: [],
       banner: { enabled: false, url: '', yPosition: 50 },
     })
 
@@ -86,24 +101,30 @@ codexSessionsRouter.post('/sync', requireAuth, async (req, res, next) => {
       pos: current.date,
       abSessionId: current.id,
       summary: current.short_description ?? '',
-      aliases: [], tags: ['session'], editors: [], lkProperties: [],
+      aliases: [],
+      tags: ['session'],
+      editors: [],
+      lkProperties: [],
       banner: { enabled: false, url: '', yPosition: 50 },
     })
 
     // ── Find or create a page document ───────────────────────────────────
     const existingDoc = await WorldDocument.findOne({ entryId: sessionEntry._id, type: 'page' })
-      .sort({ isFirst: -1 }).lean()
+      .sort({ isFirst: -1 })
+      .lean()
     const docId = existingDoc
       ? existingDoc._id.toString()
-      : (await WorldDocument.create({
-          entryId: sessionEntry._id,
-          name: 'Sessieaantekeningen',
-          type: 'page',
-          content: { type: 'doc', content: [{ type: 'paragraph' }] },
-          pos: 'a0',
-          isFirst: true,
-          isHidden: false,
-        }))._id.toString()
+      : (
+          await WorldDocument.create({
+            entryId: sessionEntry._id,
+            name: 'Sessieaantekeningen',
+            type: 'page',
+            content: { type: 'doc', content: [{ type: 'paragraph' }] },
+            pos: 'a0',
+            isFirst: true,
+            isHidden: false,
+          })
+        )._id.toString()
 
     res.json({
       entryId: sessionEntry._id.toString(),
@@ -122,7 +143,8 @@ codexSessionsRouter.get('/by-ab/:abSessionId', requireAuth, async (req, res, nex
   try {
     const abSessionId = Number(req.params.abSessionId)
     if (!Number.isFinite(abSessionId)) {
-      res.status(400).json({ message: 'abSessionId must be a number' }); return
+      res.status(400).json({ message: 'abSessionId must be a number' })
+      return
     }
 
     const current = await getAdventure(abSessionId)
@@ -131,11 +153,13 @@ codexSessionsRouter.get('/by-ab/:abSessionId', requireAuth, async (req, res, nex
 
     const entry = await WorldEntry.findOne({ slug: sessionSlug }).lean()
     if (!entry) {
-      res.status(404).json({ message: 'No session page yet' }); return
+      res.status(404).json({ message: 'No session page yet' })
+      return
     }
 
     const doc = await WorldDocument.findOne({ entryId: entry._id, type: 'page' })
-      .sort({ isFirst: -1 }).lean()
+      .sort({ isFirst: -1 })
+      .lean()
 
     res.json({
       entryId: entry._id.toString(),

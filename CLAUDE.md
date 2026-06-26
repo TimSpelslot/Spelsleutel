@@ -4,7 +4,7 @@
 
 Spelslot is a D&D club management platform for a Dutch D&D community. It replaces a combination of LegendKeeper (worldbuilding), AdventureBoard (session sign-ups), and a custom Marketplace (magic item shop). The goal is one unified app.
 
-This repository is the **Next.js mockup** — a working prototype used to explore features and design. The real rebuild will use Vue 3 + Express + MongoDB (matching the Marketplace stack). Do not start the rebuild in this repo; it gets a new repository.
+This repository is the **live Vue 3 rebuild** — an npm-workspaces monorepo (`spelslot-frontend` + `spelslot-backend`) built on the target stack (Vue 3 + Express + MongoDB, matching the Marketplace stack). It began as a Next.js mockup; that framing is historical. Active development happens here.
 
 **Owner:** TimSpelSlot (tim@spelslot.nl)
 **Deadline:** End of August 2026
@@ -14,12 +14,12 @@ This repository is the **Next.js mockup** — a working prototype used to explor
 
 ## Current Repo State
 
-This is the Next.js mockup. Use it to:
-- Understand what features exist and how they work
-- Reference component logic when rebuilding
-- Run/test ideas before committing to the rebuild
+This is the live Vue 3 + Express + MongoDB monorepo. Layout:
+- `spelslot-frontend/` — Vue 3, Vite, Pinia, PrimeVue 4, vue-router, Tiptap/Yjs, Firebase Web SDK
+- `spelslot-backend/` — Express 5, Mongoose, Firebase Admin, Hocuspocus collab server
+- Root npm workspaces; `npm run dev` runs both via `concurrently`.
 
-Do not build new long-lived features here unless explicitly asked. Prefer quick explorations.
+Follow the conventions in `.claude/instructions/` when working in either workspace.
 
 ---
 
@@ -28,7 +28,7 @@ Do not build new long-lived features here unless explicitly asked. Prefer quick 
 | Layer | Choice | Reason |
 |---|---|---|
 | Frontend | Vue 3 + TypeScript + Vite | Matches Marketplace |
-| UI Library | PrimeVue 4 (Aura preset) | Matches Marketplace |
+| UI Library | PrimeVue 4 (custom `spelslotPreset`, Aura-based) | Matches Marketplace |
 | State | Pinia | Matches Marketplace |
 | Backend | Express + TypeScript | Matches Marketplace |
 | Database | MongoDB + Mongoose | Matches Marketplace |
@@ -247,15 +247,6 @@ Follow `.claude/instructions/frontend.instructions.md` and `.claude/instructions
 - `@/` import alias maps to `src/`
 - Tests with Vitest, pattern: `it('should ...')`
 - Permission checks always through `auth.hasPermission()` — never hardcode role names
-
----
-
-## Misplaced Files (Mockup Cleanup Needed)
-
-These files are in wrong locations and need to be moved before merging:
-- `/page.tsx` → `src/app/(app)/worldbuilding/timelines/[id]/edit/page.tsx`
-- `/route.ts` → `src/app/api/worldbuilding/timelines/[id]/route.ts`
-- `src/components/worldbuilding/page.tsx` → empty, delete it
 
 ---
 

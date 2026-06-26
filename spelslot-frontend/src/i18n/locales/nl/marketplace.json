@@ -1,0 +1,37 @@
+{
+  "title": "Marketplace",
+  "subtitle": "Magische items voor avonturiers",
+  "fullMarketplaceButton": "Volledige marketplace",
+  "stats": {
+    "itemsAvailable": "Beschikbare items",
+    "averagePrice": "Gemiddelde prijs",
+    "mostPopularRarity": "Populairste zeldzaamheid"
+  },
+  "bestDeals": "Beste deals",
+  "filters": {
+    "searchPlaceholder": "Items zoeken…",
+    "allRarities": "Alle zeldzaamheden",
+    "allCategories": "Alle categorieën",
+    "rarityCommon": "Common",
+    "rarityUncommon": "Uncommon",
+    "rarityRare": "Rare",
+    "rarityVeryRare": "Very rare",
+    "rarityLegendary": "Legendary"
+  },
+  "empty": "Geen items gevonden voor de huidige filters.",
+  "gold": {
+    "yourBalance": "Jouw saldo",
+    "linkHint": "Koppel je Marketplace-account om je goudsaldo te zien.",
+    "goToMarketplace": "Naar Marketplace"
+  },
+  "recentPurchases": "Recente aankopen",
+  "detail": {
+    "oneTime": "Eenmalig",
+    "currentPrice": "Huidige prijs",
+    "basePrice": "Basisprijs",
+    "stock": "Voorraad",
+    "closeButton": "Sluiten",
+    "viewSource": "Bron bekijken",
+    "buyButton": "Kopen op Marketplace"
+  }
+}

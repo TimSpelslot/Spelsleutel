@@ -12,11 +12,13 @@ export const codexRouter = Router()
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-type MongoUser = IWorldEntry extends never ? never : {
-  _id: unknown
-  role: string
-  isWorldbuilder: boolean
-}
+type MongoUser = IWorldEntry extends never
+  ? never
+  : {
+      _id: unknown
+      role: string
+      isWorldbuilder: boolean
+    }
 
 function permissionFilter(user: { _id: unknown; role: string } | null) {
   if (!user) return { permission: 'PUBLIC' }
@@ -99,10 +101,7 @@ async function entryWithRelations(entry: Record<string, unknown>) {
     WorldEntryRelation.find({ targetId: id }).lean(),
   ])
 
-  const relatedIds = [
-    ...outgoing.map((r) => r.targetId),
-    ...incoming.map((r) => r.sourceId),
-  ]
+  const relatedIds = [...outgoing.map((r) => r.targetId), ...incoming.map((r) => r.sourceId)]
   const relatedEntries = await WorldEntry.find({ _id: { $in: relatedIds } })
     .select('name slug type')
     .lean()
@@ -133,7 +132,7 @@ async function entryWithRelations(entry: Record<string, unknown>) {
 // ── Routes ────────────────────────────────────────────────────────────────
 
 // GET /api/codex — list all accessible entries (optional ?name= filter for mention search)
-codexRouter.get('/', optionalAuth, async (req, res) => {
+codexRouter.get('/', optionalAuth, async (req, res, next) => {
   try {
     const authReq = req as AuthRequest
     const mongoUser = authReq.user ? await loadUser(authReq.user.uid) : null
@@ -141,39 +140,52 @@ codexRouter.get('/', optionalAuth, async (req, res) => {
       ? { name: { $regex: req.query.name as string, $options: 'i' } }
       : {}
     const isRecent = req.query.sort === 'recent'
-    const limitParam = Math.max(1, parseInt(req.query.limit as string) || (req.query.name ? 20 : 2000))
+    const limitParam = Math.max(
+      1,
+      parseInt(req.query.limit as string) || (req.query.name ? 20 : 2000),
+    )
     const entries = await WorldEntry.find({ ...permissionFilter(mongoUser), ...nameFilter })
       .select('-lkProperties')
       .sort(isRecent ? { updatedAt: -1 } : {})
       .limit(isRecent ? Math.min(limitParam, 20) : limitParam)
       .lean()
     res.json({ entries: entries.map((e) => buildEntrySummary(e as Record<string, unknown>)) })
-  } catch {
-    res.status(500).json({ message: 'Failed to load entries' })
+  } catch (err) {
+    next(err)
   }
 })
 
 // POST /api/codex — create entry
-codexRouter.post('/', requireAuth, async (req, res) => {
+codexRouter.post('/', requireAuth, async (req, res, next) => {
   try {
     const authReq = req as AuthRequest
     const mongoUser = await loadUser(authReq.user!.uid)
-    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (!mongoUser) {
+      res.status(401).json({ message: 'User not found' })
+      return
+    }
 
     const isDmAdmin = mongoUser.role === 'DM' || mongoUser.role === 'ADMIN'
     if (!isDmAdmin && !mongoUser.isWorldbuilder) {
-      res.status(403).json({ message: 'Insufficient permissions' }); return
+      res.status(403).json({ message: 'Insufficient permissions' })
+      return
     }
 
     const { name, type, permission, status, parentId, tags, summary } = req.body
-    if (!name || !type) { res.status(400).json({ message: 'name and type are required' }); return }
+    if (!name || !type) {
+      res.status(400).json({ message: 'name and type are required' })
+      return
+    }
 
     const slug = await uniqueSlug(name)
 
     // Place new entry after the last sibling under the same parent
     const lastSibling = await WorldEntry.findOne(
       parentId ? { parentId } : { parentId: { $exists: false } },
-    ).sort({ pos: -1 }).select('pos').lean()
+    )
+      .sort({ pos: -1 })
+      .select('pos')
+      .lean()
     const pos = posAfter(lastSibling?.pos)
 
     const entry = await WorldEntry.create({
@@ -189,14 +201,16 @@ codexRouter.post('/', requireAuth, async (req, res) => {
       authorId: mongoUser._id,
     })
 
-    res.status(201).json({ entry: buildEntrySummary(entry.toObject() as unknown as Record<string, unknown>) })
-  } catch {
-    res.status(500).json({ message: 'Failed to create entry' })
+    res
+      .status(201)
+      .json({ entry: buildEntrySummary(entry.toObject() as unknown as Record<string, unknown>) })
+  } catch (err) {
+    next(err)
   }
 })
 
 // GET /api/codex/slug/:slug — get entry by slug (MUST be before /:id)
-codexRouter.get('/slug/:slug', optionalAuth, async (req, res) => {
+codexRouter.get('/slug/:slug', optionalAuth, async (req, res, next) => {
   try {
     const authReq = req as AuthRequest
     const mongoUser = authReq.user ? await loadUser(authReq.user.uid) : null
@@ -205,18 +219,24 @@ codexRouter.get('/slug/:slug', optionalAuth, async (req, res) => {
       ...permissionFilter(mongoUser),
     }).lean()
 
-    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!entry) {
+      res.status(404).json({ message: 'Entry not found' })
+      return
+    }
 
     res.json(await entryWithRelations(entry as Record<string, unknown>))
-  } catch {
-    res.status(500).json({ message: 'Failed to load entry' })
+  } catch (err) {
+    next(err)
   }
 })
 
 // GET /api/codex/:id — get entry by ID
-codexRouter.get('/:id', optionalAuth, async (req, res) => {
+codexRouter.get('/:id', optionalAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ message: 'Invalid ID' })
+      return
+    }
 
     const authReq = req as AuthRequest
     const mongoUser = authReq.user ? await loadUser(authReq.user.uid) : null
@@ -225,51 +245,83 @@ codexRouter.get('/:id', optionalAuth, async (req, res) => {
       ...permissionFilter(mongoUser),
     }).lean()
 
-    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!entry) {
+      res.status(404).json({ message: 'Entry not found' })
+      return
+    }
 
     res.json(await entryWithRelations(entry as Record<string, unknown>))
-  } catch {
-    res.status(500).json({ message: 'Failed to load entry' })
+  } catch (err) {
+    next(err)
   }
 })
 
 // PATCH /api/codex/:id — update entry
-codexRouter.patch('/:id', requireAuth, async (req, res) => {
+codexRouter.patch('/:id', requireAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ message: 'Invalid ID' })
+      return
+    }
 
     const authReq = req as AuthRequest
     const mongoUser = await loadUser(authReq.user!.uid)
-    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
-
-    const entry = await WorldEntry.findById(req.params.id).lean()
-    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
-
-    if (!canWrite(mongoUser as MongoUser, entry)) {
-      res.status(403).json({ message: 'Insufficient permissions' }); return
+    if (!mongoUser) {
+      res.status(401).json({ message: 'User not found' })
+      return
     }
 
-    const allowed = ['name', 'type', 'status', 'permission', 'isLocked', 'parentId', 'pos',
-      'aliases', 'tags', 'iconColor', 'iconGlyph', 'iconShape', 'banner', 'summary']
+    const entry = await WorldEntry.findById(req.params.id).lean()
+    if (!entry) {
+      res.status(404).json({ message: 'Entry not found' })
+      return
+    }
+
+    if (!canWrite(mongoUser as MongoUser, entry)) {
+      res.status(403).json({ message: 'Insufficient permissions' })
+      return
+    }
+
+    const allowed = [
+      'name',
+      'type',
+      'status',
+      'permission',
+      'isLocked',
+      'parentId',
+      'pos',
+      'aliases',
+      'tags',
+      'iconColor',
+      'iconGlyph',
+      'iconShape',
+      'banner',
+      'summary',
+    ]
     const updates: Record<string, unknown> = {}
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key]
     }
 
     const updated = await WorldEntry.findByIdAndUpdate(
-      req.params.id, { $set: updates }, { new: true },
+      req.params.id,
+      { $set: updates },
+      { new: true },
     ).lean()
 
     res.json({ entry: buildEntrySummary(updated as Record<string, unknown>) })
-  } catch {
-    res.status(500).json({ message: 'Failed to update entry' })
+  } catch (err) {
+    next(err)
   }
 })
 
 // GET /api/codex/:id/documents
-codexRouter.get('/:id/documents', optionalAuth, async (req, res) => {
+codexRouter.get('/:id/documents', optionalAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ message: 'Invalid ID' })
+      return
+    }
 
     const authReq = req as AuthRequest
     const mongoUser = authReq.user ? await loadUser(authReq.user.uid) : null
@@ -277,29 +329,44 @@ codexRouter.get('/:id/documents', optionalAuth, async (req, res) => {
       _id: req.params.id,
       ...permissionFilter(mongoUser),
     }).lean()
-    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!entry) {
+      res.status(404).json({ message: 'Entry not found' })
+      return
+    }
 
-    const docs = await WorldDocument.find({ entryId: entry._id }).sort({ isFirst: -1, pos: 1 }).lean()
+    const docs = await WorldDocument.find({ entryId: entry._id })
+      .sort({ isFirst: -1, pos: 1 })
+      .lean()
     res.json({ documents: docs.map((d) => buildDocPayload(d as Record<string, unknown>)) })
-  } catch {
-    res.status(500).json({ message: 'Failed to load documents' })
+  } catch (err) {
+    next(err)
   }
 })
 
 // POST /api/codex/:id/documents
-codexRouter.post('/:id/documents', requireAuth, async (req, res) => {
+codexRouter.post('/:id/documents', requireAuth, async (req, res, next) => {
   try {
-    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ message: 'Invalid ID' })
+      return
+    }
 
     const authReq = req as AuthRequest
     const mongoUser = await loadUser(authReq.user!.uid)
-    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (!mongoUser) {
+      res.status(401).json({ message: 'User not found' })
+      return
+    }
 
     const entry = await WorldEntry.findById(req.params.id).lean()
-    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!entry) {
+      res.status(404).json({ message: 'Entry not found' })
+      return
+    }
 
     if (!canWrite(mongoUser as MongoUser, entry)) {
-      res.status(403).json({ message: 'Insufficient permissions' }); return
+      res.status(403).json({ message: 'Insufficient permissions' })
+      return
     }
 
     const { name, type, content, pos } = req.body
@@ -311,28 +378,38 @@ codexRouter.post('/:id/documents', requireAuth, async (req, res) => {
       pos: pos ?? '',
     })
 
-    res.status(201).json({ document: buildDocPayload(doc.toObject() as unknown as Record<string, unknown>) })
-  } catch {
-    res.status(500).json({ message: 'Failed to create document' })
+    res
+      .status(201)
+      .json({ document: buildDocPayload(doc.toObject() as unknown as Record<string, unknown>) })
+  } catch (err) {
+    next(err)
   }
 })
 
 // PATCH /api/codex/:id/documents/:docId
-codexRouter.patch('/:id/documents/:docId', requireAuth, async (req, res) => {
+codexRouter.patch('/:id/documents/:docId', requireAuth, async (req, res, next) => {
   try {
     if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.docId)) {
-      res.status(400).json({ message: 'Invalid ID' }); return
+      res.status(400).json({ message: 'Invalid ID' })
+      return
     }
 
     const authReq = req as AuthRequest
     const mongoUser = await loadUser(authReq.user!.uid)
-    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (!mongoUser) {
+      res.status(401).json({ message: 'User not found' })
+      return
+    }
 
     const entry = await WorldEntry.findById(req.params.id).lean()
-    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!entry) {
+      res.status(404).json({ message: 'Entry not found' })
+      return
+    }
 
     if (!canWrite(mongoUser as MongoUser, entry)) {
-      res.status(403).json({ message: 'Insufficient permissions' }); return
+      res.status(403).json({ message: 'Insufficient permissions' })
+      return
     }
 
     const allowed = ['content', 'name', 'isHidden']
@@ -347,26 +424,34 @@ codexRouter.patch('/:id/documents/:docId', requireAuth, async (req, res) => {
       { new: true },
     ).lean()
 
-    if (!doc) { res.status(404).json({ message: 'Document not found' }); return }
+    if (!doc) {
+      res.status(404).json({ message: 'Document not found' })
+      return
+    }
     res.json({ document: buildDocPayload(doc as Record<string, unknown>) })
-  } catch {
-    res.status(500).json({ message: 'Failed to update document' })
+  } catch (err) {
+    next(err)
   }
 })
 
 // DELETE /api/codex/:id/documents/:docId — DM/Admin only
-codexRouter.delete('/:id/documents/:docId', requireAuth, async (req, res) => {
+codexRouter.delete('/:id/documents/:docId', requireAuth, async (req, res, next) => {
   try {
     if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.docId)) {
-      res.status(400).json({ message: 'Invalid ID' }); return
+      res.status(400).json({ message: 'Invalid ID' })
+      return
     }
 
     const authReq = req as AuthRequest
     const mongoUser = await loadUser(authReq.user!.uid)
-    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (!mongoUser) {
+      res.status(401).json({ message: 'User not found' })
+      return
+    }
 
     if (mongoUser.role !== 'DM' && mongoUser.role !== 'ADMIN') {
-      res.status(403).json({ message: 'Insufficient permissions' }); return
+      res.status(403).json({ message: 'Insufficient permissions' })
+      return
     }
 
     const deleted = await WorldDocument.findOneAndDelete({
@@ -374,9 +459,12 @@ codexRouter.delete('/:id/documents/:docId', requireAuth, async (req, res) => {
       entryId: req.params.id,
     })
 
-    if (!deleted) { res.status(404).json({ message: 'Document not found' }); return }
+    if (!deleted) {
+      res.status(404).json({ message: 'Document not found' })
+      return
+    }
     res.json({ success: true })
-  } catch {
-    res.status(500).json({ message: 'Failed to delete document' })
+  } catch (err) {
+    next(err)
   }
 })

@@ -13,17 +13,17 @@ import MonsterStatBlock from '@/components/session/panels/MonsterStatBlock.vue'
 import { usePanelLayout, type PanelConfig } from '@/composables/usePanelLayout'
 import { useIsMobile } from '@/composables/useIsMobile'
 import { codexService, type CodexEntry } from '@/services/codexService'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // ── Session selection ─────────────────────────────────────────────────────
 
 const sessions = ref<CodexEntry[]>([])
 const selectedSessionId = ref<string | null>(null)
 const selectedAbSessionId = ref<number | null>(null)
-const sessionOptions = computed(() =>
-  sessions.value.map((s) => ({ label: s.name, value: s.id })),
-)
+const sessionOptions = computed(() => sessions.value.map((s) => ({ label: s.name, value: s.id })))
 
 const sessionDocIds = ref<Record<string, string>>({})
 
@@ -54,7 +54,7 @@ async function onSessionChange(id: string | null) {
 const DM_PANELS: PanelConfig[] = [
   {
     id: 'combat',
-    title: 'Combat Tracker',
+    title: t('session.panels.combatTracker'),
     icon: 'pi-shield',
     defaultX: 20,
     defaultY: 60,
@@ -63,7 +63,7 @@ const DM_PANELS: PanelConfig[] = [
   },
   {
     id: 'roster',
-    title: 'Party Roster',
+    title: t('session.panels.partyRoster'),
     icon: 'pi-users',
     defaultX: 420,
     defaultY: 60,
@@ -72,7 +72,7 @@ const DM_PANELS: PanelConfig[] = [
   },
   {
     id: 'notes',
-    title: 'Session Notes',
+    title: t('session.panels.sessionNotes'),
     icon: 'pi-file-edit',
     defaultX: 420,
     defaultY: 380,
@@ -81,7 +81,7 @@ const DM_PANELS: PanelConfig[] = [
   },
   {
     id: 'dm-notes',
-    title: 'DM Notes',
+    title: t('session.panels.dmNotes'),
     icon: 'pi-lock',
     defaultX: 20,
     defaultY: 600,
@@ -90,7 +90,7 @@ const DM_PANELS: PanelConfig[] = [
   },
   {
     id: 'monster',
-    title: 'Monster Stat Block',
+    title: t('session.panels.monsterStatBlock'),
     icon: 'pi-book',
     defaultX: 820,
     defaultY: 60,
@@ -104,15 +104,15 @@ const isMobile = useIsMobile()
 const mobileTab = ref<string>('combat')
 
 const MOBILE_TABS = [
-  { id: 'combat',   label: 'Combat',   icon: 'pi-shield' },
-  { id: 'roster',   label: 'Roster',   icon: 'pi-users' },
-  { id: 'notes',    label: 'Notes',    icon: 'pi-file-edit' },
-  { id: 'dm-notes', label: 'DM Notes', icon: 'pi-lock' },
-  { id: 'monster',  label: 'Monsters', icon: 'pi-book' },
+  { id: 'combat', label: t('session.tabs.combat'), icon: 'pi-shield' },
+  { id: 'roster', label: t('session.tabs.roster'), icon: 'pi-users' },
+  { id: 'notes', label: t('session.tabs.notes'), icon: 'pi-file-edit' },
+  { id: 'dm-notes', label: t('session.tabs.dmNotes'), icon: 'pi-lock' },
+  { id: 'monster', label: t('session.tabs.monsters'), icon: 'pi-book' },
 ]
 
 function resetLayout() {
-  if (!confirm('Reset all panels to their default positions?')) return
+  if (!confirm(t('session.layout.resetConfirm'))) return
   localStorage.removeItem('spelslot-panel-layout-dm')
   window.location.reload()
 }
@@ -128,12 +128,12 @@ function resetLayout() {
         :options="sessionOptions"
         option-label="label"
         option-value="value"
-        placeholder="Select session…"
+        :placeholder="t('session.session.selectPlaceholderShort')"
         class="sdm__session-dropdown sdm__session-dropdown--mobile"
         show-clear
         @change="onSessionChange($event.value)"
       />
-      <span class="sdm__view-badge">DM</span>
+      <span class="sdm__view-badge">{{ t('common.dm') }}</span>
     </div>
 
     <div class="sdm__mobile-tabs">
@@ -151,7 +151,11 @@ function resetLayout() {
 
     <div class="sdm__mobile-content">
       <CombatTracker v-if="mobileTab === 'combat'" :session-id="selectedSessionId" />
-      <PartyRoster v-else-if="mobileTab === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
+      <PartyRoster
+        v-else-if="mobileTab === 'roster'"
+        :session-id="selectedSessionId"
+        :ab-session-id="selectedAbSessionId"
+      />
       <SessionNotes
         v-else-if="mobileTab === 'notes'"
         :key="activeDocId ?? 'no-session'"
@@ -166,7 +170,6 @@ function resetLayout() {
 
   <!-- ── Desktop floating panel view ── -->
   <div v-else class="sdm">
-
     <!-- ── Top bar ── -->
     <div class="sdm__topbar">
       <Button
@@ -174,20 +177,20 @@ function resetLayout() {
         text
         size="small"
         class="sdm__back"
-        label="Dashboard"
+        :label="t('session.view.dashboard')"
         @click="router.push('/dashboard')"
       />
 
       <div class="sdm__session-select">
         <label class="sdm__session-label">
-          <i class="pi pi-play" /> Session:
+          <i class="pi pi-play" /> {{ t('session.session.label') }}
         </label>
         <Select
           :model-value="selectedSessionId"
           :options="sessionOptions"
           option-label="label"
           option-value="value"
-          placeholder="Select a session…"
+          :placeholder="t('session.session.selectPlaceholder')"
           class="sdm__session-dropdown"
           show-clear
           @change="onSessionChange($event.value)"
@@ -196,15 +199,15 @@ function resetLayout() {
 
       <div class="sdm__view-badge">
         <i class="pi pi-shield" />
-        DM View
+        {{ t('session.view.dmView') }}
       </div>
     </div>
 
     <!-- ── Floating panels ── -->
     <FloatingPanel
       v-for="p in layout.visiblePanels.value"
-      :key="p.id"
       :id="p.id"
+      :key="p.id"
       :title="p.title"
       :icon="p.icon"
       :x="layout.states.value[p.id].x"
@@ -221,7 +224,11 @@ function resetLayout() {
       @focus="layout.focus(p.id)"
     >
       <CombatTracker v-if="p.id === 'combat'" :session-id="selectedSessionId" />
-      <PartyRoster v-else-if="p.id === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
+      <PartyRoster
+        v-else-if="p.id === 'roster'"
+        :session-id="selectedSessionId"
+        :ab-session-id="selectedAbSessionId"
+      />
       <SessionNotes
         v-else-if="p.id === 'notes'"
         :key="activeDocId ?? 'no-session'"
@@ -240,7 +247,6 @@ function resetLayout() {
       @open="layout.open"
       @reset="resetLayout"
     />
-
   </div>
 </template>
 
@@ -251,8 +257,16 @@ function resetLayout() {
   height: calc(100vh - var(--ss-navbar-height));
   background: color-mix(in srgb, var(--ss-shell) 85%, var(--ss-parchment-dark));
   background-image:
-    radial-gradient(ellipse at 20% 20%, color-mix(in srgb, var(--ss-primary) 4%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, color-mix(in srgb, var(--ss-primary) 3%, transparent) 0%, transparent 60%);
+    radial-gradient(
+      ellipse at 20% 20%,
+      color-mix(in srgb, var(--ss-primary) 4%, transparent) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 80% 80%,
+      color-mix(in srgb, var(--ss-primary) 3%, transparent) 0%,
+      transparent 60%
+    );
   position: relative;
   overflow: hidden;
 }
@@ -291,7 +305,10 @@ function resetLayout() {
   white-space: nowrap;
 }
 
-.sdm__session-label .pi { color: var(--ss-primary); font-size: 0.7rem; }
+.sdm__session-label .pi {
+  color: var(--ss-primary);
+  font-size: 0.7rem;
+}
 
 .sdm__session-dropdown {
   min-width: 220px;
@@ -337,7 +354,9 @@ function resetLayout() {
   scrollbar-width: none;
   flex-shrink: 0;
 }
-.sdm__mobile-tabs::-webkit-scrollbar { display: none; }
+.sdm__mobile-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .sdm__mobile-tab {
   flex: 1;
@@ -356,10 +375,14 @@ function resetLayout() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
-.sdm__mobile-tab .pi { font-size: 1rem; }
+.sdm__mobile-tab .pi {
+  font-size: 1rem;
+}
 .sdm__mobile-tab--active {
   color: var(--ss-primary);
   border-bottom-color: var(--ss-primary);

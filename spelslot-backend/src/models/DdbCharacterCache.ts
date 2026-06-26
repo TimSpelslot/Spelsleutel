@@ -42,4 +42,7 @@ const DdbCharacterCacheSchema = new Schema<IDdbCharacterCache>({
   fetchedAt: { type: Date, required: true },
 })
 
-export const DdbCharacterCache = model<IDdbCharacterCache>('DdbCharacterCache', DdbCharacterCacheSchema)
+export const DdbCharacterCache = model<IDdbCharacterCache>(
+  'DdbCharacterCache',
+  DdbCharacterCacheSchema,
+)

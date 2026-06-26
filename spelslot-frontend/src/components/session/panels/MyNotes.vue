@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, watch, computed, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { notesService, type NoteMeta } from '@/services/notesService'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   sessionId: string | null
@@ -37,7 +40,10 @@ async function openSession(sessionId: string | null) {
   }
   loading.value = true
   const listResult = await notesService.list(sessionId, 'player')
-  if (listResult.type === 'error') { loading.value = false; return }
+  if (listResult.type === 'error') {
+    loading.value = false
+    return
+  }
 
   if (listResult.data.length === 0) {
     // Auto-create the first note
@@ -57,9 +63,10 @@ async function activateNote(sessionId: string, noteId: string) {
   activeId.value = noteId
   const r = await notesService.load(sessionId, 'player', noteId)
   if (r.type === 'ok') {
-    const content = r.data.content && Object.keys(r.data.content).length > 0
-      ? r.data.content
-      : { type: 'doc', content: [] }
+    const content =
+      r.data.content && Object.keys(r.data.content).length > 0
+        ? r.data.content
+        : { type: 'doc', content: [] }
     editor.value?.commands.setContent(content as object)
   }
 }
@@ -86,7 +93,13 @@ async function addNote() {
   }
 }
 
-watch(() => props.sessionId, (id) => { openSession(id) }, { immediate: true })
+watch(
+  () => props.sessionId,
+  (id) => {
+    openSession(id)
+  },
+  { immediate: true },
+)
 
 // ── Auto-save ─────────────────────────────────────────────────────────────
 
@@ -98,9 +111,16 @@ function scheduleAutoSave(content: object) {
     saveStatus.value = 'saving'
     const r = await notesService.save(props.sessionId, 'player', activeId.value, content)
     saveStatus.value = r.type === 'ok' ? 'saved' : 'error'
-    if (saveStatus.value === 'saved') setTimeout(() => { saveStatus.value = 'idle' }, 2000)
+    if (saveStatus.value === 'saved')
+      setTimeout(() => {
+        saveStatus.value = 'idle'
+      }, 2000)
   }, 800)
 }
+
+const editorStyle = computed(() => ({
+  '--my-notes-placeholder': `"${t('session.notes.myNotesPlaceholder')}"`,
+}))
 
 onBeforeUnmount(() => {
   if (saveTimer.value) clearTimeout(saveTimer.value)
@@ -123,7 +143,7 @@ onBeforeUnmount(() => {
           {{ note.name }}
         </button>
       </div>
-      <button class="my-notes__add" title="New note" @click="addNote">
+      <button class="my-notes__add" :title="$t('session.notes.newNote')" @click="addNote">
         <i class="pi pi-plus" />
       </button>
     </div>
@@ -131,19 +151,25 @@ onBeforeUnmount(() => {
     <!-- Status bar -->
     <div class="my-notes__bar">
       <span class="my-notes__label">
-        <i class="pi pi-pencil" /> Private notes
+        <i class="pi pi-pencil" /> {{ $t('session.notes.myNotesLabel') }}
       </span>
       <span class="my-notes__autosave" :class="`my-notes__autosave--${saveStatus}`">
-        <template v-if="saveStatus === 'saving'">Saving…</template>
-        <template v-else-if="saveStatus === 'saved'">Saved</template>
-        <template v-else-if="saveStatus === 'error'">Save failed</template>
-        <template v-else>Auto-saved</template>
+        <template v-if="saveStatus === 'saving'">{{
+          $t('session.notes.savingStatus.saving')
+        }}</template>
+        <template v-else-if="saveStatus === 'saved'">{{
+          $t('session.notes.savingStatus.saved')
+        }}</template>
+        <template v-else-if="saveStatus === 'error'">{{
+          $t('session.notes.savingStatus.error')
+        }}</template>
+        <template v-else>{{ $t('session.notes.savingStatus.idle') }}</template>
       </span>
     </div>
 
     <!-- Editor -->
-    <div v-if="loading" class="my-notes__loading">Loading…</div>
-    <EditorContent v-else :editor="editor" class="my-notes__editor" />
+    <div v-if="loading" class="my-notes__loading">{{ $t('common.loading') }}</div>
+    <EditorContent v-else :editor="editor" class="my-notes__editor" :style="editorStyle" />
   </div>
 </template>
 
@@ -170,7 +196,9 @@ onBeforeUnmount(() => {
   flex: 1;
   scrollbar-width: none;
 }
-.my-notes__tab-list::-webkit-scrollbar { display: none; }
+.my-notes__tab-list::-webkit-scrollbar {
+  display: none;
+}
 
 .my-notes__tab {
   padding: 0.3rem 0.75rem;
@@ -182,10 +210,14 @@ onBeforeUnmount(() => {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   flex-shrink: 0;
 }
-.my-notes__tab:hover { color: var(--ss-text); }
+.my-notes__tab:hover {
+  color: var(--ss-text);
+}
 .my-notes__tab--active {
   color: var(--ss-primary);
   border-bottom-color: var(--ss-primary);
@@ -201,7 +233,9 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   transition: color 0.15s;
 }
-.my-notes__add:hover { color: var(--ss-primary); }
+.my-notes__add:hover {
+  color: var(--ss-primary);
+}
 
 /* Status bar */
 .my-notes__bar {
@@ -221,18 +255,31 @@ onBeforeUnmount(() => {
   color: var(--ss-text-muted);
   font-weight: 600;
 }
-.my-notes__label .pi { color: var(--ss-primary); font-size: 0.65rem; }
+.my-notes__label .pi {
+  color: var(--ss-primary);
+  font-size: 0.65rem;
+}
 
 .my-notes__autosave {
   margin-left: auto;
   font-size: 0.62rem;
   color: var(--ss-text-muted);
   opacity: 0.6;
-  transition: color 0.2s, opacity 0.2s;
+  transition:
+    color 0.2s,
+    opacity 0.2s;
 }
-.my-notes__autosave--saving { opacity: 0.8; }
-.my-notes__autosave--saved  { color: var(--ss-success, #22c55e); opacity: 1; }
-.my-notes__autosave--error  { color: var(--ss-danger, #ef4444); opacity: 1; }
+.my-notes__autosave--saving {
+  opacity: 0.8;
+}
+.my-notes__autosave--saved {
+  color: var(--ss-success, #22c55e);
+  opacity: 1;
+}
+.my-notes__autosave--error {
+  color: var(--ss-danger, #ef4444);
+  opacity: 1;
+}
 
 /* Editor */
 .my-notes__loading {
@@ -257,15 +304,19 @@ onBeforeUnmount(() => {
   line-height: 1.7;
   font-size: 0.88rem;
 }
-.my-notes__editor :deep(.ProseMirror p) { margin: 0 0 0.5em; }
+.my-notes__editor :deep(.ProseMirror p) {
+  margin: 0 0 0.5em;
+}
 .my-notes__editor :deep(.ProseMirror ul),
 .my-notes__editor :deep(.ProseMirror ol) {
   padding-left: 1.4em;
   margin: 0 0 0.5em;
 }
-.my-notes__editor :deep(.ProseMirror li) { margin-bottom: 0.15em; }
+.my-notes__editor :deep(.ProseMirror li) {
+  margin-bottom: 0.15em;
+}
 .my-notes__editor :deep(.ProseMirror.is-editor-empty:first-child::before) {
-  content: 'Your private session notes…';
+  content: var(--my-notes-placeholder);
   float: left;
   color: var(--ss-text-muted);
   opacity: 0.5;

@@ -15,11 +15,13 @@ async function handleLogout() {
 <template>
   <div class="home">
     <div class="home__card">
-      <h1 class="home__title">Spelslot</h1>
-      <p class="home__welcome">Welcome, {{ auth.user?.displayName ?? auth.user?.name }}</p>
+      <h1 class="home__title">{{ $t('home.title') }}</h1>
+      <p class="home__welcome">
+        {{ $t('home.welcome', { name: auth.user?.displayName ?? auth.user?.name }) }}
+      </p>
       <p class="home__role">{{ auth.user?.role }}</p>
       <Button
-        label="Sign out"
+        :label="$t('common.signOut')"
         severity="secondary"
         icon="pi pi-sign-out"
         class="home__logout"

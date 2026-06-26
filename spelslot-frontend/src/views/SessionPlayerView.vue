@@ -13,9 +13,11 @@ import { useIsMobile } from '@/composables/useIsMobile'
 import { codexService, type CodexEntry } from '@/services/codexService'
 import CharacterSheet from '@/components/session/panels/CharacterSheet.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const auth = useAuthStore()
+const { t } = useI18n()
 const characterId = computed(() => {
   const raw = auth.user?.dndbeyondCharacterId
   if (!raw) return null
@@ -27,9 +29,7 @@ const characterId = computed(() => {
 
 const sessions = ref<CodexEntry[]>([])
 const selectedSessionId = ref<string | null>(null)
-const sessionOptions = computed(() =>
-  sessions.value.map((s) => ({ label: s.name, value: s.id })),
-)
+const sessionOptions = computed(() => sessions.value.map((s) => ({ label: s.name, value: s.id })))
 
 const sessionDocIds = ref<Record<string, string>>({})
 
@@ -67,7 +67,7 @@ async function onSessionChange(id: string | null) {
 const PLAYER_PANELS: PanelConfig[] = [
   {
     id: 'roster',
-    title: 'Party Roster',
+    title: t('session.panels.partyRoster'),
     icon: 'pi-users',
     defaultX: 20,
     defaultY: 60,
@@ -76,7 +76,7 @@ const PLAYER_PANELS: PanelConfig[] = [
   },
   {
     id: 'notes',
-    title: 'Session Notes',
+    title: t('session.panels.sessionNotes'),
     icon: 'pi-file-edit',
     defaultX: 340,
     defaultY: 60,
@@ -85,7 +85,7 @@ const PLAYER_PANELS: PanelConfig[] = [
   },
   {
     id: 'my-notes',
-    title: 'My Notes',
+    title: t('session.panels.myNotes'),
     icon: 'pi-pencil',
     defaultX: 20,
     defaultY: 420,
@@ -94,7 +94,7 @@ const PLAYER_PANELS: PanelConfig[] = [
   },
   {
     id: 'character',
-    title: 'Character Sheet',
+    title: t('session.panels.characterSheet'),
     icon: 'pi-user',
     defaultX: 760,
     defaultY: 60,
@@ -108,14 +108,14 @@ const isMobile = useIsMobile()
 const mobileTab = ref<string>('character')
 
 const MOBILE_TABS = [
-  { id: 'character', label: 'Character', icon: 'pi-user' },
-  { id: 'roster',    label: 'Party',     icon: 'pi-users' },
-  { id: 'notes',     label: 'Session',   icon: 'pi-file-edit' },
-  { id: 'my-notes',  label: 'My Notes',  icon: 'pi-pencil' },
+  { id: 'character', label: t('session.tabs.character'), icon: 'pi-user' },
+  { id: 'roster', label: t('common.party'), icon: 'pi-users' },
+  { id: 'notes', label: t('session.tabs.session'), icon: 'pi-file-edit' },
+  { id: 'my-notes', label: t('session.tabs.myNotes'), icon: 'pi-pencil' },
 ]
 
 function resetLayout() {
-  if (!confirm('Reset all panels to their default positions?')) return
+  if (!confirm(t('session.layout.resetConfirm'))) return
   localStorage.removeItem('spelslot-panel-layout-player')
   window.location.reload()
 }
@@ -131,12 +131,12 @@ function resetLayout() {
         :options="sessionOptions"
         option-label="label"
         option-value="value"
-        placeholder="Select session…"
+        :placeholder="t('session.session.selectPlaceholderShort')"
         class="spv__session-dropdown spv__session-dropdown--mobile"
         show-clear
         @change="onSessionChange($event.value)"
       />
-      <span class="spv__view-badge">Player</span>
+      <span class="spv__view-badge">{{ t('session.view.playerBadge') }}</span>
     </div>
 
     <div class="spv__mobile-tabs">
@@ -154,7 +154,11 @@ function resetLayout() {
 
     <div class="spv__mobile-content">
       <CharacterSheet v-if="mobileTab === 'character'" :character-id="characterId" />
-      <PartyRoster v-else-if="mobileTab === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
+      <PartyRoster
+        v-else-if="mobileTab === 'roster'"
+        :session-id="selectedSessionId"
+        :ab-session-id="selectedAbSessionId"
+      />
       <SessionNotes
         v-else-if="mobileTab === 'notes'"
         :key="activeDocId ?? 'no-session'"
@@ -168,7 +172,6 @@ function resetLayout() {
 
   <!-- ── Desktop floating panel view ── -->
   <div v-else class="spv">
-
     <!-- ── Top bar ── -->
     <div class="spv__topbar">
       <Button
@@ -176,20 +179,20 @@ function resetLayout() {
         text
         size="small"
         class="spv__back"
-        label="Dashboard"
+        :label="t('session.view.dashboard')"
         @click="router.push('/dashboard')"
       />
 
       <div class="spv__session-select">
         <label class="spv__session-label">
-          <i class="pi pi-play" /> Session:
+          <i class="pi pi-play" /> {{ t('session.session.label') }}
         </label>
         <Select
           :model-value="selectedSessionId"
           :options="sessionOptions"
           option-label="label"
           option-value="value"
-          placeholder="Select a session…"
+          :placeholder="t('session.session.selectPlaceholder')"
           class="spv__session-dropdown"
           show-clear
           @change="onSessionChange($event.value)"
@@ -198,15 +201,15 @@ function resetLayout() {
 
       <div class="spv__view-badge">
         <i class="pi pi-user" />
-        Player View
+        {{ t('session.view.playerView') }}
       </div>
     </div>
 
     <!-- ── Floating panels ── -->
     <FloatingPanel
       v-for="p in layout.visiblePanels.value"
-      :key="p.id"
       :id="p.id"
+      :key="p.id"
       :title="p.title"
       :icon="p.icon"
       :x="layout.states.value[p.id].x"
@@ -222,7 +225,11 @@ function resetLayout() {
       @close="layout.close(p.id)"
       @focus="layout.focus(p.id)"
     >
-      <PartyRoster v-if="p.id === 'roster'" :session-id="selectedSessionId" :ab-session-id="selectedAbSessionId" />
+      <PartyRoster
+        v-if="p.id === 'roster'"
+        :session-id="selectedSessionId"
+        :ab-session-id="selectedAbSessionId"
+      />
       <SessionNotes
         v-else-if="p.id === 'notes'"
         :key="activeDocId ?? 'no-session'"
@@ -241,7 +248,6 @@ function resetLayout() {
       @open="layout.open"
       @reset="resetLayout"
     />
-
   </div>
 </template>
 
@@ -251,8 +257,16 @@ function resetLayout() {
   height: calc(100vh - var(--ss-navbar-height));
   background: color-mix(in srgb, var(--ss-shell) 85%, var(--ss-parchment-dark));
   background-image:
-    radial-gradient(ellipse at 30% 30%, color-mix(in srgb, var(--ss-primary) 3%, transparent) 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 70%, color-mix(in srgb, var(--ss-primary) 2%, transparent) 0%, transparent 55%);
+    radial-gradient(
+      ellipse at 30% 30%,
+      color-mix(in srgb, var(--ss-primary) 3%, transparent) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 70% 70%,
+      color-mix(in srgb, var(--ss-primary) 2%, transparent) 0%,
+      transparent 55%
+    );
   position: relative;
   overflow: hidden;
 }
@@ -290,7 +304,10 @@ function resetLayout() {
   white-space: nowrap;
 }
 
-.spv__session-label .pi { color: var(--ss-primary); font-size: 0.7rem; }
+.spv__session-label .pi {
+  color: var(--ss-primary);
+  font-size: 0.7rem;
+}
 
 .spv__session-dropdown {
   min-width: 220px;
@@ -336,7 +353,9 @@ function resetLayout() {
   scrollbar-width: none;
   flex-shrink: 0;
 }
-.spv__mobile-tabs::-webkit-scrollbar { display: none; }
+.spv__mobile-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .spv__mobile-tab {
   flex: 1;
@@ -355,10 +374,14 @@ function resetLayout() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
-.spv__mobile-tab .pi { font-size: 1rem; }
+.spv__mobile-tab .pi {
+  font-size: 1rem;
+}
 .spv__mobile-tab--active {
   color: var(--ss-primary);
   border-bottom-color: var(--ss-primary);

@@ -17,11 +17,19 @@ export const useSessionMonstersStore = defineStore('sessionMonsters', () => {
   const activeId = ref<number | null>(null)
 
   const pinnedMonsters = computed(() =>
-    tabs.value.filter((t): t is MonsterTab & { monster: Monster } => t.type === 'monster' && t.monster !== null),
+    tabs.value.filter(
+      (t): t is MonsterTab & { monster: Monster } => t.type === 'monster' && t.monster !== null,
+    ),
   )
 
   function addMonsterTab(monster: Monster): MonsterTab {
-    const tab: MonsterTab = { id: nextId++, label: monster.name, type: 'monster', monster, imageUrl: null }
+    const tab: MonsterTab = {
+      id: nextId++,
+      label: monster.name,
+      type: 'monster',
+      monster,
+      imageUrl: null,
+    }
     tabs.value.push(tab)
     activeId.value = tab.id
     return tab

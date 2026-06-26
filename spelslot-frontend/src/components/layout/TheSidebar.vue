@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Avatar from 'primevue/avatar'
 import { useAuthStore } from '@/stores/auth'
 import { useSidebar } from '@/composables/useSidebar'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const sidebar = useSidebar()
 
@@ -18,25 +20,23 @@ type NavItem = { name: string; label: string; icon: string }
 const navItems = computed<NavItem[]>(() => {
   const role = auth.effectiveUser?.role
   const items: NavItem[] = [
-    { name: 'dashboard',      label: 'Dashboard',    icon: 'pi pi-home' },
-    { name: 'codex',          label: 'Codex',        icon: 'pi pi-book' },
-    { name: 'sessions',       label: 'Sessions',     icon: 'pi pi-calendar' },
-    { name: 'session-player', label: 'Session',      icon: 'pi pi-play-circle' },
-    { name: 'marketplace',    label: 'Marketplace',  icon: 'pi pi-shopping-bag' },
+    { name: 'dashboard', label: t('nav.sidebar.dashboard'), icon: 'pi pi-home' },
+    { name: 'codex', label: t('nav.sidebar.codex'), icon: 'pi pi-book' },
+    { name: 'sessions', label: t('nav.sidebar.sessions'), icon: 'pi pi-calendar' },
+    { name: 'session-player', label: t('nav.sidebar.session'), icon: 'pi pi-play-circle' },
+    { name: 'marketplace', label: t('nav.sidebar.marketplace'), icon: 'pi pi-shopping-bag' },
   ]
   // DM Dashboard only for permanent DM/ADMIN roles.
   // Player-hosted sessions will add this link dynamically once AdventureBoard
   // integration is in place and we know who's running a given session.
   if (role === 'DM' || role === 'ADMIN') {
-    items.push({ name: 'session-dm', label: 'DM Dashboard', icon: 'pi pi-shield' })
+    items.push({ name: 'session-dm', label: t('nav.sidebar.dmDashboard'), icon: 'pi pi-shield' })
   }
   if (role === 'ADMIN') {
-    items.push({ name: 'admin', label: 'Admin', icon: 'pi pi-sliders-h' })
+    items.push({ name: 'admin', label: t('nav.sidebar.admin'), icon: 'pi pi-sliders-h' })
   }
   return items
 })
-
-
 </script>
 
 <template>
@@ -45,22 +45,21 @@ const navItems = computed<NavItem[]>(() => {
       'sidebar',
       { 'sidebar--collapsed': sidebar.collapsed, 'sidebar--mobile-open': sidebar.mobileOpen },
     ]"
-    aria-label="Main navigation"
+    :aria-label="$t('nav.sidebar.mainNavigation')"
   >
     <!-- Nav items -->
     <nav class="sidebar__nav">
       <RouterLink
         v-for="item in navItems"
         :key="item.name"
+        v-tooltip.right="sidebar.collapsed ? item.label : undefined"
         :to="{ name: item.name }"
         :class="['sidebar__item']"
-        v-tooltip.right="sidebar.collapsed ? item.label : undefined"
         @click="sidebar.closeMobile()"
       >
         <i :class="['sidebar__icon', item.icon]" aria-hidden="true" />
         <span class="sidebar__label">{{ item.label }}</span>
       </RouterLink>
-
     </nav>
 
     <!-- Divider -->
@@ -124,7 +123,10 @@ const navItems = computed<NavItem[]>(() => {
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   border-left: 3px solid transparent;
   user-select: none;
 }

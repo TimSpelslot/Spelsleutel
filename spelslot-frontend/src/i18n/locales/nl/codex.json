@@ -1,0 +1,106 @@
+{
+  "title": "Codex",
+  "newEntry": "Nieuwe pagina",
+  "expandTree": "Boom uitklappen",
+  "collapseTree": "Boom inklappen",
+  "searchPlaceholder": "Zoeken…",
+  "noResults": "Geen resultaten.",
+  "noEntries": "Geen pagina's.",
+  "alsoKnownAs": "Ook bekend als:",
+  "unknownEntry": "Onbekende pagina",
+  "noDocuments": "Nog geen documenten voor deze pagina.",
+  "noDocumentsShort": "Geen documenten voor deze pagina.",
+  "relatedEntries": "Gerelateerde pagina's",
+  "related": "Gerelateerd",
+  "selectEntry": "Selecteer een pagina in de boom",
+  "bannerAlt": "Banner voor {name}",
+  "types": {
+    "lore": "Lore",
+    "location": "Locatie",
+    "npc": "NPC",
+    "faction": "Factie",
+    "item": "Item",
+    "event": "Gebeurtenis",
+    "rule": "Regel",
+    "session": "Sessie"
+  },
+  "status": {
+    "draft": "Concept",
+    "published": "Gepubliceerd",
+    "archived": "Gearchiveerd"
+  },
+  "permission": {
+    "public": "Openbaar",
+    "players": "Spelers",
+    "dmOnly": "Alleen DM",
+    "private": "Privé"
+  },
+  "docViewer": {
+    "comingInV2": "{type}-weergave komt in v2.",
+    "notYetSupported": "{type}-weergave wordt nog niet ondersteund.",
+    "emptyPage": "Deze pagina is leeg.",
+    "noContent": "Deze pagina heeft nog geen inhoud."
+  },
+  "toast": {
+    "reorderFailed": "Herordenen mislukt",
+    "reorderFailedDetail": "Kon de nieuwe positie niet opslaan. Probeer het opnieuw."
+  },
+  "newEntryForm": {
+    "pageTitle": "Nieuwe Codex-pagina",
+    "titleLabel": "Titel",
+    "titlePlaceholder": "Paginanaam…",
+    "typeLabel": "Type",
+    "visibilityLabel": "Zichtbaarheid",
+    "summaryLabel": "Samenvatting",
+    "summaryOptional": "(optioneel)",
+    "summaryPlaceholder": "Korte omschrijving die in de boom en previews wordt getoond…",
+    "tagsLabel": "Tags",
+    "tagsOptional": "(optioneel)",
+    "tagsPlaceholder": "Tag toevoegen, druk op Enter…",
+    "submitLabel": "Pagina aanmaken"
+  },
+  "editForm": {
+    "titleLabel": "Titel",
+    "typeLabel": "Type",
+    "statusLabel": "Status",
+    "permissionLabel": "Toestemming",
+    "summaryLabel": "Samenvatting",
+    "summaryPlaceholder": "Korte omschrijving…",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Tag toevoegen, druk op Enter…",
+    "bannerLabel": "Bannerafbeelding",
+    "bannerReplace": "Afbeelding vervangen",
+    "bannerUpload": "Afbeelding uploaden",
+    "bannerVisible": "Zichtbaar",
+    "bannerVerticalPosition": "Verticale positie",
+    "bannerRemove": "Verwijderen"
+  },
+  "editor": {
+    "bold": "Vet",
+    "italic": "Cursief",
+    "strikethrough": "Doorhalen",
+    "inlineCode": "Inline code",
+    "heading1": "Kop 1",
+    "heading2": "Kop 2",
+    "heading3": "Kop 3",
+    "bulletList": "Opsommingslijst",
+    "numberedList": "Genummerde lijst",
+    "blockquote": "Citaat",
+    "codeBlock": "Codeblok",
+    "insertTable": "Tabel invoegen",
+    "undo": "Ongedaan maken",
+    "redo": "Opnieuw uitvoeren",
+    "collaborationStatus": "Samenwerking: {status}"
+  },
+  "mention": {
+    "noResults": "Geen resultaten"
+  },
+  "timeline": {
+    "zoomTitle": "Zoom",
+    "fitTitle": "Alle gebeurtenissen in beeld passen",
+    "fitLabel": "Passen",
+    "loadingCalendar": "Kalender laden…",
+    "calendarNotFound": "Kalender niet gevonden",
+    "noEvents": "Geen tijdlijngebeurtenissen gevonden."
+  }
+}

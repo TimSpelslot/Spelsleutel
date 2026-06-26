@@ -21,4 +21,7 @@ const WorldEntryRelationSchema = new Schema<IWorldEntryRelation>(
 
 WorldEntryRelationSchema.index({ sourceId: 1, targetId: 1 }, { unique: true })
 
-export const WorldEntryRelation = model<IWorldEntryRelation>('WorldEntryRelation', WorldEntryRelationSchema)
+export const WorldEntryRelation = model<IWorldEntryRelation>(
+  'WorldEntryRelation',
+  WorldEntryRelationSchema,
+)

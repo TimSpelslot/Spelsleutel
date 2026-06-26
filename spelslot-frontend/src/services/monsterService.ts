@@ -63,7 +63,9 @@ export interface Monster {
 
 export const monsterService = {
   async search(name: string): Promise<Result<MonsterSummary[]>> {
-    const result = await api.get<{ results: MonsterSummary[] }>(`/api/monsters?search=${encodeURIComponent(name)}`)
+    const result = await api.get<{ results: MonsterSummary[] }>(
+      `/api/monsters?search=${encodeURIComponent(name)}`,
+    )
     if (result.type === 'error') return result
     return { type: 'ok', data: result.data.results }
   },
@@ -72,7 +74,9 @@ export const monsterService = {
     return api.get<Monster>(`/api/monsters/${slug}`)
   },
 
-  async fromUrl(url: string): Promise<Result<{ monster: Monster; alternatives: MonsterSummary[]; extractedName?: string }>> {
+  async fromUrl(
+    url: string,
+  ): Promise<Result<{ monster: Monster; alternatives: MonsterSummary[]; extractedName?: string }>> {
     return api.post('/api/monsters/from-url', { url })
   },
 }

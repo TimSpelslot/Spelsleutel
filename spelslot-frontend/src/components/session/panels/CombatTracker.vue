@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useSessionMonstersStore } from '@/stores/sessionMonsters'
+import { useI18n } from 'vue-i18n'
 
 interface Monster {
   id: string
@@ -17,11 +18,24 @@ const props = defineProps<{
 }>()
 
 const DND_CONDITIONS = [
-  'Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened',
-  'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified',
-  'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious',
+  'Blinded',
+  'Charmed',
+  'Deafened',
+  'Exhaustion',
+  'Frightened',
+  'Grappled',
+  'Incapacitated',
+  'Invisible',
+  'Paralyzed',
+  'Petrified',
+  'Poisoned',
+  'Prone',
+  'Restrained',
+  'Stunned',
+  'Unconscious',
 ]
 
+const { t } = useI18n()
 const monstersStore = useSessionMonstersStore()
 const pinnedMonsters = computed(() => monstersStore.pinnedMonsters)
 
@@ -51,11 +65,9 @@ function save() {
 
 watch(storageKey, load, { immediate: true })
 
-const sorted = computed(() =>
-  [...monsters.value].sort((a, b) => b.initiative - a.initiative),
-)
+const sorted = computed(() => [...monsters.value].sort((a, b) => b.initiative - a.initiative))
 
-function fillFromPinned(tab: typeof pinnedMonsters.value[number]) {
+function fillFromPinned(tab: (typeof pinnedMonsters.value)[number]) {
   addForm.value.name = tab.monster.name
   addForm.value.maxHp = String(tab.monster.hit_points)
   addForm.value.ac = String(tab.monster.armor_class)
@@ -125,7 +137,7 @@ function hpColor(pct: number) {
 }
 
 function clearAll() {
-  if (!confirm('Clear all monsters?')) return
+  if (!confirm(t('session.combat.clearAll'))) return
   monsters.value = []
   save()
 }
@@ -135,9 +147,13 @@ function clearAll() {
   <div class="ct">
     <!-- Toolbar -->
     <div class="ct__toolbar">
-      <span class="ct__count">{{ monsters.length }} combatant{{ monsters.length !== 1 ? 's' : '' }}</span>
+      <span class="ct__count">{{
+        monsters.length !== 1
+          ? t('session.combat.combatantCountPlural', { count: monsters.length })
+          : t('session.combat.combatantCount', { count: monsters.length })
+      }}</span>
       <button class="ct__btn ct__btn--add" @click="showAdd = !showAdd">
-        <i class="pi pi-plus" /> Add
+        <i class="pi pi-plus" /> {{ t('session.combat.add') }}
       </button>
       <button v-if="monsters.length > 0" class="ct__btn ct__btn--danger" @click="clearAll">
         <i class="pi pi-trash" />
@@ -146,12 +162,17 @@ function clearAll() {
 
     <!-- Pinned monster quick-add chips (always visible when there are pinned monsters) -->
     <div v-if="pinnedMonsters.length" class="ct__pinned">
-      <span class="ct__pinned-label">Pinned:</span>
+      <span class="ct__pinned-label">{{ t('session.combat.pinned') }}</span>
       <button
         v-for="tab in pinnedMonsters"
         :key="tab.id"
         class="ct__pinned-chip"
-        :title="`HP ${tab.monster.hit_points} · AC ${tab.monster.armor_class}`"
+        :title="
+          t('session.combat.pinnedTitle', {
+            hp: tab.monster.hit_points,
+            ac: tab.monster.armor_class,
+          })
+        "
         @click="fillFromPinned(tab)"
       >
         {{ tab.label }}
@@ -163,26 +184,45 @@ function clearAll() {
       <input
         v-model="addForm.name"
         class="ct__input ct__input--name"
-        placeholder="Name…"
+        :placeholder="t('session.combat.namePlaceholder')"
         @keydown.enter="addMonster"
       />
       <div class="ct__add-row">
-        <input v-model="addForm.initiative" class="ct__input ct__input--num" placeholder="Ini" type="number" />
-        <input v-model="addForm.maxHp" class="ct__input ct__input--num" placeholder="HP" type="number" min="1" />
-        <input v-model="addForm.ac" class="ct__input ct__input--num" placeholder="AC" type="number" min="1" />
+        <input
+          v-model="addForm.initiative"
+          class="ct__input ct__input--num"
+          :placeholder="t('session.combat.initiativePlaceholder')"
+          type="number"
+        />
+        <input
+          v-model="addForm.maxHp"
+          class="ct__input ct__input--num"
+          :placeholder="t('session.combat.hpPlaceholder')"
+          type="number"
+          min="1"
+        />
+        <input
+          v-model="addForm.ac"
+          class="ct__input ct__input--num"
+          :placeholder="t('session.combat.acPlaceholder')"
+          type="number"
+          min="1"
+        />
       </div>
       <div class="ct__add-actions">
-        <button class="ct__btn ct__btn--add" @click="addMonster">Add monster</button>
-        <button class="ct__btn" @click="showAdd = false">Cancel</button>
+        <button class="ct__btn ct__btn--add" @click="addMonster">
+          {{ t('session.combat.addMonster') }}
+        </button>
+        <button class="ct__btn" @click="showAdd = false">{{ t('common.cancel') }}</button>
       </div>
     </div>
 
     <!-- Empty state -->
     <div v-if="monsters.length === 0 && !showAdd" class="ct__empty">
       <i class="pi pi-shield ct__empty-icon" />
-      <p>No combatants yet.</p>
+      <p>{{ t('session.combat.noCombatants') }}</p>
       <button class="ct__btn ct__btn--add" @click="showAdd = true">
-        <i class="pi pi-plus" /> Add first monster
+        <i class="pi pi-plus" /> {{ t('session.combat.addFirstMonster') }}
       </button>
     </div>
 
@@ -191,10 +231,18 @@ function clearAll() {
       <div v-for="m in sorted" :key="m.id" class="ct__monster">
         <!-- Initiative badge + name -->
         <div class="ct__monster-header">
-          <span class="ct__ini" :title="`Initiative: ${m.initiative}`">{{ m.initiative }}</span>
+          <span
+            class="ct__ini"
+            :title="t('session.combat.initiativeTitle', { initiative: m.initiative })"
+            >{{ m.initiative }}</span
+          >
           <span class="ct__name">{{ m.name }}</span>
-          <span class="ct__ac" title="Armor Class">AC {{ m.ac }}</span>
-          <button class="ct__icon-btn" title="Remove" @click="removeMonster(m.id)">
+          <span class="ct__ac">{{ t('session.combat.armorClass', { ac: m.ac }) }}</span>
+          <button
+            class="ct__icon-btn"
+            :title="t('session.combat.removeTitle')"
+            @click="removeMonster(m.id)"
+          >
             <i class="pi pi-times" />
           </button>
         </div>
@@ -219,13 +267,18 @@ function clearAll() {
                 type="number"
                 :min="0"
                 :max="m.maxHp"
+                autofocus
                 @blur="commitHpEdit(m)"
                 @keydown.enter="commitHpEdit(m)"
                 @keydown.escape="editingHp = null"
-                autofocus
               />
             </template>
-            <button v-else class="ct__hp-num" :title="'Click to set HP'" @click="startHpEdit(m)">
+            <button
+              v-else
+              class="ct__hp-num"
+              :title="t('session.combat.clickToSetHp')"
+              @click="startHpEdit(m)"
+            >
               {{ m.hp }}
             </button>
             <span class="ct__hp-sep">/</span>
@@ -240,14 +293,22 @@ function clearAll() {
             class="ct__input ct__input--adjust"
             type="number"
             min="0"
-            placeholder="Amt"
+            :placeholder="t('session.combat.adjustAmountPlaceholder')"
             @keydown.enter="adjust(m, false)"
           />
-          <button class="ct__btn ct__btn--dmg" @click="adjust(m, false)" title="Deal damage">
-            <i class="pi pi-minus" /> Dmg
+          <button
+            class="ct__btn ct__btn--dmg"
+            :title="t('session.combat.dealDamage')"
+            @click="adjust(m, false)"
+          >
+            <i class="pi pi-minus" /> {{ t('session.combat.dmg') }}
           </button>
-          <button class="ct__btn ct__btn--heal" @click="adjust(m, true)" title="Heal">
-            <i class="pi pi-plus" /> Heal
+          <button
+            class="ct__btn ct__btn--heal"
+            :title="t('session.combat.heal')"
+            @click="adjust(m, true)"
+          >
+            <i class="pi pi-plus" /> {{ t('session.combat.heal') }}
           </button>
         </div>
 
@@ -257,7 +318,7 @@ function clearAll() {
             v-for="cond in m.conditions"
             :key="cond"
             class="ct__cond-chip"
-            :title="`Remove ${cond}`"
+            :title="t('session.combat.removeCondition', { condition: cond })"
             @click="toggleCondition(m, cond)"
           >
             {{ cond }} <i class="pi pi-times" />
@@ -328,15 +389,38 @@ function clearAll() {
   white-space: nowrap;
 }
 
-.ct__btn:hover { color: var(--ss-text); border-color: var(--ss-text-muted); }
-.ct__btn--add { border-color: var(--ss-primary); color: var(--ss-primary); }
-.ct__btn--add:hover { background: color-mix(in srgb, var(--ss-primary) 10%, transparent); }
-.ct__btn--danger { color: var(--ss-danger); border-color: color-mix(in srgb, var(--ss-danger) 40%, transparent); }
-.ct__btn--danger:hover { background: color-mix(in srgb, var(--ss-danger) 10%, transparent); }
-.ct__btn--dmg { color: var(--ss-danger); border-color: color-mix(in srgb, var(--ss-danger) 30%, transparent); }
-.ct__btn--dmg:hover { background: color-mix(in srgb, var(--ss-danger) 10%, transparent); }
-.ct__btn--heal { color: var(--ss-success); border-color: color-mix(in srgb, var(--ss-success) 30%, transparent); }
-.ct__btn--heal:hover { background: color-mix(in srgb, var(--ss-success) 10%, transparent); }
+.ct__btn:hover {
+  color: var(--ss-text);
+  border-color: var(--ss-text-muted);
+}
+.ct__btn--add {
+  border-color: var(--ss-primary);
+  color: var(--ss-primary);
+}
+.ct__btn--add:hover {
+  background: color-mix(in srgb, var(--ss-primary) 10%, transparent);
+}
+.ct__btn--danger {
+  color: var(--ss-danger);
+  border-color: color-mix(in srgb, var(--ss-danger) 40%, transparent);
+}
+.ct__btn--danger:hover {
+  background: color-mix(in srgb, var(--ss-danger) 10%, transparent);
+}
+.ct__btn--dmg {
+  color: var(--ss-danger);
+  border-color: color-mix(in srgb, var(--ss-danger) 30%, transparent);
+}
+.ct__btn--dmg:hover {
+  background: color-mix(in srgb, var(--ss-danger) 10%, transparent);
+}
+.ct__btn--heal {
+  color: var(--ss-success);
+  border-color: color-mix(in srgb, var(--ss-success) 30%, transparent);
+}
+.ct__btn--heal:hover {
+  background: color-mix(in srgb, var(--ss-success) 10%, transparent);
+}
 
 /* ── Pinned monsters ── */
 .ct__pinned {
@@ -406,10 +490,19 @@ function clearAll() {
   transition: border-color 0.15s;
 }
 
-.ct__input:focus { border-color: var(--ss-primary); }
-.ct__input--name { width: 100%; }
-.ct__input--num { width: 60px; }
-.ct__input--adjust { width: 56px; text-align: center; }
+.ct__input:focus {
+  border-color: var(--ss-primary);
+}
+.ct__input--name {
+  width: 100%;
+}
+.ct__input--num {
+  width: 60px;
+}
+.ct__input--adjust {
+  width: 56px;
+  text-align: center;
+}
 
 /* ── Empty ── */
 .ct__empty {
@@ -423,8 +516,14 @@ function clearAll() {
   text-align: center;
 }
 
-.ct__empty-icon { font-size: 2rem; opacity: 0.3; }
-.ct__empty p { margin: 0; font-size: 0.8rem; }
+.ct__empty-icon {
+  font-size: 2rem;
+  opacity: 0.3;
+}
+.ct__empty p {
+  margin: 0;
+  font-size: 0.8rem;
+}
 
 /* ── Monster list ── */
 .ct__list {
@@ -438,7 +537,9 @@ function clearAll() {
   border-bottom: 1px solid color-mix(in srgb, var(--ss-border) 50%, transparent);
 }
 
-.ct__monster:last-child { border-bottom: none; }
+.ct__monster:last-child {
+  border-bottom: none;
+}
 
 .ct__monster-header {
   display: flex;
@@ -487,7 +588,9 @@ function clearAll() {
   transition: color 0.1s;
 }
 
-.ct__icon-btn:hover { color: var(--ss-danger); }
+.ct__icon-btn:hover {
+  color: var(--ss-danger);
+}
 
 /* ── HP ── */
 .ct__hp-row {
@@ -508,7 +611,9 @@ function clearAll() {
 .ct__hp-bar {
   height: 100%;
   border-radius: 99px;
-  transition: width 0.2s, background 0.2s;
+  transition:
+    width 0.2s,
+    background 0.2s;
 }
 
 .ct__hp-val {
@@ -532,7 +637,9 @@ function clearAll() {
   text-align: center;
 }
 
-.ct__hp-num:hover { border-color: var(--ss-primary); }
+.ct__hp-num:hover {
+  border-color: var(--ss-primary);
+}
 
 .ct__hp-input {
   width: 40px;
@@ -547,8 +654,12 @@ function clearAll() {
   outline: none;
 }
 
-.ct__hp-sep { color: var(--ss-text-muted); }
-.ct__hp-max { color: var(--ss-text-muted); }
+.ct__hp-sep {
+  color: var(--ss-text-muted);
+}
+.ct__hp-max {
+  color: var(--ss-text-muted);
+}
 
 /* ── Adjust row ── */
 .ct__adjust-row {
@@ -581,10 +692,18 @@ function clearAll() {
   transition: background 0.1s;
 }
 
-.ct__cond-chip:hover { background: color-mix(in srgb, var(--ss-danger) 15%, transparent); color: var(--ss-danger); border-color: color-mix(in srgb, var(--ss-danger) 40%, transparent); }
-.ct__cond-chip .pi { font-size: 0.55rem; }
+.ct__cond-chip:hover {
+  background: color-mix(in srgb, var(--ss-danger) 15%, transparent);
+  color: var(--ss-danger);
+  border-color: color-mix(in srgb, var(--ss-danger) 40%, transparent);
+}
+.ct__cond-chip .pi {
+  font-size: 0.55rem;
+}
 
-.ct__cond-add { position: relative; }
+.ct__cond-add {
+  position: relative;
+}
 
 .ct__cond-toggle {
   display: flex;
@@ -602,7 +721,10 @@ function clearAll() {
 }
 
 .ct__cond-toggle:hover,
-.ct__cond-toggle--open { color: var(--ss-primary); border-color: var(--ss-primary); }
+.ct__cond-toggle--open {
+  color: var(--ss-primary);
+  border-color: var(--ss-primary);
+}
 
 .ct__cond-picker {
   position: absolute;
@@ -611,7 +733,7 @@ function clearAll() {
   background: var(--ss-surface);
   border: 1px solid var(--ss-border);
   border-radius: var(--ss-radius);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   padding: 0.4rem;
   display: flex;
   flex-wrap: wrap;
@@ -632,6 +754,13 @@ function clearAll() {
   transition: all 0.1s;
 }
 
-.ct__cond-option:hover { border-color: var(--ss-primary); color: var(--ss-primary); }
-.ct__cond-option--active { background: color-mix(in srgb, var(--ss-warning) 15%, transparent); border-color: var(--ss-warning); color: var(--ss-warning); }
+.ct__cond-option:hover {
+  border-color: var(--ss-primary);
+  color: var(--ss-primary);
+}
+.ct__cond-option--active {
+  background: color-mix(in srgb, var(--ss-warning) 15%, transparent);
+  border-color: var(--ss-warning);
+  color: var(--ss-warning);
+}
 </style>

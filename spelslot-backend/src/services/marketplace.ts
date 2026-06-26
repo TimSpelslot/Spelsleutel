@@ -2,7 +2,9 @@
 // All public endpoints (items, stats, recent purchases) need no auth.
 // Gold/inventory endpoints require a privileged Marketplace JWT (future work).
 
-const BASE = (process.env.MARKETPLACE_API_URL ?? 'https://spelslot-marketplace-dev.idohobbysservers.com/api').replace(/\/$/, '')
+const BASE = (
+  process.env.MARKETPLACE_API_URL ?? 'https://spelslot-marketplace-dev.idohobbysservers.com/api'
+).replace(/\/$/, '')
 
 async function mpGet<T>(path: string, auth?: string): Promise<T> {
   const headers: Record<string, string> = {}

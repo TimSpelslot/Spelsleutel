@@ -1,0 +1,106 @@
+{
+  "title": "Codex",
+  "newEntry": "New entry",
+  "expandTree": "Expand tree",
+  "collapseTree": "Collapse tree",
+  "searchPlaceholder": "Search…",
+  "noResults": "No results.",
+  "noEntries": "No entries.",
+  "alsoKnownAs": "Also known as:",
+  "unknownEntry": "Unknown entry",
+  "noDocuments": "No documents for this entry yet.",
+  "noDocumentsShort": "No documents for this entry.",
+  "relatedEntries": "Related Entries",
+  "related": "Related",
+  "selectEntry": "Select an entry from the tree",
+  "bannerAlt": "Banner for {name}",
+  "types": {
+    "lore": "Lore",
+    "location": "Location",
+    "npc": "NPC",
+    "faction": "Faction",
+    "item": "Item",
+    "event": "Event",
+    "rule": "Rule",
+    "session": "Session"
+  },
+  "status": {
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "permission": {
+    "public": "Public",
+    "players": "Players",
+    "dmOnly": "DM Only",
+    "private": "Private"
+  },
+  "docViewer": {
+    "comingInV2": "{type} viewer coming in v2.",
+    "notYetSupported": "{type} viewer not yet supported.",
+    "emptyPage": "This page is empty.",
+    "noContent": "This page has no content yet."
+  },
+  "toast": {
+    "reorderFailed": "Reorder failed",
+    "reorderFailedDetail": "Could not save the new position. Try again."
+  },
+  "newEntryForm": {
+    "pageTitle": "New Codex Entry",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Entry name…",
+    "typeLabel": "Type",
+    "visibilityLabel": "Visibility",
+    "summaryLabel": "Summary",
+    "summaryOptional": "(optional)",
+    "summaryPlaceholder": "Short description shown in the tree and previews…",
+    "tagsLabel": "Tags",
+    "tagsOptional": "(optional)",
+    "tagsPlaceholder": "Add tag, press Enter…",
+    "submitLabel": "Create entry"
+  },
+  "editForm": {
+    "titleLabel": "Title",
+    "typeLabel": "Type",
+    "statusLabel": "Status",
+    "permissionLabel": "Permission",
+    "summaryLabel": "Summary",
+    "summaryPlaceholder": "Short description…",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "Add tag, press Enter…",
+    "bannerLabel": "Banner image",
+    "bannerReplace": "Replace image",
+    "bannerUpload": "Upload image",
+    "bannerVisible": "Visible",
+    "bannerVerticalPosition": "Vertical position",
+    "bannerRemove": "Remove"
+  },
+  "editor": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "inlineCode": "Inline code",
+    "heading1": "Heading 1",
+    "heading2": "Heading 2",
+    "heading3": "Heading 3",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "blockquote": "Blockquote",
+    "codeBlock": "Code block",
+    "insertTable": "Insert table",
+    "undo": "Undo",
+    "redo": "Redo",
+    "collaborationStatus": "Collaboration: {status}"
+  },
+  "mention": {
+    "noResults": "No results"
+  },
+  "timeline": {
+    "zoomTitle": "Zoom",
+    "fitTitle": "Fit all events in view",
+    "fitLabel": "Fit",
+    "loadingCalendar": "Loading calendar…",
+    "calendarNotFound": "Calendar not found",
+    "noEvents": "No timeline events found."
+  }
+}

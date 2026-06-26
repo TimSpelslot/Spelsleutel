@@ -6,6 +6,9 @@ export function posAfter(last: string | null | undefined): string {
 }
 
 /** A pos that sorts between `before` and `after`. */
-export function posBetween(before: string | null | undefined, after: string | null | undefined): string {
+export function posBetween(
+  before: string | null | undefined,
+  after: string | null | undefined,
+): string {
   return generateKeyBetween(before ?? null, after ?? null)
 }

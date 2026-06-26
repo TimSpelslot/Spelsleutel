@@ -1,0 +1,53 @@
+{
+  "welcome": "Welcome back, {name}!",
+  "adventurerFallback": "adventurer",
+  "worldbuilder": {
+    "tag": "Worldbuilder",
+    "bannerTitle": "Want to contribute to the Codex?",
+    "bannerBody": "Request worldbuilder access to create and edit new pages.",
+    "requestAccess": "Request access",
+    "pendingTitle": "Request submitted.",
+    "pendingBody": "An admin will review your worldbuilder access request."
+  },
+  "sessions": {
+    "heading": "Upcoming sessions",
+    "loadError": "Failed to load sessions — {error}",
+    "empty": "No upcoming sessions. Enjoy the downtime, adventurer.",
+    "statusUpcoming": "Upcoming",
+    "unknownDm": "Unknown DM",
+    "spotsFree": "· {n} free",
+    "spotsFull": "· full",
+    "viewAll": "View all sessions →"
+  },
+  "quickLinks": {
+    "heading": "Quick links"
+  },
+  "recentCodex": {
+    "heading": "Recent Codex",
+    "empty": "No Codex entries yet.",
+    "openCodex": "Open Codex →"
+  },
+  "links": {
+    "codex": { "label": "Codex", "desc": "Worldbuilding & lore" },
+    "sessions": { "label": "Sessions", "desc": "Upcoming adventures" },
+    "marketplace": { "label": "Marketplace", "desc": "Magic items" },
+    "sessionPlayer": { "label": "Player Dashboard", "desc": "Session view" },
+    "sessionDm": { "label": "DM Dashboard", "desc": "Combat & management" },
+    "admin": { "label": "Admin", "desc": "User management" }
+  },
+  "timeAgo": {
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago"
+  },
+  "roles": {
+    "player": "Player",
+    "dm": "Dungeon Master",
+    "admin": "Admin"
+  },
+  "rankTitle": {
+    "combat": "Combat: {label}",
+    "exploration": "Exploration: {label}",
+    "roleplaying": "Roleplaying: {label}"
+  }
+}

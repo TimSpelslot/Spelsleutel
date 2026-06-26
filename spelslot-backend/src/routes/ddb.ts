@@ -1,6 +1,11 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth'
-import { DdbCharacterCache, type DdbCharacterData, type DdbStats, type DdbClass } from '../models/DdbCharacterCache'
+import {
+  DdbCharacterCache,
+  type DdbCharacterData,
+  type DdbStats,
+  type DdbClass,
+} from '../models/DdbCharacterCache'
 
 export const ddbRouter = Router()
 
@@ -96,7 +101,9 @@ function parseCharacter(raw: Record<string, unknown>): DdbCharacterData {
 
   // Speed — base from race weightSpeeds, plus any bonus modifiers
   const race = d.race as Record<string, unknown> | undefined
-  const weightSpeeds = race?.weightSpeeds as Record<string, Record<string, number> | null> | undefined
+  const weightSpeeds = race?.weightSpeeds as
+    | Record<string, Record<string, number> | null>
+    | undefined
   const overrideWalk = weightSpeeds?.override?.walk
   let speed = overrideWalk ?? weightSpeeds?.normal?.walk ?? 30
   for (const m of allMods) {
@@ -109,14 +116,19 @@ function parseCharacter(raw: Record<string, unknown>): DdbCharacterData {
   type InvItem = { equipped: boolean; definition: Record<string, unknown> }
   const inventory = (d.inventory as InvItem[]) ?? []
   const ARMOR_TYPE: Record<number, 'light' | 'medium' | 'heavy' | 'shield'> = {
-    1: 'light', 2: 'medium', 3: 'heavy', 4: 'shield',
+    1: 'light',
+    2: 'medium',
+    3: 'heavy',
+    4: 'shield',
   }
-  const equippedArmor = inventory.filter(i => i.equipped && i.definition?.filterType === 'Armor')
-  const armor = equippedArmor.find(i => {
+  const equippedArmor = inventory.filter((i) => i.equipped && i.definition?.filterType === 'Armor')
+  const armor = equippedArmor.find((i) => {
     const t = ARMOR_TYPE[i.definition.armorTypeId as number]
     return t === 'light' || t === 'medium' || t === 'heavy'
   })
-  const hasShield = equippedArmor.some(i => ARMOR_TYPE[i.definition.armorTypeId as number] === 'shield')
+  const hasShield = equippedArmor.some(
+    (i) => ARMOR_TYPE[i.definition.armorTypeId as number] === 'shield',
+  )
   const shieldBonus = hasShield ? 2 : 0
 
   let armorClass: number
@@ -172,7 +184,9 @@ ddbRouter.get('/character/:characterId', async (req, res, next) => {
     const characterId = extractCharacterId(raw)
 
     if (!characterId) {
-      res.status(400).json({ message: 'Character ID must be a number or a DnD Beyond character URL' })
+      res
+        .status(400)
+        .json({ message: 'Character ID must be a number or a DnD Beyond character URL' })
       return
     }
 
@@ -227,7 +241,9 @@ ddbRouter.get('/character/:characterId', async (req, res, next) => {
         res.json({ character: cached.data, cachedAt: cached.fetchedAt, stale: true })
         return
       }
-      res.status(502).json({ message: `DnD Beyond returned ${fetchRes.status}. The service may be temporarily unavailable.` })
+      res.status(502).json({
+        message: `DnD Beyond returned ${fetchRes.status}. The service may be temporarily unavailable.`,
+      })
       return
     }
 

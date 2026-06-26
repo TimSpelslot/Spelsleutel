@@ -1,0 +1,31 @@
+{
+  "title": "Notifications",
+  "deleteAriaLabel": "Delete",
+  "push": {
+    "heading": "Push notifications",
+    "enabledLabel": "Enabled on this device",
+    "enabledHint": "You'll receive push notifications in your browser.",
+    "blockedLabel": "Blocked in your browser",
+    "blockedHint": "To re-enable, click the lock icon in your browser's address bar, find the Notifications setting, and change it to Allow.",
+    "notEnabledLabel": "Not enabled on this device",
+    "notEnabledHint": "Enable to receive notifications even when the app is not open.",
+    "enable": "Enable"
+  },
+  "prefs": {
+    "heading": "Notification preferences",
+    "signupsLabel": "Sign-ups",
+    "signupsHint": "When a session you signed up for changes",
+    "assignmentLabel": "Assignment",
+    "assignmentHint": "When you are assigned to a session",
+    "marketplaceLabel": "Marketplace",
+    "marketplaceHint": "Updates about items and transactions",
+    "sessionsLabel": "Sessions",
+    "sessionsHint": "Session notes creation and updates"
+  },
+  "timeAgo": {
+    "minutesAgo": "{m} min ago",
+    "hoursAgo": "{h} h ago",
+    "daysAgo": "{d} days ago",
+    "yesterday": "Yesterday"
+  }
+}

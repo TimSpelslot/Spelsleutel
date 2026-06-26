@@ -1,0 +1,39 @@
+{
+  "title": "Profiel",
+  "account": {
+    "heading": "Account",
+    "displayNameLabel": "Weergavenaam",
+    "displayNameHint": "Deze naam wordt aan andere spelers getoond. Je Google-accountnaam is {name}.",
+    "emailLabel": "E-mail"
+  },
+  "roleAccess": {
+    "heading": "Rol & toegang",
+    "roleLabel": "Rol",
+    "worldbuilderLabel": "Worldbuilder",
+    "wbActive": "Worldbuilder-toegang verleend — je kunt Codex-pagina's aanmaken en bewerken.",
+    "wbPending": "Aanvraag in behandeling — een DM of beheerder beoordeelt deze binnenkort.",
+    "wbDmBypass": "Volledige Codex-toegang als {role}.",
+    "wbNone": "Spelers kunnen worldbuilder-toegang aanvragen om Codex-pagina's aan te maken en te bewerken.",
+    "requestAccess": "Toegang aanvragen"
+  },
+  "dndBeyond": {
+    "heading": "DnD Beyond-personage",
+    "noCharacter": "Geen personage gekoppeld. Vraag een beheerder om je DnD Beyond personage-ID toe te voegen.",
+    "characterIdLabel": "Personage-ID",
+    "loadingCharacter": "Personagegegevens laden…",
+    "notLoaded": "Personagegegevens nog niet geladen.",
+    "syncNow": "Nu synchroniseren",
+    "syncTitle": "Synchroniseren vanaf DnD Beyond",
+    "level": "Level {n}"
+  },
+  "notifications": {
+    "heading": "Meldingen",
+    "sub": "Beheer welke gebeurtenissen je een melding sturen.",
+    "settingsLink": "Meldingsinstellingen"
+  },
+  "roles": {
+    "player": "Speler",
+    "dm": "Dungeon Master",
+    "admin": "Beheerder"
+  }
+}

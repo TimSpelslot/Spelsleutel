@@ -30,14 +30,18 @@ authRouter.patch('/me', requireAuth, async (req: Request, res: Response, next: N
     const { uid } = (req as AuthRequest).user!
     const { displayName } = req.body as { displayName?: string }
     if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
-      res.status(400).json({ message: 'displayName is required' }); return
+      res.status(400).json({ message: 'displayName is required' })
+      return
     }
     const user = await User.findOneAndUpdate(
       { uid },
       { $set: { displayName: displayName.trim() } },
       { new: true },
     )
-    if (!user) { res.status(404).json({ message: 'User not found' }); return }
+    if (!user) {
+      res.status(404).json({ message: 'User not found' })
+      return
+    }
     res.json(buildUserPayload(user))
   } catch (err) {
     next(err)
@@ -45,41 +49,70 @@ authRouter.patch('/me', requireAuth, async (req: Request, res: Response, next: N
 })
 
 // PATCH /api/auth/me/preferences — update notification preferences
-authRouter.patch('/me/preferences', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { uid } = (req as AuthRequest).user!
-    const allowed = ['notifySignup', 'notifyAssignment', 'notifyMarketplace', 'notifySession'] as const
-    const updates: Partial<Record<(typeof allowed)[number], boolean>> = {}
-    for (const key of allowed) {
-      if (typeof req.body[key] === 'boolean') updates[key] = req.body[key]
+authRouter.patch(
+  '/me/preferences',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { uid } = (req as AuthRequest).user!
+      const allowed = [
+        'notifySignup',
+        'notifyAssignment',
+        'notifyMarketplace',
+        'notifySession',
+      ] as const
+      const updates: Partial<Record<(typeof allowed)[number], boolean>> = {}
+      for (const key of allowed) {
+        if (typeof req.body[key] === 'boolean') updates[key] = req.body[key]
+      }
+      if (Object.keys(updates).length === 0) {
+        res.status(400).json({ message: 'No preference fields provided' })
+        return
+      }
+      const user = await User.findOneAndUpdate({ uid }, { $set: updates }, { new: true })
+      if (!user) {
+        res.status(404).json({ message: 'User not found' })
+        return
+      }
+      res.json(buildUserPayload(user))
+    } catch (err) {
+      next(err)
     }
-    if (Object.keys(updates).length === 0) {
-      res.status(400).json({ message: 'No preference fields provided' }); return
-    }
-    const user = await User.findOneAndUpdate({ uid }, { $set: updates }, { new: true })
-    if (!user) { res.status(404).json({ message: 'User not found' }); return }
-    res.json(buildUserPayload(user))
-  } catch (err) {
-    next(err)
-  }
-})
+  },
+)
 
 // POST /api/auth/me/request-worldbuilder — player requests worldbuilder flag
-authRouter.post('/me/request-worldbuilder', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { uid } = (req as AuthRequest).user!
-    const user = await User.findOne({ uid })
-    if (!user) { res.status(404).json({ message: 'User not found' }); return }
-    if (user.role !== 'PLAYER') { res.status(403).json({ message: 'Only players can request worldbuilder access' }); return }
-    if (user.isWorldbuilder) { res.status(400).json({ message: 'Already a worldbuilder' }); return }
-    if (user.worldbuilderRequestPending) { res.status(400).json({ message: 'Request already pending' }); return }
-    user.worldbuilderRequestPending = true
-    await user.save()
-    res.json(buildUserPayload(user))
-  } catch (err) {
-    next(err)
-  }
-})
+authRouter.post(
+  '/me/request-worldbuilder',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { uid } = (req as AuthRequest).user!
+      const user = await User.findOne({ uid })
+      if (!user) {
+        res.status(404).json({ message: 'User not found' })
+        return
+      }
+      if (user.role !== 'PLAYER') {
+        res.status(403).json({ message: 'Only players can request worldbuilder access' })
+        return
+      }
+      if (user.isWorldbuilder) {
+        res.status(400).json({ message: 'Already a worldbuilder' })
+        return
+      }
+      if (user.worldbuilderRequestPending) {
+        res.status(400).json({ message: 'Request already pending' })
+        return
+      }
+      user.worldbuilderRequestPending = true
+      await user.save()
+      res.json(buildUserPayload(user))
+    } catch (err) {
+      next(err)
+    }
+  },
+)
 
 authRouter.post('/sync', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {

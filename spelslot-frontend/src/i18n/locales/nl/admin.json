@@ -1,0 +1,34 @@
+{
+  "title": "Beheer",
+  "worldbuilderRequests": {
+    "heading": "Worldbuilder-aanvragen"
+  },
+  "users": {
+    "sectionHeading": "Gebruikers",
+    "columns": {
+      "user": "Gebruiker",
+      "role": "Rol",
+      "worldbuilder": "Worldbuilder",
+      "dndBeyond": "DnD Beyond"
+    },
+    "worldbuilderYes": "Ja",
+    "worldbuilderNo": "Nee",
+    "worldbuilderRequested": "Aangevraagd"
+  },
+  "edit": {
+    "roleLabel": "Rol",
+    "worldbuilderLabel": "Worldbuilder",
+    "worldbuilderEnabled": "Kan Codex-pagina's aanmaken en bewerken",
+    "worldbuilderDisabled": "Alleen-lezen toegang",
+    "worldbuilderRequestHint": "Heeft worldbuilder-toegang aangevraagd",
+    "dndBeyondLabel": "DnD Beyond personage-ID",
+    "dndBeyondPlaceholder": "Personage-ID of volledige DnD Beyond-URL",
+    "dndBeyondHint": "Plak de numerieke ID of de volledige personage-URL — beide werken.",
+    "worldbuilderRequestedTag": "Aangevraagd"
+  },
+  "roles": {
+    "player": "Speler",
+    "dm": "DM",
+    "admin": "Beheerder"
+  }
+}

@@ -282,7 +282,8 @@ async function main() {
   // ── Calendars: upsert all calendar definitions ───────────────────────────
   console.log('[import] Importing calendars...')
   let calCount = 0
-  for (const cal of (data as unknown as { calendars?: Record<string, unknown>[] }).calendars ?? []) {
+  for (const cal of (data as unknown as { calendars?: Record<string, unknown>[] }).calendars ??
+    []) {
     await LkCalendar.findOneAndUpdate(
       { lkCalendarId: cal.id as string },
       {
@@ -292,17 +293,35 @@ async function main() {
           hoursInDay: (cal.hoursInDay as number) ?? 24,
           minutesInHour: (cal.minutesInHour as number) ?? 60,
           months: ((cal.months as Record<string, unknown>[]) ?? []).map((m) => ({
-            id: m.id, name: m.name, length: m.length, isIntercalary: m.isIntercalary ?? false,
+            id: m.id,
+            name: m.name,
+            length: m.length,
+            isIntercalary: m.isIntercalary ?? false,
           })),
           leapDays: ((cal.leapDays as Record<string, unknown>[]) ?? []).map((l) => ({
-            id: l.id, month: l.month ?? 0, day: l.day ?? 0, interval: l.interval ?? '', offset: l.offset ?? 0,
+            id: l.id,
+            month: l.month ?? 0,
+            day: l.day ?? 0,
+            interval: l.interval ?? '',
+            offset: l.offset ?? 0,
           })),
-          weekdays: ((cal.weekdays as Record<string, unknown>[]) ?? []).map((w) => ({ id: w.id, name: w.name })),
+          weekdays: ((cal.weekdays as Record<string, unknown>[]) ?? []).map((w) => ({
+            id: w.id,
+            name: w.name,
+          })),
           negativeEra: cal.negativeEra
-            ? { id: (cal.negativeEra as Record<string, unknown>).id, name: (cal.negativeEra as Record<string, unknown>).name, abbr: (cal.negativeEra as Record<string, unknown>).abbr }
+            ? {
+                id: (cal.negativeEra as Record<string, unknown>).id,
+                name: (cal.negativeEra as Record<string, unknown>).name,
+                abbr: (cal.negativeEra as Record<string, unknown>).abbr,
+              }
             : undefined,
           positiveEra: cal.positiveEra
-            ? { id: (cal.positiveEra as Record<string, unknown>).id, name: (cal.positiveEra as Record<string, unknown>).name, abbr: (cal.positiveEra as Record<string, unknown>).abbr }
+            ? {
+                id: (cal.positiveEra as Record<string, unknown>).id,
+                name: (cal.positiveEra as Record<string, unknown>).name,
+                abbr: (cal.positiveEra as Record<string, unknown>).abbr,
+              }
             : undefined,
         },
       },
@@ -334,7 +353,9 @@ async function main() {
     })
 
     if (changed) {
-      await WorldDocument.findByIdAndUpdate(doc._id, { $set: { content: { ...content, events: enrichedEvents } } })
+      await WorldDocument.findByIdAndUpdate(doc._id, {
+        $set: { content: { ...content, events: enrichedEvents } },
+      })
       timelineEnrichedCount++
     }
   }

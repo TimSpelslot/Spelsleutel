@@ -49,7 +49,8 @@ function onDragOver(e: DragEvent) {
     !codexDrag.id ||
     codexDrag.id === props.node.entry.id ||
     codexDrag.parentId !== (props.node.entry.parentId ?? null)
-  ) return
+  )
+    return
 
   dropTarget.value =
     e.offsetY < (e.currentTarget as HTMLElement).offsetHeight / 2 ? 'before' : 'after'
@@ -65,7 +66,8 @@ function onDrop() {
     codexDrag.id === props.node.entry.id ||
     codexDrag.parentId !== (props.node.entry.parentId ?? null) ||
     !dropTarget.value
-  ) return
+  )
+    return
 
   emit('reorder', {
     draggedId: codexDrag.id,
@@ -113,7 +115,9 @@ function onDrop() {
           <i :class="['pi', expanded ? 'pi-chevron-down' : 'pi-chevron-right']" />
         </span>
         <span class="tree-node__name">{{ node.entry.name }}</span>
-        <span v-if="node.entry.permission === 'DM_ONLY'" class="tree-node__dm">DM</span>
+        <span v-if="node.entry.permission === 'DM_ONLY'" class="tree-node__dm">{{
+          $t('common.dm')
+        }}</span>
       </button>
     </div>
 
@@ -170,7 +174,9 @@ function onDrop() {
   font-size: 0.8rem;
   color: var(--ss-shell-fg-muted);
   border-radius: 4px;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
   min-height: 26px;
   white-space: nowrap;
 }

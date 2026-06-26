@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -8,6 +9,8 @@ import Textarea from 'primevue/textarea'
 import InputChips from 'primevue/inputchips'
 import { codexService, type EntryType } from '@/services/codexService'
 import { useAuthStore } from '@/stores/auth'
+
+const { t } = useI18n()
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -23,26 +26,26 @@ const form = reactive({
   summary: '',
 })
 
-const TYPE_OPTIONS = [
-  { label: 'Lore', value: 'lore' },
-  { label: 'Location', value: 'location' },
-  { label: 'NPC', value: 'npc' },
-  { label: 'Faction', value: 'faction' },
-  { label: 'Item', value: 'item' },
-  { label: 'Event', value: 'event' },
-  { label: 'Rule', value: 'rule' },
-  { label: 'Session', value: 'session' },
-]
+const TYPE_OPTIONS = computed(() => [
+  { label: t('codex.types.lore'), value: 'lore' },
+  { label: t('codex.types.location'), value: 'location' },
+  { label: t('codex.types.npc'), value: 'npc' },
+  { label: t('codex.types.faction'), value: 'faction' },
+  { label: t('codex.types.item'), value: 'item' },
+  { label: t('codex.types.event'), value: 'event' },
+  { label: t('codex.types.rule'), value: 'rule' },
+  { label: t('codex.types.session'), value: 'session' },
+])
 
 const permissionOptions = computed(() => {
   const opts: { label: string; value: string }[] = [
-    { label: 'Public', value: 'PUBLIC' },
-    { label: 'Players', value: 'PLAYERS' },
-    { label: 'Private', value: 'PRIVATE' },
+    { label: t('codex.permission.public'), value: 'PUBLIC' },
+    { label: t('codex.permission.players'), value: 'PLAYERS' },
+    { label: t('codex.permission.private'), value: 'PRIVATE' },
   ]
   const r = auth.effectiveUser?.role
   if (r === 'DM' || r === 'ADMIN') {
-    opts.splice(2, 0, { label: 'DM Only', value: 'DM_ONLY' })
+    opts.splice(2, 0, { label: t('codex.permission.dmOnly'), value: 'DM_ONLY' })
   }
   return opts
 })
@@ -78,7 +81,7 @@ async function submit() {
           size="small"
           @click="router.back()"
         />
-        <h1 class="new-entry__title">New Codex Entry</h1>
+        <h1 class="new-entry__title">{{ $t('codex.newEntryForm.pageTitle') }}</h1>
       </div>
 
       <div v-if="error" class="new-entry__error">
@@ -88,10 +91,10 @@ async function submit() {
       <form class="new-entry__form" @submit.prevent="submit">
         <!-- Name -->
         <div class="form-field form-field--required">
-          <label class="form-label">Title</label>
+          <label class="form-label">{{ $t('codex.newEntryForm.titleLabel') }}</label>
           <InputText
             v-model="form.name"
-            placeholder="Entry name…"
+            :placeholder="$t('codex.newEntryForm.titlePlaceholder')"
             class="form-input"
             required
             autofocus
@@ -101,7 +104,7 @@ async function submit() {
         <!-- Type + Permission -->
         <div class="form-row">
           <div class="form-field">
-            <label class="form-label">Type</label>
+            <label class="form-label">{{ $t('codex.newEntryForm.typeLabel') }}</label>
             <Select
               v-model="form.type"
               :options="TYPE_OPTIONS"
@@ -111,7 +114,7 @@ async function submit() {
             />
           </div>
           <div class="form-field">
-            <label class="form-label">Visibility</label>
+            <label class="form-label">{{ $t('codex.newEntryForm.visibilityLabel') }}</label>
             <Select
               v-model="form.permission"
               :options="permissionOptions"
@@ -124,36 +127,41 @@ async function submit() {
 
         <!-- Summary -->
         <div class="form-field">
-          <label class="form-label">Summary <span class="form-optional">(optional)</span></label>
+          <label class="form-label"
+            >{{ $t('codex.newEntryForm.summaryLabel') }}
+            <span class="form-optional">{{ $t('codex.newEntryForm.summaryOptional') }}</span></label
+          >
           <Textarea
             v-model="form.summary"
             :rows="3"
             auto-resize
-            placeholder="Short description shown in the tree and previews…"
+            :placeholder="$t('codex.newEntryForm.summaryPlaceholder')"
             class="form-input"
           />
         </div>
 
         <!-- Tags -->
         <div class="form-field">
-          <label class="form-label">Tags <span class="form-optional">(optional)</span></label>
-          <InputChips v-model="form.tags" placeholder="Add tag, press Enter…" class="form-input" />
+          <label class="form-label"
+            >{{ $t('codex.newEntryForm.tagsLabel') }}
+            <span class="form-optional">{{ $t('codex.newEntryForm.tagsOptional') }}</span></label
+          >
+          <InputChips
+            v-model="form.tags"
+            :placeholder="$t('codex.newEntryForm.tagsPlaceholder')"
+            class="form-input"
+          />
         </div>
 
         <div class="new-entry__actions">
           <Button
             type="submit"
-            label="Create entry"
+            :label="$t('codex.newEntryForm.submitLabel')"
             icon="pi pi-plus"
             :loading="saving"
             :disabled="!form.name.trim()"
           />
-          <Button
-            label="Cancel"
-            text
-            severity="secondary"
-            @click="router.back()"
-          />
+          <Button :label="$t('common.cancel')" text severity="secondary" @click="router.back()" />
         </div>
       </form>
     </div>
@@ -213,7 +221,10 @@ async function submit() {
   flex-wrap: wrap;
 }
 
-.form-row .form-field { flex: 1; min-width: 180px; }
+.form-row .form-field {
+  flex: 1;
+  min-width: 180px;
+}
 
 .form-field {
   display: flex;
@@ -227,10 +238,18 @@ async function submit() {
   color: var(--ss-text-muted);
 }
 
-.form-field--required .form-label::after { content: ' *'; color: var(--ss-primary); }
-.form-optional { font-weight: 400; opacity: 0.7; }
+.form-field--required .form-label::after {
+  content: ' *';
+  color: var(--ss-primary);
+}
+.form-optional {
+  font-weight: 400;
+  opacity: 0.7;
+}
 
-.form-input { width: 100%; }
+.form-input {
+  width: 100%;
+}
 
 .new-entry__actions {
   display: flex;

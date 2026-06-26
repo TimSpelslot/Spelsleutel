@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import TiptapRenderer from '@/components/codex/TiptapRenderer.vue'
 import { codexService, type CodexEntryDetail, type EntryType } from '@/services/codexService'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -34,7 +37,12 @@ async function loadEntry(slug: string) {
 }
 
 onMounted(() => loadEntry(route.params.slug as string))
-watch(() => route.params.slug, (s) => { if (s) loadEntry(s as string) })
+watch(
+  () => route.params.slug,
+  (s) => {
+    if (s) loadEntry(s as string)
+  },
+)
 
 // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -45,21 +53,21 @@ const visibleDocs = computed(() => documents.value.filter((d) => !d.isHidden))
 const activeDoc = computed(() => visibleDocs.value[activeDocIndex.value] ?? null)
 
 const TYPE_META: Record<EntryType, { label: string; icon: string; severity: string }> = {
-  lore:     { label: 'Lore',     icon: 'pi-book',       severity: 'secondary' },
-  location: { label: 'Location', icon: 'pi-map-marker',  severity: 'secondary' },
-  npc:      { label: 'NPC',      icon: 'pi-user',        severity: 'secondary' },
-  faction:  { label: 'Faction',  icon: 'pi-users',       severity: 'secondary' },
-  item:     { label: 'Item',     icon: 'pi-star',        severity: 'warn' },
-  event:    { label: 'Event',    icon: 'pi-calendar',    severity: 'secondary' },
-  rule:     { label: 'Rule',     icon: 'pi-file',        severity: 'secondary' },
-  session:  { label: 'Session',  icon: 'pi-play',        severity: 'contrast' },
+  lore: { label: t('codex.types.lore'), icon: 'pi-book', severity: 'secondary' },
+  location: { label: t('codex.types.location'), icon: 'pi-map-marker', severity: 'secondary' },
+  npc: { label: t('codex.types.npc'), icon: 'pi-user', severity: 'secondary' },
+  faction: { label: t('codex.types.faction'), icon: 'pi-users', severity: 'secondary' },
+  item: { label: t('codex.types.item'), icon: 'pi-star', severity: 'warn' },
+  event: { label: t('codex.types.event'), icon: 'pi-calendar', severity: 'secondary' },
+  rule: { label: t('codex.types.rule'), icon: 'pi-file', severity: 'secondary' },
+  session: { label: t('codex.types.session'), icon: 'pi-play', severity: 'contrast' },
 }
 
 const PERM_META: Record<string, { label: string; severity: string }> = {
-  PUBLIC:   { label: 'Public',   severity: 'success' },
-  PLAYERS:  { label: 'Players',  severity: 'secondary' },
-  DM_ONLY:  { label: 'DM Only',  severity: 'warn' },
-  PRIVATE:  { label: 'Private',  severity: 'danger' },
+  PUBLIC: { label: t('codex.permission.public'), severity: 'success' },
+  PLAYERS: { label: t('codex.permission.players'), severity: 'secondary' },
+  DM_ONLY: { label: t('codex.permission.dmOnly'), severity: 'warn' },
+  PRIVATE: { label: t('codex.permission.private'), severity: 'danger' },
 }
 
 function typeMeta(type: EntryType) {
@@ -71,7 +79,7 @@ function typeMeta(type: EntryType) {
   <div class="entry-view">
     <!-- Back -->
     <Button
-      label="Codex"
+      :label="$t('codex.title')"
       icon="pi pi-arrow-left"
       text
       size="small"
@@ -84,7 +92,7 @@ function typeMeta(type: EntryType) {
       <Skeleton height="2rem" width="60%" class="entry-view__skel-title" />
       <Skeleton height="1rem" width="30%" />
       <div class="entry-view__skel-body">
-        <Skeleton height="1rem" v-for="n in 6" :key="n" />
+        <Skeleton v-for="n in 6" :key="n" height="1rem" />
       </div>
     </template>
 
@@ -100,9 +108,12 @@ function typeMeta(type: EntryType) {
       <div
         v-if="entry.banner.enabled && entry.banner.url"
         class="entry-view__banner"
-        :style="{ backgroundImage: `url(${entry.banner.url})`, backgroundPositionY: `${entry.banner.yPosition}%` }"
+        :style="{
+          backgroundImage: `url(${entry.banner.url})`,
+          backgroundPositionY: `${entry.banner.yPosition}%`,
+        }"
         role="img"
-        :aria-label="`Banner for ${entry.name}`"
+        :aria-label="$t('codex.bannerAlt', { name: entry.name })"
       />
 
       <!-- Header -->
@@ -126,7 +137,11 @@ function typeMeta(type: EntryType) {
               :severity="PERM_META[entry.permission]?.severity ?? 'secondary'"
               class="entry-view__perm-tag"
             />
-            <Tag v-if="entry.status === 'DRAFT'" value="Draft" severity="warn" />
+            <Tag
+              v-if="entry.status === 'DRAFT'"
+              :value="$t('codex.status.draft')"
+              severity="warn"
+            />
             <Tag v-if="entry.isLocked" value="" severity="secondary">
               <template #default>
                 <i class="pi pi-lock" aria-hidden="true" />
@@ -145,7 +160,7 @@ function typeMeta(type: EntryType) {
 
         <!-- Aliases -->
         <p v-if="entry.aliases.length" class="entry-view__aliases">
-          <span class="entry-view__aliases-label">Also known as:</span>
+          <span class="entry-view__aliases-label">{{ $t('codex.alsoKnownAs') }}</span>
           {{ entry.aliases.join(', ') }}
         </p>
       </div>
@@ -176,30 +191,32 @@ function typeMeta(type: EntryType) {
           <!-- Other types: not rendered yet -->
           <div v-else-if="activeDoc.type !== 'page'" class="entry-view__unsupported">
             <i class="pi pi-clock" aria-hidden="true" />
-            <p>{{ activeDoc.type.charAt(0).toUpperCase() + activeDoc.type.slice(1) }} viewer coming in v2.</p>
+            <p>
+              {{
+                $t('codex.docViewer.comingInV2', {
+                  type: activeDoc.type.charAt(0).toUpperCase() + activeDoc.type.slice(1),
+                })
+              }}
+            </p>
           </div>
           <div v-else class="entry-view__empty-doc">
-            <p>This page is empty.</p>
+            <p>{{ $t('codex.docViewer.emptyPage') }}</p>
           </div>
         </div>
       </div>
 
       <div v-else class="entry-view__no-docs">
-        <p>No documents for this entry yet.</p>
+        <p>{{ $t('codex.noDocuments') }}</p>
       </div>
 
       <!-- Relations -->
       <div v-if="relations.length" class="entry-view__relations">
         <h2 class="entry-view__relations-heading">
           <i class="pi pi-link" aria-hidden="true" />
-          Related Entries
+          {{ $t('codex.relatedEntries') }}
         </h2>
         <div class="entry-view__relation-list">
-          <div
-            v-for="rel in relations"
-            :key="rel.id"
-            class="entry-view__relation"
-          >
+          <div v-for="rel in relations" :key="rel.id" class="entry-view__relation">
             <i
               :class="['pi', rel.direction === 'outgoing' ? 'pi-arrow-right' : 'pi-arrow-left']"
               class="entry-view__relation-dir"
@@ -213,7 +230,7 @@ function typeMeta(type: EntryType) {
             >
               {{ rel.relatedEntry.name }}
             </button>
-            <span v-else class="entry-view__relation-unknown">Unknown entry</span>
+            <span v-else class="entry-view__relation-unknown">{{ $t('codex.unknownEntry') }}</span>
           </div>
         </div>
       </div>
@@ -234,7 +251,9 @@ function typeMeta(type: EntryType) {
 }
 
 /* ── Skeleton ── */
-.entry-view__skel-title { margin-bottom: 0.5rem; }
+.entry-view__skel-title {
+  margin-bottom: 0.5rem;
+}
 .entry-view__skel-body {
   margin-top: 1.5rem;
   display: flex;
@@ -349,10 +368,14 @@ function typeMeta(type: EntryType) {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
-.entry-view__tab:hover { color: var(--ss-text); }
+.entry-view__tab:hover {
+  color: var(--ss-text);
+}
 
 .entry-view__tab--active {
   color: var(--ss-primary);
@@ -478,11 +501,19 @@ function typeMeta(type: EntryType) {
   color: var(--ss-text-muted);
 }
 
-.entry-view__empty--error .entry-view__empty-icon { color: var(--ss-danger); }
+.entry-view__empty--error .entry-view__empty-icon {
+  color: var(--ss-danger);
+}
 
 @media (max-width: 767px) {
-  .entry-view { max-width: 100%; }
-  .entry-view__title { font-size: 1.3rem; }
-  .entry-view__doc-body { padding: 1rem; }
+  .entry-view {
+    max-width: 100%;
+  }
+  .entry-view__title {
+    font-size: 1.3rem;
+  }
+  .entry-view__doc-body {
+    padding: 1rem;
+  }
 }
 </style>

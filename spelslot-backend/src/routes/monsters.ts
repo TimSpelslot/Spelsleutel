@@ -18,7 +18,7 @@ monstersRouter.get('/', async (req, res, next) => {
     }
     const url = `${OPEN5E_BASE}/monsters/?name__icontains=${encodeURIComponent(search)}&limit=15`
     const upstream = await fetch(url, { signal: AbortSignal.timeout(8000) })
-    const data = await upstream.json() as { results?: unknown[] }
+    const data = (await upstream.json()) as { results?: unknown[] }
     res.json({ results: data.results ?? [] })
   } catch (err) {
     next(err)
@@ -36,13 +36,16 @@ monstersRouter.post('/from-url', async (req, res, next) => {
 
     const name = extractMonsterName(url)
     if (!name) {
-      res.status(400).json({ message: 'Could not extract a monster name from this URL. Supported: dndbeyond.com/monsters/…, 5e.tools/bestiary.html#…' })
+      res.status(400).json({
+        message:
+          'Could not extract a monster name from this URL. Supported: dndbeyond.com/monsters/…, 5e.tools/bestiary.html#…',
+      })
       return
     }
 
     const searchUrl = `${OPEN5E_BASE}/monsters/?name__icontains=${encodeURIComponent(name)}&limit=10`
     const upstream = await fetch(searchUrl, { signal: AbortSignal.timeout(8000) })
-    const data = await upstream.json() as { results?: Record<string, unknown>[] }
+    const data = (await upstream.json()) as { results?: Record<string, unknown>[] }
     const results = data.results ?? []
 
     if (results.length === 0) {
@@ -103,11 +106,7 @@ function extractMonsterName(url: string): string | null {
 }
 
 function slugToName(slug: string): string {
-  return slug
-    .replace(/-/g, ' ')
-    .replace(/_/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return slug.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 monstersRouter.get('/:slug', async (req, res, next) => {

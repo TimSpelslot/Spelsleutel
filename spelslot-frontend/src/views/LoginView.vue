@@ -29,11 +29,11 @@ async function signInWithGoogle() {
 <template>
   <div class="login">
     <div class="login__card">
-      <h1 class="login__title">Spelslot</h1>
-      <p class="login__sub">D&amp;D club management platform</p>
+      <h1 class="login__title">{{ $t('auth.title') }}</h1>
+      <p class="login__sub">{{ $t('auth.subtitle') }}</p>
 
       <Button
-        label="Sign in with Google"
+        :label="$t('common.signInWithGoogle')"
         icon="pi pi-google"
         :loading="loading"
         class="login__button"

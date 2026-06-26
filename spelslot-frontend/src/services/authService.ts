@@ -41,7 +41,11 @@ export const authService = {
     return { type: 'ok', data: normalise(result.data) }
   },
 
-  async updatePreferences(prefs: Partial<Pick<User, 'notifySignup' | 'notifyAssignment' | 'notifyMarketplace' | 'notifySession'>>): Promise<Result<User>> {
+  async updatePreferences(
+    prefs: Partial<
+      Pick<User, 'notifySignup' | 'notifyAssignment' | 'notifyMarketplace' | 'notifySession'>
+    >,
+  ): Promise<Result<User>> {
     const result = await api.patch<RawUser>('/api/auth/me/preferences', prefs)
     if (result.type === 'error') return result
     return { type: 'ok', data: normalise(result.data) }

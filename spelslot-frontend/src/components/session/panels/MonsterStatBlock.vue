@@ -1,23 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AutoComplete from 'primevue/autocomplete'
 import SelectButton from 'primevue/selectbutton'
 import { monsterService, type Monster, type MonsterSummary } from '@/services/monsterService'
 import { useSessionMonstersStore } from '@/stores/sessionMonsters'
 
+const { t } = useI18n()
 const store = useSessionMonstersStore()
 const tabs = computed(() => store.tabs)
 const activeId = computed({
   get: () => store.activeId,
-  set: (v) => { store.activeId = v },
+  set: (v) => {
+    store.activeId = v
+  },
 })
-const adding = ref(false)       // add-panel open
+const adding = ref(false) // add-panel open
 const addMode = ref<'search' | 'url' | 'image'>('search')
-const ADD_MODES = [
-  { label: 'Search', value: 'search' },
-  { label: 'URL', value: 'url' },
-  { label: 'Image', value: 'image' },
-]
+const ADD_MODES = computed(() => [
+  { label: t('session.statBlock.addModes.search'), value: 'search' },
+  { label: t('session.statBlock.addModes.url'), value: 'url' },
+  { label: t('session.statBlock.addModes.image'), value: 'image' },
+])
 
 // ── Add panel state ───────────────────────────────────────────────────────
 const searchQuery = ref<string | MonsterSummary>('')
@@ -134,7 +138,7 @@ function onGlobalPaste(e: ClipboardEvent) {
       e.preventDefault()
       const file = item.getAsFile()
       if (!file) continue
-      store.addImageTab('Pasted screenshot', URL.createObjectURL(file))
+      store.addImageTab(t('session.statBlock.pastedScreenshot'), URL.createObjectURL(file))
       if (adding.value) closeAdd()
       break
     }
@@ -159,7 +163,14 @@ function mod(score: number): string {
   return m >= 0 ? `+${m}` : `${m}`
 }
 
-const statKeys = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] as const
+const statKeys = [
+  'strength',
+  'dexterity',
+  'constitution',
+  'intelligence',
+  'wisdom',
+  'charisma',
+] as const
 const statLabels = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']
 
 function speedStr(speed: Record<string, number>): string {
@@ -195,7 +206,6 @@ function fmtBonus(n: number): string {
 
 <template>
   <div class="msb">
-
     <!-- ── Tab bar ── -->
     <div class="msb__tabbar">
       <div class="msb__tabs-scroll">
@@ -203,14 +213,22 @@ function fmtBonus(n: number): string {
           v-for="tab in tabs"
           :key="tab.id"
           :class="['msb__tab', { 'msb__tab--active': tab.id === activeId }]"
-          @click="activeId = tab.id; adding = false"
+          @click="
+            activeId = tab.id;
+            adding = false;
+          "
         >
           <i :class="['pi', tab.type === 'image' ? 'pi-image' : 'pi-book']" />
           <span class="msb__tab-label">{{ tab.label }}</span>
           <span class="msb__tab-close" @click="closeTab(tab.id, $event)">×</span>
         </button>
       </div>
-      <button class="msb__add-btn" :class="{ 'msb__add-btn--active': adding }" title="Add monster" @click="adding ? closeAdd() : openAdd()">
+      <button
+        class="msb__add-btn"
+        :class="{ 'msb__add-btn--active': adding }"
+        :title="$t('session.statBlock.addMonsterTitle')"
+        @click="adding ? closeAdd() : openAdd()"
+      >
         <i class="pi pi-plus" />
       </button>
     </div>
@@ -234,7 +252,7 @@ function fmtBonus(n: number): string {
           v-model="searchQuery"
           :suggestions="suggestions"
           option-label="name"
-          placeholder="Monster name…"
+          :placeholder="$t('session.statBlock.searchPlaceholder')"
           :delay="300"
           complete-on-focus
           fluid
@@ -244,11 +262,15 @@ function fmtBonus(n: number): string {
           <template #option="{ option }">
             <div class="msb__suggestion">
               <span class="msb__suggestion-name">{{ option.name }}</span>
-              <span class="msb__suggestion-meta">CR {{ option.challenge_rating }} · {{ option.size }} {{ option.type }}</span>
+              <span class="msb__suggestion-meta"
+                >CR {{ option.challenge_rating }} · {{ option.size }} {{ option.type }}</span
+              >
             </div>
           </template>
         </AutoComplete>
-        <p v-if="addLoading" class="msb__add-loading"><i class="pi pi-spin pi-spinner" /> Loading…</p>
+        <p v-if="addLoading" class="msb__add-loading">
+          <i class="pi pi-spin pi-spinner" /> {{ $t('common.loading') }}
+        </p>
         <p v-if="addError" class="msb__add-error">{{ addError }}</p>
       </template>
 
@@ -259,27 +281,26 @@ function fmtBonus(n: number): string {
             v-model="urlInput"
             class="msb__search"
             type="url"
-            placeholder="https://www.dndbeyond.com/monsters/goblin"
+            :placeholder="$t('session.statBlock.urlPlaceholder')"
             @keydown.enter="loadFromUrl"
           />
-          <button class="msb__url-go" :disabled="addLoading || !urlInput.trim()" @click="loadFromUrl">
+          <button
+            class="msb__url-go"
+            :disabled="addLoading || !urlInput.trim()"
+            @click="loadFromUrl"
+          >
             <i v-if="addLoading" class="pi pi-spin pi-spinner" />
             <i v-else class="pi pi-arrow-right" />
           </button>
         </div>
-        <p class="msb__url-hint">Works with dndbeyond.com and 5e.tools URLs. Finds the closest match in Open5e's database — non-SRD homebrew won't be found.</p>
+        <p class="msb__url-hint">{{ $t('session.statBlock.urlHint') }}</p>
       </template>
 
       <!-- Image -->
       <template v-else>
-        <div
-          class="msb__drop-target"
-          @dragover.prevent
-          @drop="onDrop"
-          @click="browseFile"
-        >
+        <div class="msb__drop-target" @dragover.prevent @drop="onDrop" @click="browseFile">
           <i class="pi pi-upload" />
-          <span>Drop, paste (Ctrl+V), or click to browse</span>
+          <span>{{ $t('session.statBlock.dropTarget') }}</span>
         </div>
         <input
           ref="fileInputRef"
@@ -293,12 +314,12 @@ function fmtBonus(n: number): string {
 
     <!-- ── Empty (no tabs, no add panel) ── -->
     <div v-if="!adding && tabs.length === 0" class="msb__empty">
-      <i class="pi pi-book" style="font-size:1.6rem;opacity:0.2" />
-      <p>No stat blocks loaded</p>
+      <i class="pi pi-book" style="font-size: 1.6rem; opacity: 0.2" />
+      <p>{{ $t('session.statBlock.noStatBlocks') }}</p>
       <button class="msb__empty-add" @click="openAdd()">
-        <i class="pi pi-plus" /> Add monster
+        <i class="pi pi-plus" /> {{ $t('session.statBlock.addMonsterBtn') }}
       </button>
-      <p class="msb__hint">Tip: Ctrl+V pastes a screenshot directly</p>
+      <p class="msb__hint">{{ $t('session.statBlock.tip') }}</p>
     </div>
 
     <!-- ── Content area ── -->
@@ -313,7 +334,10 @@ function fmtBonus(n: number): string {
         <div class="msb__header">
           <div class="msb__name">{{ activeTab.monster.name }}</div>
           <div class="msb__meta">
-            {{ activeTab.monster.size }} {{ activeTab.monster.type }}<template v-if="activeTab.monster.subtype"> ({{ activeTab.monster.subtype }})</template>, {{ activeTab.monster.alignment }}
+            {{ activeTab.monster.size }} {{ activeTab.monster.type
+            }}<template v-if="activeTab.monster.subtype">
+              ({{ activeTab.monster.subtype }})</template
+            >, {{ activeTab.monster.alignment }}
           </div>
         </div>
 
@@ -321,15 +345,20 @@ function fmtBonus(n: number): string {
 
         <div class="msb__core">
           <div class="msb__core-row">
-            <span class="msb__label">Armor Class</span>
-            <span>{{ activeTab.monster.armor_class }}<template v-if="activeTab.monster.armor_desc"> ({{ activeTab.monster.armor_desc }})</template></span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.armorClass') }}</span>
+            <span
+              >{{ activeTab.monster.armor_class
+              }}<template v-if="activeTab.monster.armor_desc">
+                ({{ activeTab.monster.armor_desc }})</template
+              ></span
+            >
           </div>
           <div class="msb__core-row">
-            <span class="msb__label">Hit Points</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.hitPoints') }}</span>
             <span>{{ activeTab.monster.hit_points }} ({{ activeTab.monster.hit_dice }})</span>
           </div>
           <div class="msb__core-row">
-            <span class="msb__label">Speed</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.speed') }}</span>
             <span>{{ speedStr(activeTab.monster.speed) }}</span>
           </div>
         </div>
@@ -348,39 +377,49 @@ function fmtBonus(n: number): string {
 
         <div class="msb__traits">
           <div v-if="tabSaves(activeTab.monster).length" class="msb__trait-row">
-            <span class="msb__label">Saving Throws</span>
-            <span>{{ tabSaves(activeTab.monster).map(s => `${s.label} ${fmtBonus(s.val)}`).join(', ') }}</span>
+            <span class="msb__label">{{ $t('common.savingThrows') }}</span>
+            <span>{{
+              tabSaves(activeTab.monster)
+                .map((s) => `${s.label} ${fmtBonus(s.val)}`)
+                .join(', ')
+            }}</span>
           </div>
           <div v-if="tabSkills(activeTab.monster).length" class="msb__trait-row">
-            <span class="msb__label">Skills</span>
-            <span>{{ tabSkills(activeTab.monster).map(s => `${s.label} ${s.val}`).join(', ') }}</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.skills') }}</span>
+            <span>{{
+              tabSkills(activeTab.monster)
+                .map((s) => `${s.label} ${s.val}`)
+                .join(', ')
+            }}</span>
           </div>
           <div v-if="activeTab.monster.damage_vulnerabilities" class="msb__trait-row">
-            <span class="msb__label">Damage Vulnerabilities</span>
+            <span class="msb__label">{{
+              $t('session.statBlock.traits.damageVulnerabilities')
+            }}</span>
             <span>{{ activeTab.monster.damage_vulnerabilities }}</span>
           </div>
           <div v-if="activeTab.monster.damage_resistances" class="msb__trait-row">
-            <span class="msb__label">Damage Resistances</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.damageResistances') }}</span>
             <span>{{ activeTab.monster.damage_resistances }}</span>
           </div>
           <div v-if="activeTab.monster.damage_immunities" class="msb__trait-row">
-            <span class="msb__label">Damage Immunities</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.damageImmunities') }}</span>
             <span>{{ activeTab.monster.damage_immunities }}</span>
           </div>
           <div v-if="activeTab.monster.condition_immunities" class="msb__trait-row">
-            <span class="msb__label">Condition Immunities</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.conditionImmunities') }}</span>
             <span>{{ activeTab.monster.condition_immunities }}</span>
           </div>
           <div class="msb__trait-row">
-            <span class="msb__label">Senses</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.senses') }}</span>
             <span>{{ activeTab.monster.senses }}</span>
           </div>
           <div class="msb__trait-row">
-            <span class="msb__label">Languages</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.languages') }}</span>
             <span>{{ activeTab.monster.languages || '—' }}</span>
           </div>
           <div class="msb__trait-row">
-            <span class="msb__label">Challenge</span>
+            <span class="msb__label">{{ $t('session.statBlock.traits.challenge') }}</span>
             <span>{{ activeTab.monster.challenge_rating }}</span>
           </div>
         </div>
@@ -394,29 +433,33 @@ function fmtBonus(n: number): string {
         </div>
 
         <div v-if="activeTab.monster.actions?.length" class="msb__section">
-          <div class="msb__section-title">Actions</div>
+          <div class="msb__section-title">{{ $t('session.statBlock.sections.actions') }}</div>
           <div v-for="a in activeTab.monster.actions" :key="a.name" class="msb__feature">
             <span class="msb__feature-name">{{ a.name }}.</span> {{ a.desc }}
           </div>
         </div>
 
         <div v-if="activeTab.monster.bonus_actions?.length" class="msb__section">
-          <div class="msb__section-title">Bonus Actions</div>
+          <div class="msb__section-title">{{ $t('session.statBlock.sections.bonusActions') }}</div>
           <div v-for="a in activeTab.monster.bonus_actions" :key="a.name" class="msb__feature">
             <span class="msb__feature-name">{{ a.name }}.</span> {{ a.desc }}
           </div>
         </div>
 
         <div v-if="activeTab.monster.reactions?.length" class="msb__section">
-          <div class="msb__section-title">Reactions</div>
+          <div class="msb__section-title">{{ $t('session.statBlock.sections.reactions') }}</div>
           <div v-for="a in activeTab.monster.reactions" :key="a.name" class="msb__feature">
             <span class="msb__feature-name">{{ a.name }}.</span> {{ a.desc }}
           </div>
         </div>
 
         <div v-if="activeTab.monster.legendary_actions?.length" class="msb__section">
-          <div class="msb__section-title">Legendary Actions</div>
-          <p v-if="activeTab.monster.legendary_desc" class="msb__legendary-desc">{{ activeTab.monster.legendary_desc }}</p>
+          <div class="msb__section-title">
+            {{ $t('session.statBlock.sections.legendaryActions') }}
+          </div>
+          <p v-if="activeTab.monster.legendary_desc" class="msb__legendary-desc">
+            {{ activeTab.monster.legendary_desc }}
+          </p>
           <div v-for="a in activeTab.monster.legendary_actions" :key="a.name" class="msb__feature">
             <span class="msb__feature-name">{{ a.name }}.</span> {{ a.desc }}
           </div>
@@ -425,7 +468,6 @@ function fmtBonus(n: number): string {
         <div class="msb__source">{{ activeTab.monster.document__title }}</div>
       </div>
     </template>
-
   </div>
 </template>
 
@@ -454,7 +496,9 @@ function fmtBonus(n: number): string {
   flex: 1;
   scrollbar-width: none;
 }
-.msb__tabs-scroll::-webkit-scrollbar { display: none; }
+.msb__tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
 
 .msb__tab {
   display: flex;
@@ -473,7 +517,9 @@ function fmtBonus(n: number): string {
   margin-bottom: -1px;
   transition: color 0.12s;
 }
-.msb__tab:hover { color: var(--ss-text); }
+.msb__tab:hover {
+  color: var(--ss-text);
+}
 .msb__tab--active {
   color: var(--ss-text);
   border-bottom-color: var(--ss-primary);
@@ -493,7 +539,10 @@ function fmtBonus(n: number): string {
   padding: 0 0.1rem;
   cursor: pointer;
 }
-.msb__tab-close:hover { opacity: 1; color: var(--ss-danger, #ef4444); }
+.msb__tab-close:hover {
+  opacity: 1;
+  color: var(--ss-danger, #ef4444);
+}
 
 .msb__add-btn {
   flex-shrink: 0;
@@ -504,10 +553,17 @@ function fmtBonus(n: number): string {
   color: var(--ss-text-muted);
   cursor: pointer;
   font-size: 0.7rem;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
 }
-.msb__add-btn:hover { color: var(--ss-primary); }
-.msb__add-btn--active { color: var(--ss-primary); background: color-mix(in srgb, var(--ss-primary) 8%, transparent); }
+.msb__add-btn:hover {
+  color: var(--ss-primary);
+}
+.msb__add-btn--active {
+  color: var(--ss-primary);
+  background: color-mix(in srgb, var(--ss-primary) 8%, transparent);
+}
 
 /* ── Add panel ── */
 .msb__add-panel {
@@ -521,8 +577,12 @@ function fmtBonus(n: number): string {
 }
 
 /* SelectButton (Search / URL / Image) — stretch the three options full-width */
-.msb__add-modes { display: flex; }
-.msb__add-modes :deep(.p-togglebutton) { flex: 1; }
+.msb__add-modes {
+  display: flex;
+}
+.msb__add-modes :deep(.p-togglebutton) {
+  flex: 1;
+}
 
 /* Text input inside add panel (URL mode) */
 .msb__search {
@@ -535,7 +595,9 @@ function fmtBonus(n: number): string {
   color: var(--ss-text);
   outline: none;
 }
-.msb__search:focus { border-color: var(--ss-primary); }
+.msb__search:focus {
+  border-color: var(--ss-primary);
+}
 
 /* Suggestion row rendered inside the AutoComplete #option slot */
 .msb__suggestion {
@@ -545,8 +607,16 @@ function fmtBonus(n: number): string {
   gap: 0.5rem;
   width: 100%;
 }
-.msb__suggestion-name { font-weight: 600; color: var(--ss-text); font-size: 0.78rem; }
-.msb__suggestion-meta { font-size: 0.65rem; color: var(--ss-text-muted); white-space: nowrap; }
+.msb__suggestion-name {
+  font-weight: 600;
+  color: var(--ss-text);
+  font-size: 0.78rem;
+}
+.msb__suggestion-meta {
+  font-size: 0.65rem;
+  color: var(--ss-text-muted);
+  white-space: nowrap;
+}
 
 .msb__add-loading {
   display: flex;
@@ -582,8 +652,13 @@ function fmtBonus(n: number): string {
   align-items: center;
   justify-content: center;
 }
-.msb__url-go:disabled { opacity: 0.4; cursor: not-allowed; }
-.msb__url-go:not(:disabled):hover { filter: brightness(1.1); }
+.msb__url-go:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.msb__url-go:not(:disabled):hover {
+  filter: brightness(1.1);
+}
 
 .msb__url-hint {
   font-size: 0.65rem;
@@ -605,9 +680,14 @@ function fmtBonus(n: number): string {
   font-size: 0.72rem;
   color: var(--ss-text-muted);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
 }
-.msb__drop-target:hover { border-color: var(--ss-primary); color: var(--ss-text); }
+.msb__drop-target:hover {
+  border-color: var(--ss-primary);
+  color: var(--ss-text);
+}
 
 .msb__file-input {
   display: none;
@@ -640,7 +720,9 @@ function fmtBonus(n: number): string {
   cursor: pointer;
   margin-top: 0.25rem;
 }
-.msb__empty-add:hover { background: color-mix(in srgb, var(--ss-primary) 8%, transparent); }
+.msb__empty-add:hover {
+  background: color-mix(in srgb, var(--ss-primary) 8%, transparent);
+}
 
 /* ── Image area ── */
 .msb__image-area {
@@ -662,7 +744,9 @@ function fmtBonus(n: number): string {
   padding: 0.6rem 0.7rem;
 }
 
-.msb__header { margin-bottom: 0.2rem; }
+.msb__header {
+  margin-bottom: 0.2rem;
+}
 
 .msb__name {
   font-size: 1.05rem;
@@ -684,7 +768,11 @@ function fmtBonus(n: number): string {
   margin: 0.4rem 0;
 }
 
-.msb__core { display: flex; flex-direction: column; gap: 0.12rem; }
+.msb__core {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
 
 .msb__core-row {
   display: flex;
@@ -725,7 +813,11 @@ function fmtBonus(n: number): string {
   color: var(--ss-text-muted);
 }
 
-.msb__traits { display: flex; flex-direction: column; gap: 0.1rem; }
+.msb__traits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
 
 .msb__trait-row {
   display: flex;
@@ -752,8 +844,14 @@ function fmtBonus(n: number): string {
   margin-bottom: 0.1rem;
 }
 
-.msb__feature { line-height: 1.5; color: var(--ss-text); }
-.msb__feature-name { font-weight: 700; font-style: italic; }
+.msb__feature {
+  line-height: 1.5;
+  color: var(--ss-text);
+}
+.msb__feature-name {
+  font-weight: 700;
+  font-style: italic;
+}
 
 .msb__legendary-desc {
   font-size: 0.75rem;

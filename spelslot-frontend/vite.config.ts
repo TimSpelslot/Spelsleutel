@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import checker from 'vite-plugin-checker'
 import { fileURLToPath, URL } from 'node:url'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -66,8 +67,25 @@ self.addEventListener('notificationclick', (event) => {
   }
 }
 
+// Vitest loads this config too; skip the checker there since `npm run test`
+// already runs vue-tsc explicitly.
+const isVitest = !!process.env.VITEST
+
 export default defineConfig({
-  plugins: [vue(), firebaseSwPlugin()],
+  plugins: [
+    vue(),
+    firebaseSwPlugin(),
+    // Runs vue-tsc (types + templates) in a worker during `vite`/`vite preview`
+    // and surfaces errors in the browser overlay + terminal as you save.
+    ...(isVitest
+      ? []
+      : [
+          checker({
+            vueTsc: true,
+            enableBuild: false,
+          }),
+        ]),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

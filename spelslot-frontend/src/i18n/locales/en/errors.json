@@ -1,0 +1,13 @@
+{
+  "networkError": "Network error — check your internet connection and try again.",
+  "notLoggedIn": "You are not logged in. Please log in and try again.",
+  "noPermission": "You do not have permission to perform this action.",
+  "httpStatus": "HTTP {status}",
+  "invalidFileType": "Only JPEG, PNG, WebP and GIF images are allowed.",
+  "fileTooLarge": "Image must be smaller than {max} MB.",
+  "notAuthenticated": "Not authenticated.",
+  "unexpectedServerResponse": "Unexpected server response.",
+  "uploadFailedHttp": "Upload failed (HTTP {status})",
+  "networkErrorDuringUpload": "Network error during upload.",
+  "uploadCancelled": "Upload cancelled."
+}

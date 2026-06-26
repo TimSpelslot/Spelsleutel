@@ -21,7 +21,9 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
         name: decoded.name ?? '',
         picture: decoded.picture ?? '',
       }
-    } catch { /* no-op — unauthenticated request continues */ }
+    } catch {
+      /* no-op — unauthenticated request continues */
+    }
   }
   next()
 }

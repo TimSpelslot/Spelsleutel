@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
@@ -13,6 +14,8 @@ import TimelineView from './TimelineView.vue'
 import { codexService, type CodexEntryDetail, type EntryType } from '@/services/codexService'
 import { uploadImage } from '@/services/uploadService'
 import { useAuthStore } from '@/stores/auth'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   slug: string | null
@@ -87,10 +90,17 @@ async function load(slug: string) {
   }
 }
 
-watch(() => props.slug, (s) => {
-  if (s) load(s)
-  else { detail.value = null; isEditing.value = false }
-}, { immediate: true })
+watch(
+  () => props.slug,
+  (s) => {
+    if (s) load(s)
+    else {
+      detail.value = null
+      isEditing.value = false
+    }
+  },
+  { immediate: true },
+)
 
 const entry = computed(() => detail.value?.entry)
 const visibleDocs = computed(() => (detail.value?.documents ?? []).filter((d) => !d.isHidden))
@@ -108,32 +118,32 @@ const canWrite = computed(() => {
   return e.authorId === user.id || (e.editors ?? []).includes(user.id)
 })
 
-const TYPE_OPTIONS = [
-  { label: 'Lore', value: 'lore' },
-  { label: 'Location', value: 'location' },
-  { label: 'NPC', value: 'npc' },
-  { label: 'Faction', value: 'faction' },
-  { label: 'Item', value: 'item' },
-  { label: 'Event', value: 'event' },
-  { label: 'Rule', value: 'rule' },
-  { label: 'Session', value: 'session' },
-]
+const TYPE_OPTIONS = computed(() => [
+  { label: t('codex.types.lore'), value: 'lore' },
+  { label: t('codex.types.location'), value: 'location' },
+  { label: t('codex.types.npc'), value: 'npc' },
+  { label: t('codex.types.faction'), value: 'faction' },
+  { label: t('codex.types.item'), value: 'item' },
+  { label: t('codex.types.event'), value: 'event' },
+  { label: t('codex.types.rule'), value: 'rule' },
+  { label: t('codex.types.session'), value: 'session' },
+])
 
-const STATUS_OPTIONS = [
-  { label: 'Draft', value: 'DRAFT' },
-  { label: 'Published', value: 'PUBLISHED' },
-  { label: 'Archived', value: 'ARCHIVED' },
-]
+const STATUS_OPTIONS = computed(() => [
+  { label: t('codex.status.draft'), value: 'DRAFT' },
+  { label: t('codex.status.published'), value: 'PUBLISHED' },
+  { label: t('codex.status.archived'), value: 'ARCHIVED' },
+])
 
 const permissionOptions = computed(() => {
   const opts: { label: string; value: string }[] = [
-    { label: 'Public', value: 'PUBLIC' },
-    { label: 'Players', value: 'PLAYERS' },
-    { label: 'Private', value: 'PRIVATE' },
+    { label: t('codex.permission.public'), value: 'PUBLIC' },
+    { label: t('codex.permission.players'), value: 'PLAYERS' },
+    { label: t('codex.permission.private'), value: 'PRIVATE' },
   ]
   const r = auth.effectiveUser?.role
   if (r === 'DM' || r === 'ADMIN') {
-    opts.splice(2, 0, { label: 'DM Only', value: 'DM_ONLY' })
+    opts.splice(2, 0, { label: t('codex.permission.dmOnly'), value: 'DM_ONLY' })
   }
   return opts
 })
@@ -195,14 +205,14 @@ function timelineContent(content: unknown): any {
 }
 
 const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
-  lore:     { label: 'Lore',     icon: 'pi-book' },
-  location: { label: 'Location', icon: 'pi-map-marker' },
-  npc:      { label: 'NPC',      icon: 'pi-user' },
-  faction:  { label: 'Faction',  icon: 'pi-users' },
-  item:     { label: 'Item',     icon: 'pi-star' },
-  event:    { label: 'Event',    icon: 'pi-calendar' },
-  rule:     { label: 'Rule',     icon: 'pi-file' },
-  session:  { label: 'Session',  icon: 'pi-play' },
+  lore: { label: t('codex.types.lore'), icon: 'pi-book' },
+  location: { label: t('codex.types.location'), icon: 'pi-map-marker' },
+  npc: { label: t('codex.types.npc'), icon: 'pi-user' },
+  faction: { label: t('codex.types.faction'), icon: 'pi-users' },
+  item: { label: t('codex.types.item'), icon: 'pi-star' },
+  event: { label: t('codex.types.event'), icon: 'pi-calendar' },
+  rule: { label: t('codex.types.rule'), icon: 'pi-file' },
+  session: { label: t('codex.types.session'), icon: 'pi-play' },
 }
 </script>
 
@@ -210,7 +220,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   <!-- Empty state -->
   <div v-if="!slug" class="detail-empty">
     <i class="pi pi-book detail-empty__icon" aria-hidden="true" />
-    <p class="detail-empty__text">Select an entry from the tree</p>
+    <p class="detail-empty__text">{{ $t('codex.selectEntry') }}</p>
   </div>
 
   <!-- Loading -->
@@ -242,46 +252,76 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
     />
 
     <div class="detail-content">
-
       <!-- ── Edit mode: metadata form ── -->
       <template v-if="isEditing">
         <div class="edit-meta">
           <div class="edit-meta__row">
-            <label class="edit-label">Title</label>
+            <label class="edit-label">{{ $t('codex.editForm.titleLabel') }}</label>
             <InputText v-model="metaForm.name" class="edit-title-input" />
           </div>
           <div class="edit-meta__row edit-meta__row--cols">
             <div class="edit-field">
-              <label class="edit-label">Type</label>
-              <Select v-model="metaForm.type" :options="TYPE_OPTIONS" option-label="label" option-value="value" class="edit-select" />
+              <label class="edit-label">{{ $t('codex.editForm.typeLabel') }}</label>
+              <Select
+                v-model="metaForm.type"
+                :options="TYPE_OPTIONS"
+                option-label="label"
+                option-value="value"
+                class="edit-select"
+              />
             </div>
             <div class="edit-field">
-              <label class="edit-label">Status</label>
-              <Select v-model="metaForm.status" :options="STATUS_OPTIONS" option-label="label" option-value="value" class="edit-select" />
+              <label class="edit-label">{{ $t('codex.editForm.statusLabel') }}</label>
+              <Select
+                v-model="metaForm.status"
+                :options="STATUS_OPTIONS"
+                option-label="label"
+                option-value="value"
+                class="edit-select"
+              />
             </div>
             <div class="edit-field">
-              <label class="edit-label">Permission</label>
-              <Select v-model="metaForm.permission" :options="permissionOptions" option-label="label" option-value="value" class="edit-select" />
+              <label class="edit-label">{{ $t('codex.editForm.permissionLabel') }}</label>
+              <Select
+                v-model="metaForm.permission"
+                :options="permissionOptions"
+                option-label="label"
+                option-value="value"
+                class="edit-select"
+              />
             </div>
           </div>
           <div class="edit-meta__row">
-            <label class="edit-label">Summary</label>
-            <Textarea v-model="metaForm.summary" :rows="2" auto-resize class="edit-textarea" placeholder="Short description…" />
+            <label class="edit-label">{{ $t('codex.editForm.summaryLabel') }}</label>
+            <Textarea
+              v-model="metaForm.summary"
+              :rows="2"
+              auto-resize
+              class="edit-textarea"
+              :placeholder="$t('codex.editForm.summaryPlaceholder')"
+            />
           </div>
           <div class="edit-meta__row">
-            <label class="edit-label">Tags</label>
-            <InputChips v-model="metaForm.tags" placeholder="Add tag, press Enter…" class="edit-chips" />
+            <label class="edit-label">{{ $t('codex.editForm.tagsLabel') }}</label>
+            <InputChips
+              v-model="metaForm.tags"
+              :placeholder="$t('codex.editForm.tagsPlaceholder')"
+              class="edit-chips"
+            />
           </div>
 
           <!-- Banner -->
           <div class="edit-meta__row">
-            <label class="edit-label">Banner image</label>
+            <label class="edit-label">{{ $t('codex.editForm.bannerLabel') }}</label>
 
             <!-- Preview -->
             <div
               v-if="bannerForm.url"
               class="edit-banner-preview"
-              :style="{ backgroundImage: `url(${bannerForm.url})`, backgroundPositionY: `${bannerForm.yPosition}%` }"
+              :style="{
+                backgroundImage: `url(${bannerForm.url})`,
+                backgroundPositionY: `${bannerForm.yPosition}%`,
+              }"
             />
 
             <div class="edit-banner-controls">
@@ -293,7 +333,11 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
                 @change="handleBannerFile"
               />
               <Button
-                :label="bannerForm.url ? 'Replace image' : 'Upload image'"
+                :label="
+                  bannerForm.url
+                    ? $t('codex.editForm.bannerReplace')
+                    : $t('codex.editForm.bannerUpload')
+                "
                 icon="pi pi-upload"
                 size="small"
                 outlined
@@ -303,38 +347,54 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
 
               <template v-if="bannerForm.url">
                 <label class="edit-label edit-label--inline">
-                  Visible
-                  <input type="checkbox" v-model="bannerForm.enabled" />
+                  {{ $t('codex.editForm.bannerVisible') }}
+                  <input v-model="bannerForm.enabled" type="checkbox" />
                 </label>
 
                 <div class="edit-banner-position">
-                  <span class="edit-label edit-label--inline">Vertical position</span>
+                  <span class="edit-label edit-label--inline">{{
+                    $t('codex.editForm.bannerVerticalPosition')
+                  }}</span>
                   <input
+                    v-model.number="bannerForm.yPosition"
                     type="range"
                     min="0"
                     max="100"
-                    v-model.number="bannerForm.yPosition"
                     class="edit-banner-slider"
                   />
                   <span class="edit-banner-position-val">{{ bannerForm.yPosition }}%</span>
                 </div>
 
-                <button class="edit-banner-remove" @click="bannerForm.url = ''; bannerForm.enabled = false">
-                  <i class="pi pi-times" /> Remove
+                <button
+                  class="edit-banner-remove"
+                  @click="
+                    bannerForm.url = '';
+                    bannerForm.enabled = false;
+                  "
+                >
+                  <i class="pi pi-times" /> {{ $t('codex.editForm.bannerRemove') }}
                 </button>
               </template>
 
               <!-- Upload progress -->
               <div v-if="bannerUploading" class="edit-banner-progress">
-                <div class="edit-banner-progress-bar" :style="{ width: `${bannerUploadProgress}%` }" />
+                <div
+                  class="edit-banner-progress-bar"
+                  :style="{ width: `${bannerUploadProgress}%` }"
+                />
               </div>
               <p v-if="bannerUploadError" class="edit-banner-error">{{ bannerUploadError }}</p>
             </div>
           </div>
 
           <div class="edit-actions">
-            <Button label="Save" icon="pi pi-check" :loading="saving" @click="saveEdit" />
-            <Button label="Cancel" text severity="secondary" @click="cancelEdit" />
+            <Button
+              :label="$t('common.save')"
+              icon="pi pi-check"
+              :loading="saving"
+              @click="saveEdit"
+            />
+            <Button :label="$t('common.cancel')" text severity="secondary" @click="cancelEdit" />
           </div>
         </div>
       </template>
@@ -350,15 +410,23 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
                 {{ TYPE_META[entry.type]?.label ?? entry.type }}
               </template>
             </Tag>
-            <Tag v-if="entry.permission === 'DM_ONLY'" value="DM Only" severity="warn" />
-            <Tag v-if="entry.status === 'DRAFT'" value="Draft" severity="warn" />
+            <Tag
+              v-if="entry.permission === 'DM_ONLY'"
+              :value="$t('codex.permission.dmOnly')"
+              severity="warn"
+            />
+            <Tag
+              v-if="entry.status === 'DRAFT'"
+              :value="$t('codex.status.draft')"
+              severity="warn"
+            />
             <Tag v-if="entry.isLocked" severity="secondary">
               <template #default><i class="pi pi-lock" /></template>
             </Tag>
             <Button
               v-if="canWrite"
               icon="pi pi-pencil"
-              label="Edit"
+              :label="$t('common.edit')"
               size="small"
               text
               class="detail-edit-btn"
@@ -374,7 +442,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
         </div>
 
         <p v-if="entry.aliases.length" class="detail-aliases">
-          <span class="detail-aliases__label">Also known as:</span>
+          <span class="detail-aliases__label">{{ $t('codex.alsoKnownAs') }}</span>
           {{ entry.aliases.join(', ') }}
         </p>
       </template>
@@ -416,7 +484,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
               @navigate="$emit('navigate', $event)"
             />
             <div v-else-if="activeDoc.type === 'page'" class="detail-no-content">
-              This page has no content yet.
+              {{ $t('codex.docViewer.noContent') }}
             </div>
             <TimelineView
               v-else-if="activeDoc.type === 'time'"
@@ -426,21 +494,25 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
             />
             <div v-else class="detail-no-content">
               <i class="pi pi-clock" />
-              {{ activeDoc.type.charAt(0).toUpperCase() + activeDoc.type.slice(1) }} viewer not yet supported.
+              {{
+                $t('codex.docViewer.notYetSupported', {
+                  type: activeDoc.type.charAt(0).toUpperCase() + activeDoc.type.slice(1),
+                })
+              }}
             </div>
           </template>
         </div>
       </div>
 
       <div v-else class="detail-no-content detail-no-content--standalone">
-        No documents for this entry.
+        {{ $t('codex.noDocumentsShort') }}
       </div>
 
       <!-- ── Relations ── -->
       <div v-if="relations.length && !isEditing" class="detail-relations">
         <h2 class="detail-relations__heading">
           <i class="pi pi-link" aria-hidden="true" />
-          Related
+          {{ $t('codex.related') }}
         </h2>
         <div class="detail-relations__list">
           <div v-for="rel in relations" :key="rel.id" class="detail-relation">
@@ -456,7 +528,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
             >
               {{ rel.relatedEntry.name }}
             </button>
-            <span v-else class="detail-relation__unknown">Unknown entry</span>
+            <span v-else class="detail-relation__unknown">{{ $t('codex.unknownEntry') }}</span>
           </div>
         </div>
       </div>
@@ -476,12 +548,24 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   color: var(--ss-text-muted);
 }
 
-.detail-empty__icon { font-size: 2.5rem; color: var(--ss-text-subtle); opacity: 0.4; }
-.detail-empty__text { margin: 0; font-size: 0.9rem; }
-.detail-empty--error .detail-empty__icon { color: var(--ss-danger); opacity: 1; }
+.detail-empty__icon {
+  font-size: 2.5rem;
+  color: var(--ss-text-subtle);
+  opacity: 0.4;
+}
+.detail-empty__text {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.detail-empty--error .detail-empty__icon {
+  color: var(--ss-danger);
+  opacity: 1;
+}
 
 /* ── Skeleton ── */
-.detail-skel { margin-bottom: 0.5rem; }
+.detail-skel {
+  margin-bottom: 0.5rem;
+}
 
 /* ── Banner ── */
 .detail-banner {
@@ -493,7 +577,9 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
 }
 
 /* ── Content ── */
-.detail-content { padding: 1.25rem 1.5rem 2rem; }
+.detail-content {
+  padding: 1.25rem 1.5rem 2rem;
+}
 
 .detail-title-row {
   display: flex;
@@ -527,9 +613,17 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   font-size: 0.75rem;
 }
 
-.detail-edit-btn { font-size: 0.75rem !important; padding: 0.2rem 0.5rem !important; }
+.detail-edit-btn {
+  font-size: 0.75rem !important;
+  padding: 0.2rem 0.5rem !important;
+}
 
-.detail-summary { margin: 0 0 0.75rem; color: var(--ss-text-muted); font-size: 0.875rem; line-height: 1.6; }
+.detail-summary {
+  margin: 0 0 0.75rem;
+  color: var(--ss-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
 
 .detail-tags {
   display: flex;
@@ -548,8 +642,15 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   font-weight: 500;
 }
 
-.detail-aliases { margin: 0 0 0.75rem; font-size: 0.75rem; color: var(--ss-text-muted); }
-.detail-aliases__label { font-weight: 600; margin-right: 0.25em; }
+.detail-aliases {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: var(--ss-text-muted);
+}
+.detail-aliases__label {
+  font-weight: 600;
+  margin-right: 0.25em;
+}
 
 /* ── Edit meta form ── */
 .edit-meta {
@@ -563,14 +664,24 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   gap: 0.75rem;
 }
 
-.edit-meta__row { display: flex; flex-direction: column; gap: 0.3rem; }
+.edit-meta__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
 .edit-meta__row--cols {
   flex-direction: row;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.edit-field { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 140px; }
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 140px;
+}
 
 .edit-label {
   font-size: 0.72rem;
@@ -580,10 +691,21 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   color: var(--ss-text-muted);
 }
 
-.edit-title-input { width: 100%; font-size: 1.1rem !important; font-weight: 600 !important; }
-.edit-select { width: 100%; }
-.edit-textarea { width: 100%; font-size: 0.875rem; }
-.edit-chips { width: 100%; }
+.edit-title-input {
+  width: 100%;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+}
+.edit-select {
+  width: 100%;
+}
+.edit-textarea {
+  width: 100%;
+  font-size: 0.875rem;
+}
+.edit-chips {
+  width: 100%;
+}
 
 .edit-actions {
   display: flex;
@@ -616,15 +738,30 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   border-bottom: 2px solid transparent;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.1s, border-color 0.1s;
+  transition:
+    color 0.1s,
+    border-color 0.1s;
 }
 
-.detail-tab:hover { color: var(--ss-text); }
-.detail-tab--active { color: var(--ss-primary); border-bottom-color: var(--ss-primary); }
-.detail-tab:disabled { opacity: 0.5; cursor: not-allowed; }
+.detail-tab:hover {
+  color: var(--ss-text);
+}
+.detail-tab--active {
+  color: var(--ss-primary);
+  border-bottom-color: var(--ss-primary);
+}
+.detail-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-.detail-doc-body { padding: 1.25rem; background: var(--ss-surface); }
-.detail-doc-body--timeline { padding: 0; }
+.detail-doc-body {
+  padding: 1.25rem;
+  background: var(--ss-surface);
+}
+.detail-doc-body--timeline {
+  padding: 0;
+}
 
 .detail-no-content {
   display: flex;
@@ -636,7 +773,9 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   font-style: italic;
 }
 
-.detail-no-content--standalone { margin-top: 1rem; }
+.detail-no-content--standalone {
+  margin-top: 1rem;
+}
 
 /* ── Relations ── */
 .detail-relations {
@@ -657,11 +796,29 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   margin: 0 0 0.6rem;
 }
 
-.detail-relations__heading .pi { color: var(--ss-primary); }
-.detail-relations__list { display: flex; flex-direction: column; gap: 0.3rem; }
-.detail-relation { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
-.detail-relation__dir { color: var(--ss-text-subtle); font-size: 0.7rem; }
-.detail-relation__type { color: var(--ss-text-muted); font-style: italic; font-size: 0.75rem; }
+.detail-relations__heading .pi {
+  color: var(--ss-primary);
+}
+.detail-relations__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.detail-relation {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+.detail-relation__dir {
+  color: var(--ss-text-subtle);
+  font-size: 0.7rem;
+}
+.detail-relation__type {
+  color: var(--ss-text-muted);
+  font-style: italic;
+  font-size: 0.75rem;
+}
 
 .detail-relation__link {
   background: none;
@@ -674,7 +831,10 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   text-underline-offset: 2px;
 }
 
-.detail-relation__unknown { color: var(--ss-text-muted); font-style: italic; }
+.detail-relation__unknown {
+  color: var(--ss-text-muted);
+  font-style: italic;
+}
 
 /* ── Banner upload ── */
 .edit-banner-preview {
@@ -694,7 +854,9 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   align-items: flex-start;
 }
 
-.edit-banner-file-input { display: none; }
+.edit-banner-file-input {
+  display: none;
+}
 
 .edit-label--inline {
   display: flex;
@@ -737,7 +899,9 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   gap: 0.25rem;
   padding: 0;
 }
-.edit-banner-remove:hover { opacity: 0.75; }
+.edit-banner-remove:hover {
+  opacity: 0.75;
+}
 
 .edit-banner-progress {
   width: 100%;
