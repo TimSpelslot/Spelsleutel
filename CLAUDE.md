@@ -237,7 +237,7 @@ Use CSS custom properties throughout. A team member is working on a new theme fo
 
 ## Coding Conventions (Rebuild)
 
-Follow `.claude/instructions/frontend.instructions.md` and `.claude/instructions/backend.instructions.md` for detailed Vue/Express patterns. Key rules:
+Follow `.claude/instructions/frontend.instructions.md` and `.claude/instructions/backend.instructions.md` for detailed Vue/Express patterns, and `.claude/instructions/testing.instructions.md` for testing conventions. Key rules:
 
 - `<script setup lang="ts">` exclusively
 - Pinia setup stores only (no Options Store)
