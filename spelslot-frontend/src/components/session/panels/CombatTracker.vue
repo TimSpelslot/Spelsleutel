@@ -2,16 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useSessionMonstersStore } from '@/stores/sessionMonsters'
 import { useI18n } from 'vue-i18n'
-
-interface Monster {
-  id: string
-  name: string
-  hp: number
-  maxHp: number
-  ac: number
-  initiative: number
-  conditions: string[]
-}
+import type { Combatant } from '@/types'
 
 const props = defineProps<{
   sessionId: string | null
@@ -41,7 +32,7 @@ const pinnedMonsters = computed(() => monstersStore.pinnedMonsters)
 
 const storageKey = computed(() => `spelslot-combat-${props.sessionId ?? 'draft'}`)
 
-const monsters = ref<Monster[]>([])
+const monsters = ref<Combatant[]>([])
 const addForm = ref({ name: '', maxHp: '', ac: '', initiative: '' })
 const showAdd = ref(false)
 const editingHp = ref<string | null>(null)
@@ -97,12 +88,12 @@ function removeMonster(id: string) {
   save()
 }
 
-function startHpEdit(m: Monster) {
+function startHpEdit(m: Combatant) {
   editingHp.value = m.id
   hpInput.value = String(m.hp)
 }
 
-function commitHpEdit(m: Monster) {
+function commitHpEdit(m: Combatant) {
   const v = parseInt(hpInput.value)
   if (!isNaN(v)) {
     m.hp = Math.min(m.maxHp, Math.max(0, v))
@@ -111,7 +102,7 @@ function commitHpEdit(m: Monster) {
   editingHp.value = null
 }
 
-function adjust(m: Monster, heal: boolean) {
+function adjust(m: Combatant, heal: boolean) {
   const val = parseInt(adjustInput.value[m.id] ?? '0') || 0
   if (heal) m.hp = Math.min(m.maxHp, m.hp + val)
   else m.hp = Math.max(0, m.hp - val)
@@ -119,14 +110,14 @@ function adjust(m: Monster, heal: boolean) {
   save()
 }
 
-function toggleCondition(m: Monster, cond: string) {
+function toggleCondition(m: Combatant, cond: string) {
   const idx = m.conditions.indexOf(cond)
   if (idx === -1) m.conditions.push(cond)
   else m.conditions.splice(idx, 1)
   save()
 }
 
-function hpPercent(m: Monster) {
+function hpPercent(m: Combatant) {
   return Math.round((m.hp / m.maxHp) * 100)
 }
 

@@ -86,6 +86,7 @@ onMounted(() => fcm.initIfAlreadyGranted())
   .app-layout__content,
   .app-layout__content.is-sidebar-collapsed {
     margin-left: 0;
+    padding: 0.75rem;
   }
 }
 </style>
