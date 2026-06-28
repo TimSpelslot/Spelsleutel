@@ -5,6 +5,10 @@
     "sessionNotes": "Session Notes",
     "dmNotes": "DM Notes",
     "monsterStatBlock": "Monster Stat Block",
+    "diceRoller": "Dice Roller",
+    "conditions": "Conditions",
+    "counter": "Counter",
+    "dmReference": "DM Reference",
     "myNotes": "My Notes",
     "characterSheet": "Character Sheet"
   },
@@ -14,6 +18,8 @@
     "notes": "Notes",
     "dmNotes": "DM Notes",
     "monsters": "Monsters",
+    "conditions": "Conditions",
+    "reference": "Reference",
     "character": "Character",
     "session": "Session",
     "myNotes": "My Notes"
@@ -33,6 +39,8 @@
     "panels": "Panels",
     "allPanelsOpen": "All panels open",
     "closed": "Closed:",
+    "addPanel": "Add:",
+    "addPanelTitle": "Add {title} panel",
     "resetLayout": "Reset layout",
     "resetLayoutTitle": "Reset panel layout to defaults",
     "restorePanel": "Restore {title}",

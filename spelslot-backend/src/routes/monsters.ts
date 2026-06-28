@@ -1,14 +1,13 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth'
+import { Monster } from '../models/Monster'
+import type { IMonster } from '../models/Monster'
 
 export const monstersRouter = Router()
 
 monstersRouter.use(requireAuth)
 
-const OPEN5E_BASE = 'https://api.open5e.com/v1'
-
-// GET /api/monsters?search=<name>   — search by name (top 10)
-// GET /api/monsters/<slug>          — fetch full stat block by slug
+// GET /api/monsters?search=<name>   — search by name (top 15)
 monstersRouter.get('/', async (req, res, next) => {
   try {
     const { search } = req.query
@@ -16,16 +15,20 @@ monstersRouter.get('/', async (req, res, next) => {
       res.status(400).json({ message: 'search parameter required' })
       return
     }
-    const url = `${OPEN5E_BASE}/monsters/?name__icontains=${encodeURIComponent(search)}&limit=15`
-    const upstream = await fetch(url, { signal: AbortSignal.timeout(8000) })
-    const data = (await upstream.json()) as { results?: unknown[] }
-    res.json({ results: data.results ?? [] })
+
+    const results = await Monster.find({ name: { $regex: search, $options: 'i' } })
+      .select('slug name challenge_rating type size document__title')
+      .sort({ cr: 1, name: 1 })
+      .limit(15)
+      .lean<Array<Pick<IMonster, 'slug' | 'name' | 'challenge_rating' | 'type' | 'size' | 'document__title'>>>()
+
+    res.json({ results })
   } catch (err) {
     next(err)
   }
 })
 
-// POST /api/monsters/from-url — extract monster name from a URL and search Open5e
+// POST /api/monsters/from-url — extract monster name from a URL and search DB
 monstersRouter.post('/from-url', async (req, res, next) => {
   try {
     const { url } = req.body as { url?: string }
@@ -43,22 +46,21 @@ monstersRouter.post('/from-url', async (req, res, next) => {
       return
     }
 
-    const searchUrl = `${OPEN5E_BASE}/monsters/?name__icontains=${encodeURIComponent(name)}&limit=10`
-    const upstream = await fetch(searchUrl, { signal: AbortSignal.timeout(8000) })
-    const data = (await upstream.json()) as { results?: Record<string, unknown>[] }
-    const results = data.results ?? []
+    const results = await Monster.find({ name: { $regex: name, $options: 'i' } })
+      .sort({ cr: 1, name: 1 })
+      .limit(10)
+      .lean()
 
     if (results.length === 0) {
       res.status(404).json({
-        message: `"${name}" not found in Open5e. Non-SRD/non-published monsters aren't in the database — use the Image tab to upload a stat block screenshot instead.`,
+        message: `"${name}" not found. Check the monster name or use the Image tab to upload a stat block screenshot instead.`,
         extractedName: name,
       })
       return
     }
 
-    // Prefer exact name match; fall back to first result
-    const exact = results.find((r) => (r.name as string)?.toLowerCase() === name.toLowerCase())
-    res.json({ monster: exact ?? results[0], alternatives: results.slice(0, 5) })
+    const exact = results.find((r) => r.name?.toLowerCase() === name.toLowerCase())
+    res.json({ monster: exact ?? results[0], alternatives: results.slice(0, 5), extractedName: name })
   } catch (err) {
     next(err)
   }
@@ -109,6 +111,7 @@ function slugToName(slug: string): string {
   return slug.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+// GET /api/monsters/:slug — fetch full stat block by slug
 monstersRouter.get('/:slug', async (req, res, next) => {
   try {
     const { slug } = req.params
@@ -116,14 +119,14 @@ monstersRouter.get('/:slug', async (req, res, next) => {
       res.status(400).json({ message: 'Invalid slug' })
       return
     }
-    const url = `${OPEN5E_BASE}/monsters/${slug}/`
-    const upstream = await fetch(url, { signal: AbortSignal.timeout(8000) })
-    if (upstream.status === 404) {
+
+    const monster = await Monster.findOne({ slug }).lean()
+    if (!monster) {
       res.status(404).json({ message: 'Monster not found' })
       return
     }
-    const data = await upstream.json()
-    res.json(data)
+
+    res.json({ monster })
   } catch (err) {
     next(err)
   }

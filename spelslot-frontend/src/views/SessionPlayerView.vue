@@ -8,7 +8,7 @@ import PanelLauncher from '@/components/session/PanelLauncher.vue'
 import PartyRoster from '@/components/session/panels/PartyRoster.vue'
 import SessionNotes from '@/components/session/panels/SessionNotes.vue'
 import MyNotes from '@/components/session/panels/MyNotes.vue'
-import { usePanelLayout, type PanelConfig } from '@/composables/usePanelLayout'
+import { usePanelLayout, type PanelType } from '@/composables/usePanelLayout'
 import { useIsMobile } from '@/composables/useIsMobile'
 import { codexService, type CodexEntry } from '@/services/codexService'
 import CharacterSheet from '@/components/session/panels/CharacterSheet.vue'
@@ -64,9 +64,9 @@ async function onSessionChange(id: string | null) {
 
 // ── Panel layout ──────────────────────────────────────────────────────────
 
-const PLAYER_PANELS: PanelConfig[] = [
+const PLAYER_CATALOG: PanelType[] = [
   {
-    id: 'roster',
+    type: 'roster',
     title: t('session.panels.partyRoster'),
     icon: 'pi-users',
     defaultX: 20,
@@ -75,7 +75,7 @@ const PLAYER_PANELS: PanelConfig[] = [
     defaultH: 340,
   },
   {
-    id: 'notes',
+    type: 'notes',
     title: t('session.panels.sessionNotes'),
     icon: 'pi-file-edit',
     defaultX: 340,
@@ -84,7 +84,7 @@ const PLAYER_PANELS: PanelConfig[] = [
     defaultH: 360,
   },
   {
-    id: 'my-notes',
+    type: 'my-notes',
     title: t('session.panels.myNotes'),
     icon: 'pi-pencil',
     defaultX: 20,
@@ -93,7 +93,7 @@ const PLAYER_PANELS: PanelConfig[] = [
     defaultH: 280,
   },
   {
-    id: 'character',
+    type: 'character',
     title: t('session.panels.characterSheet'),
     icon: 'pi-user',
     defaultX: 760,
@@ -103,7 +103,7 @@ const PLAYER_PANELS: PanelConfig[] = [
   },
 ]
 
-const layout = usePanelLayout(PLAYER_PANELS, 'spelslot-panel-layout-player')
+const layout = usePanelLayout(PLAYER_CATALOG, 'spelslot-panel-layout-player')
 const isMobile = useIsMobile()
 const mobileTab = ref<string>('character')
 
@@ -212,12 +212,12 @@ function resetLayout() {
       :key="p.id"
       :title="p.title"
       :icon="p.icon"
-      :x="layout.states.value[p.id].x"
-      :y="layout.states.value[p.id].y + 50"
-      :width="layout.states.value[p.id].w"
-      :height="layout.states.value[p.id].h"
-      :minimized="layout.states.value[p.id].minimized"
-      :z-index="layout.states.value[p.id].zIndex"
+      :x="p.state.x"
+      :y="p.state.y + 50"
+      :width="p.state.w"
+      :height="p.state.h"
+      :minimized="p.state.minimized"
+      :z-index="p.state.zIndex"
       @move="(x, y) => layout.move(p.id, x, y - 50)"
       @resize="(w, h) => layout.resize(p.id, w, h)"
       @move-and-resize="(x, y, w, h) => layout.moveAndResize(p.id, x, y - 50, w, h)"
@@ -226,26 +226,27 @@ function resetLayout() {
       @focus="layout.focus(p.id)"
     >
       <PartyRoster
-        v-if="p.id === 'roster'"
+        v-if="p.type === 'roster'"
         :session-id="selectedSessionId"
         :ab-session-id="selectedAbSessionId"
       />
       <SessionNotes
-        v-else-if="p.id === 'notes'"
+        v-else-if="p.type === 'notes'"
         :key="activeDocId ?? 'no-session'"
         :session-id="selectedSessionId"
         :session-doc-id="activeDocId"
         :readonly="false"
       />
-      <MyNotes v-else-if="p.id === 'my-notes'" :session-id="selectedSessionId" />
-      <CharacterSheet v-else-if="p.id === 'character'" :character-id="characterId" />
+      <MyNotes v-else-if="p.type === 'my-notes'" :session-id="selectedSessionId" />
+      <CharacterSheet v-else-if="p.type === 'character'" :character-id="characterId" />
     </FloatingPanel>
 
     <!-- ── Panel launcher (bottom bar) ── -->
     <PanelLauncher
       :closed-panels="layout.closedPanels.value"
-      :all-panels="PLAYER_PANELS"
+      :spawnable-types="layout.spawnableTypes.value"
       @open="layout.open"
+      @spawn="layout.spawn"
       @reset="resetLayout"
     />
   </div>

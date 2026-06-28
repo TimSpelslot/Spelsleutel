@@ -5,6 +5,10 @@
     "sessionNotes": "Sessienotities",
     "dmNotes": "DM-notities",
     "monsterStatBlock": "Monster-statblock",
+    "diceRoller": "Dobbelstenenroller",
+    "conditions": "Condities",
+    "counter": "Teller",
+    "dmReference": "DM-naslag",
     "myNotes": "Mijn notities",
     "characterSheet": "Personagebladzijde"
   },
@@ -14,6 +18,8 @@
     "notes": "Notities",
     "dmNotes": "DM-notities",
     "monsters": "Monsters",
+    "conditions": "Condities",
+    "reference": "Naslag",
     "character": "Personage",
     "session": "Sessie",
     "myNotes": "Mijn notities"
@@ -33,6 +39,8 @@
     "panels": "Panelen",
     "allPanelsOpen": "Alle panelen open",
     "closed": "Gesloten:",
+    "addPanel": "Toevoegen:",
+    "addPanelTitle": "{title}-paneel toevoegen",
     "resetLayout": "Lay-out herstellen",
     "resetLayoutTitle": "Panelenlay-out naar standaard herstellen",
     "restorePanel": "{title} herstellen",

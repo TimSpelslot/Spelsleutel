@@ -71,7 +71,9 @@ export const monsterService = {
   },
 
   async get(slug: string): Promise<Result<Monster>> {
-    return api.get<Monster>(`/api/monsters/${slug}`)
+    const result = await api.get<{ monster: Monster }>(`/api/monsters/${slug}`)
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.monster }
   },
 
   async fromUrl(

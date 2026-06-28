@@ -10,7 +10,11 @@ import PartyRoster from '@/components/session/panels/PartyRoster.vue'
 import SessionNotes from '@/components/session/panels/SessionNotes.vue'
 import DmNotes from '@/components/session/panels/DmNotes.vue'
 import MonsterStatBlock from '@/components/session/panels/MonsterStatBlock.vue'
-import { usePanelLayout, type PanelConfig } from '@/composables/usePanelLayout'
+import DiceRoller from '@/components/session/panels/DiceRoller.vue'
+import ConditionsReference from '@/components/session/panels/ConditionsReference.vue'
+import Counter from '@/components/session/panels/Counter.vue'
+import DmReferenceTables from '@/components/session/panels/DmReferenceTables.vue'
+import { usePanelLayout, type PanelType } from '@/composables/usePanelLayout'
 import { useIsMobile } from '@/composables/useIsMobile'
 import { codexService, type CodexEntry } from '@/services/codexService'
 import { useI18n } from 'vue-i18n'
@@ -49,11 +53,12 @@ async function onSessionChange(id: string | null) {
   }
 }
 
-// ── Panel layout ──────────────────────────────────────────────────────────
+// ── Panel catalog ─────────────────────────────────────────────────────────
 
-const DM_PANELS: PanelConfig[] = [
+const DM_CATALOG: PanelType[] = [
+  // Singleton panels — core session tools
   {
-    id: 'combat',
+    type: 'combat',
     title: t('session.panels.combatTracker'),
     icon: 'pi-shield',
     defaultX: 20,
@@ -62,7 +67,7 @@ const DM_PANELS: PanelConfig[] = [
     defaultH: 520,
   },
   {
-    id: 'roster',
+    type: 'roster',
     title: t('session.panels.partyRoster'),
     icon: 'pi-users',
     defaultX: 420,
@@ -71,7 +76,7 @@ const DM_PANELS: PanelConfig[] = [
     defaultH: 300,
   },
   {
-    id: 'notes',
+    type: 'notes',
     title: t('session.panels.sessionNotes'),
     icon: 'pi-file-edit',
     defaultX: 420,
@@ -80,7 +85,7 @@ const DM_PANELS: PanelConfig[] = [
     defaultH: 300,
   },
   {
-    id: 'dm-notes',
+    type: 'dm-notes',
     title: t('session.panels.dmNotes'),
     icon: 'pi-lock',
     defaultX: 20,
@@ -89,7 +94,7 @@ const DM_PANELS: PanelConfig[] = [
     defaultH: 260,
   },
   {
-    id: 'monster',
+    type: 'monster',
     title: t('session.panels.monsterStatBlock'),
     icon: 'pi-book',
     defaultX: 820,
@@ -97,9 +102,49 @@ const DM_PANELS: PanelConfig[] = [
     defaultW: 320,
     defaultH: 560,
   },
+  // Singleton reference panels
+  {
+    type: 'conditions',
+    title: t('session.panels.conditions'),
+    icon: 'pi-exclamation-circle',
+    defaultX: 20,
+    defaultY: 60,
+    defaultW: 300,
+    defaultH: 420,
+  },
+  {
+    type: 'reference',
+    title: t('session.panels.dmReference'),
+    icon: 'pi-list',
+    defaultX: 700,
+    defaultY: 60,
+    defaultW: 340,
+    defaultH: 460,
+  },
+  // Spawnable panels — DM can add multiple instances
+  {
+    type: 'dice',
+    title: t('session.panels.diceRoller'),
+    icon: 'pi-prime',
+    defaultX: 500,
+    defaultY: 120,
+    defaultW: 260,
+    defaultH: 340,
+    singleton: false,
+  },
+  {
+    type: 'counter',
+    title: t('session.panels.counter'),
+    icon: 'pi-calculator',
+    defaultX: 400,
+    defaultY: 200,
+    defaultW: 220,
+    defaultH: 215,
+    singleton: false,
+  },
 ]
 
-const layout = usePanelLayout(DM_PANELS, 'spelslot-panel-layout-dm')
+const layout = usePanelLayout(DM_CATALOG, 'spelslot-panel-layout-dm')
 const isMobile = useIsMobile()
 const mobileTab = ref<string>('combat')
 
@@ -109,6 +154,8 @@ const MOBILE_TABS = [
   { id: 'notes', label: t('session.tabs.notes'), icon: 'pi-file-edit' },
   { id: 'dm-notes', label: t('session.tabs.dmNotes'), icon: 'pi-lock' },
   { id: 'monster', label: t('session.tabs.monsters'), icon: 'pi-book' },
+  { id: 'conditions', label: t('session.tabs.conditions'), icon: 'pi-exclamation-circle' },
+  { id: 'reference', label: t('session.tabs.reference'), icon: 'pi-list' },
 ]
 
 function resetLayout() {
@@ -165,6 +212,8 @@ function resetLayout() {
       />
       <DmNotes v-else-if="mobileTab === 'dm-notes'" :session-id="selectedSessionId" />
       <MonsterStatBlock v-else-if="mobileTab === 'monster'" />
+      <ConditionsReference v-else-if="mobileTab === 'conditions'" />
+      <DmReferenceTables v-else-if="mobileTab === 'reference'" />
     </div>
   </div>
 
@@ -210,12 +259,12 @@ function resetLayout() {
       :key="p.id"
       :title="p.title"
       :icon="p.icon"
-      :x="layout.states.value[p.id].x"
-      :y="layout.states.value[p.id].y + 50"
-      :width="layout.states.value[p.id].w"
-      :height="layout.states.value[p.id].h"
-      :minimized="layout.states.value[p.id].minimized"
-      :z-index="layout.states.value[p.id].zIndex"
+      :x="p.state.x"
+      :y="p.state.y + 50"
+      :width="p.state.w"
+      :height="p.state.h"
+      :minimized="p.state.minimized"
+      :z-index="p.state.zIndex"
       @move="(x, y) => layout.move(p.id, x, y - 50)"
       @resize="(w, h) => layout.resize(p.id, w, h)"
       @move-and-resize="(x, y, w, h) => layout.moveAndResize(p.id, x, y - 50, w, h)"
@@ -223,28 +272,33 @@ function resetLayout() {
       @close="layout.close(p.id)"
       @focus="layout.focus(p.id)"
     >
-      <CombatTracker v-if="p.id === 'combat'" :session-id="selectedSessionId" />
+      <CombatTracker v-if="p.type === 'combat'" :session-id="selectedSessionId" />
       <PartyRoster
-        v-else-if="p.id === 'roster'"
+        v-else-if="p.type === 'roster'"
         :session-id="selectedSessionId"
         :ab-session-id="selectedAbSessionId"
       />
       <SessionNotes
-        v-else-if="p.id === 'notes'"
+        v-else-if="p.type === 'notes'"
         :key="activeDocId ?? 'no-session'"
         :session-id="selectedSessionId"
         :session-doc-id="activeDocId"
         :readonly="false"
       />
-      <DmNotes v-else-if="p.id === 'dm-notes'" :session-id="selectedSessionId" />
-      <MonsterStatBlock v-else-if="p.id === 'monster'" />
+      <DmNotes v-else-if="p.type === 'dm-notes'" :session-id="selectedSessionId" />
+      <MonsterStatBlock v-else-if="p.type === 'monster'" />
+      <DiceRoller v-else-if="p.type === 'dice'" />
+      <ConditionsReference v-else-if="p.type === 'conditions'" />
+      <Counter v-else-if="p.type === 'counter'" :panel-id="p.id" />
+      <DmReferenceTables v-else-if="p.type === 'reference'" />
     </FloatingPanel>
 
     <!-- ── Panel launcher (bottom bar) ── -->
     <PanelLauncher
       :closed-panels="layout.closedPanels.value"
-      :all-panels="DM_PANELS"
+      :spawnable-types="layout.spawnableTypes.value"
       @open="layout.open"
+      @spawn="layout.spawn"
       @reset="resetLayout"
     />
   </div>
