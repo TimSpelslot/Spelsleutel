@@ -186,17 +186,6 @@
       "assigned": "Assigned",
       "waitlist": "Waitlist"
     },
-    "detail": {
-      "back": "Back to sessions",
-      "notReleased": "Assignments have not been released yet.",
-      "releaseToggle": "Release assignments",
-      "openForSignups": "Open for sign-ups",
-      "confirm": "Confirm session",
-      "cancelSession": "Cancel session",
-      "attendance": "Mark attendance",
-      "appeared": "Appeared",
-      "assignSection": "Manage assignments"
-    },
     "status": {
       "draft": "Draft",
       "open": "Open",
@@ -208,6 +197,37 @@
       "combat": "Combat",
       "exploration": "Exploration",
       "roleplay": "Roleplay"
-    }
+    },
+    "form": {
+      "createTitle": "Create Session",
+      "editTitle": "Edit Session",
+      "titleField": "Title",
+      "description": "Short description",
+      "date": "Date & time",
+      "maxPlayers": "Max players",
+      "tags": "Tags",
+      "tagsHint": "Press Enter to add a tag",
+      "storyAdventure": "Story adventure",
+      "excludeKarma": "Exclude from karma",
+      "ranks": "Rank emphasis",
+      "rankCombat": "Combat",
+      "rankExploration": "Exploration",
+      "rankRoleplay": "Roleplay",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "detail": {
+      "back": "Back to sessions",
+      "edit": "Edit session",
+      "notReleased": "Assignments have not been released yet.",
+      "releaseToggle": "Release assignments",
+      "openForSignups": "Open for sign-ups",
+      "confirm": "Confirm session",
+      "cancelSession": "Cancel session",
+      "attendance": "Mark attendance",
+      "appeared": "Appeared",
+      "assignSection": "Manage assignments"
+    },
+    "karma": "Karma"
   }
 }

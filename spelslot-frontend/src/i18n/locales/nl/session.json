@@ -186,17 +186,6 @@
       "assigned": "Toegewezen",
       "waitlist": "Wachtlijst"
     },
-    "detail": {
-      "back": "Terug naar sessies",
-      "notReleased": "De toewijzingen zijn nog niet vrijgegeven.",
-      "releaseToggle": "Toewijzingen vrijgeven",
-      "openForSignups": "Openstellen voor inschrijvingen",
-      "confirm": "Sessie bevestigen",
-      "cancelSession": "Sessie annuleren",
-      "attendance": "Aanwezigheid registreren",
-      "appeared": "Aanwezig",
-      "assignSection": "Toewijzingen beheren"
-    },
     "status": {
       "draft": "Concept",
       "open": "Open",
@@ -208,6 +197,37 @@
       "combat": "Gevecht",
       "exploration": "Verkenning",
       "roleplay": "Rollenspel"
-    }
+    },
+    "form": {
+      "createTitle": "Sessie aanmaken",
+      "editTitle": "Sessie bewerken",
+      "titleField": "Titel",
+      "description": "Korte beschrijving",
+      "date": "Datum & tijd",
+      "maxPlayers": "Max. spelers",
+      "tags": "Tags",
+      "tagsHint": "Druk op Enter om een tag toe te voegen",
+      "storyAdventure": "Verhaalaventuur",
+      "excludeKarma": "Uitsluit van karma",
+      "ranks": "Nadruk",
+      "rankCombat": "Gevecht",
+      "rankExploration": "Verkenning",
+      "rankRoleplay": "Rollenspel",
+      "save": "Opslaan",
+      "cancel": "Annuleren"
+    },
+    "detail": {
+      "back": "Terug naar sessies",
+      "edit": "Sessie bewerken",
+      "notReleased": "De toewijzingen zijn nog niet vrijgegeven.",
+      "releaseToggle": "Toewijzingen vrijgeven",
+      "openForSignups": "Openstellen voor inschrijvingen",
+      "confirm": "Sessie bevestigen",
+      "cancelSession": "Sessie annuleren",
+      "attendance": "Aanwezigheid registreren",
+      "appeared": "Aanwezig",
+      "assignSection": "Toewijzingen beheren"
+    },
+    "karma": "Karma"
   }
 }

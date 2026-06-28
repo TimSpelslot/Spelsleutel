@@ -6,22 +6,21 @@ import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import { useAuthStore } from '@/stores/auth'
-import { adventureBoardService, type UpcomingSession } from '@/services/adventureBoardService'
+import { sessionService, type SessionSummary } from '@/services/sessionService'
 import { codexService, type CodexEntry } from '@/services/codexService'
 import { authService } from '@/services/authService'
-import { rankColor, rankLabel } from '@/utils/rank'
-import DragonHeadSvg from '@/assets/spiked-dragon-head.svg?raw'
-import DungeonGateSvg from '@/assets/dungeon-gate.svg?raw'
-import DramaMasksSvg from '@/assets/drama-masks.svg?raw'
 
 const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 
 // ── Sessions ──────────────────────────────────────────────────────────────
-const sessions = ref<UpcomingSession[]>([])
+const sessions = ref<SessionSummary[]>([])
 const sessionsLoading = ref(false)
 const sessionsError = ref<string | null>(null)
+
+// ── Karma ─────────────────────────────────────────────────────────────────
+const karma = ref<number | null>(null)
 
 // ── Recent Codex ──────────────────────────────────────────────────────────
 const recentEntries = ref<CodexEntry[]>([])
@@ -139,13 +138,11 @@ function timeAgo(iso: string): string {
 
 // ── Formatting ────────────────────────────────────────────────────────────
 function formatDay(dateStr: string): string {
-  return new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric' })
 }
 
 function formatMonth(dateStr: string): string {
-  return new Date(`${dateStr}T12:00:00`)
-    .toLocaleDateString('en-GB', { month: 'short' })
-    .toUpperCase()
+  return new Date(dateStr).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()
 }
 
 // ── Role display ──────────────────────────────────────────────────────────
@@ -169,22 +166,21 @@ onMounted(async () => {
   sessionsLoading.value = true
   codexLoading.value = true
 
-  try {
-    const [sessResult, codexResult] = await Promise.all([
-      adventureBoardService.getUpcomingSessions(),
-      codexService.listRecent(6),
-    ])
+  const [sessResult, codexResult, karmaResult] = await Promise.all([
+    sessionService.list('upcoming'),
+    codexService.listRecent(6),
+    sessionService.getKarma(),
+  ])
 
-    if (sessResult.type === 'ok') sessions.value = sessResult.data.slice(0, 3)
-    else sessionsError.value = sessResult.message
+  sessionsLoading.value = false
+  codexLoading.value = false
 
-    if (codexResult.type === 'ok') recentEntries.value = codexResult.data
-  } catch (err) {
-    sessionsError.value = err instanceof Error ? err.message : t('errors.unexpectedServerResponse')
-  } finally {
-    sessionsLoading.value = false
-    codexLoading.value = false
-  }
+  if (sessResult.type === 'ok') sessions.value = sessResult.data.slice(0, 3)
+  else sessionsError.value = sessResult.message
+
+  if (codexResult.type === 'ok') recentEntries.value = codexResult.data
+
+  if (karmaResult.type === 'ok') karma.value = karmaResult.data
 })
 </script>
 
@@ -209,6 +205,9 @@ onMounted(async () => {
               :value="$t('dashboard.worldbuilder.tag')"
               severity="info"
             />
+            <span v-if="karma !== null" class="welcome__karma">
+              {{ $t('session.ab.karma') }}: {{ karma }}
+            </span>
           </div>
         </div>
       </div>
@@ -275,8 +274,8 @@ onMounted(async () => {
             class="session-card"
             role="button"
             tabindex="0"
-            @click="router.push({ name: 'sessions' })"
-            @keydown.enter="router.push({ name: 'sessions' })"
+            @click="router.push({ name: 'session-detail', params: { id: session.id } })"
+            @keydown.enter="router.push({ name: 'session-detail', params: { id: session.id } })"
           >
             <div class="session-card__date" aria-hidden="true">
               <span class="session-card__day">{{ formatDay(session.date) }}</span>
@@ -288,17 +287,13 @@ onMounted(async () => {
                 <span class="session-card__title">{{ session.title }}</span>
                 <div class="session-card__badges">
                   <Tag
-                    :value="
-                      session.status === 'assigned'
-                        ? $t('common.assigned')
-                        : $t('dashboard.sessions.statusUpcoming')
-                    "
-                    :severity="session.status === 'assigned' ? 'success' : 'secondary'"
+                    :value="$t(`session.ab.status.${session.status}`)"
+                    :severity="session.status === 'confirmed' ? 'success' : 'secondary'"
                     class="session-card__tag"
                   />
                   <Tag
                     v-if="session.isStoryAdventure"
-                    :value="$t('common.story')"
+                    :value="$t('session.ab.card.story')"
                     severity="warn"
                     class="session-card__tag"
                   />
@@ -308,17 +303,20 @@ onMounted(async () => {
               <div class="session-card__meta">
                 <span class="session-card__dm">
                   <i class="pi pi-shield" />
-                  {{ session.dmName ?? $t('dashboard.sessions.unknownDm') }}
+                  {{ session.dm?.displayName ?? $t('dashboard.sessions.unknownDm') }}
                 </span>
                 <span class="session-card__spots">
                   <i class="pi pi-users" />
-                  {{ session.partySize }}/{{ session.maxPlayers }}
-                  <span v-if="session.spotsLeft > 0" class="session-card__spots-free">
-                    {{ $t('dashboard.sessions.spotsFree', { n: session.spotsLeft }) }}</span
+                  {{ session.assignedCount }}/{{ session.maxPlayers }}
+                  <span
+                    v-if="session.assignedCount < session.maxPlayers"
+                    class="session-card__spots-free"
                   >
-                  <span v-else class="session-card__spots-full">{{
-                    $t('dashboard.sessions.spotsFull')
-                  }}</span>
+                    {{ $t('dashboard.sessions.spotsFree', { n: session.maxPlayers - session.assignedCount }) }}
+                  </span>
+                  <span v-else class="session-card__spots-full">
+                    {{ $t('dashboard.sessions.spotsFull') }}
+                  </span>
                 </span>
               </div>
 
@@ -326,53 +324,13 @@ onMounted(async () => {
                 {{ session.shortDescription }}
               </p>
 
-              <div class="session-card__footer">
-                <div v-if="session.tags.length" class="session-card__tags">
+              <div v-if="session.tags.length > 0" class="session-card__footer">
+                <div class="session-card__tags">
                   <span
                     v-for="tag in session.tags.slice(0, 2)"
                     :key="tag"
                     class="session-card__chip"
-                    >{{ tag }}</span
-                  >
-                </div>
-                <div class="session-card__ranks">
-                  <span
-                    v-if="session.ranks.combat"
-                    class="session-card__rank"
-                    :style="{ color: rankColor(session.ranks.combat) }"
-                    :title="
-                      $t('dashboard.rankTitle.combat', { label: rankLabel(session.ranks.combat) })
-                    "
-                  >
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span class="session-card__rank-icon" v-html="DragonHeadSvg" />
-                  </span>
-                  <span
-                    v-if="session.ranks.exploration"
-                    class="session-card__rank"
-                    :style="{ color: rankColor(session.ranks.exploration) }"
-                    :title="
-                      $t('dashboard.rankTitle.exploration', {
-                        label: rankLabel(session.ranks.exploration),
-                      })
-                    "
-                  >
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span class="session-card__rank-icon" v-html="DungeonGateSvg" />
-                  </span>
-                  <span
-                    v-if="session.ranks.roleplaying"
-                    class="session-card__rank"
-                    :style="{ color: rankColor(session.ranks.roleplaying) }"
-                    :title="
-                      $t('dashboard.rankTitle.roleplaying', {
-                        label: rankLabel(session.ranks.roleplaying),
-                      })
-                    "
-                  >
-                    <!-- eslint-disable-next-line vue/no-v-html -->
-                    <span class="session-card__rank-icon" v-html="DramaMasksSvg" />
-                  </span>
+                  >{{ tag }}</span>
                 </div>
               </div>
             </div>
@@ -533,8 +491,20 @@ onMounted(async () => {
 
 .welcome__tags {
   display: flex;
+  align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
+}
+
+.welcome__karma {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ss-primary);
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--ss-primary) 30%, transparent);
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ss-primary) 8%, transparent);
+  white-space: nowrap;
 }
 
 /* ── Worldbuilder banner ── */

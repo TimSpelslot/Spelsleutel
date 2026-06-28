@@ -12,9 +12,11 @@ import {
   sessionService,
   type SessionDetail,
   type SessionPlayer,
+  type SessionSummary,
   type SignUpStatus,
 } from '@/services/sessionService'
 import { useAuthStore } from '@/stores/auth'
+import SessionFormDialog from '@/components/adventureboard/SessionFormDialog.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -28,6 +30,7 @@ const session = ref<SessionDetail | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+const editDialogVisible = ref(false)
 const signingUp = ref(false)
 const updatingStatus = ref(false)
 const savingAssignments = ref(false)
@@ -64,7 +67,7 @@ const signedUp = computed(() => {
 
 const visibleSignups = computed((): SessionPlayer[] => {
   if (!session.value) return []
-  const signups = session.value.signups
+  const signups = [...session.value.signups].sort((a, b) => a.priority - b.priority)
   if (isDmOrAdmin.value || isSessionOwner.value) return signups
   if (session.value.releaseAssignments) {
     return signups.filter((s) => s.status === 'assigned')
@@ -111,6 +114,47 @@ function initPendingState(detail: SessionDetail) {
 }
 
 onMounted(loadSession)
+
+// ── Edit session ──────────────────────────────────────────────────────────
+
+// SessionFormDialog expects SessionSummary; build it from the full SessionDetail
+const sessionAsSummary = computed((): SessionSummary | null => {
+  if (!session.value) return null
+  const s = session.value
+  return {
+    id: s.id,
+    title: s.title,
+    shortDescription: s.shortDescription,
+    date: s.date,
+    dm: s.dm,
+    maxPlayers: s.maxPlayers,
+    status: s.status,
+    tags: s.tags,
+    isStoryAdventure: s.isStoryAdventure,
+    excludeFromKarma: s.excludeFromKarma,
+    rankCombat: s.rankCombat,
+    rankExploration: s.rankExploration,
+    rankRoleplaying: s.rankRoleplaying,
+    releaseAssignments: s.releaseAssignments,
+    signupCount: s.signups.length,
+    assignedCount: s.signups.filter((su) => su.status === 'assigned').length,
+    mySignUp: s.mySignUp,
+  }
+})
+
+function onSessionEdited(updated: SessionSummary) {
+  if (!session.value) return
+  session.value.title = updated.title
+  session.value.shortDescription = updated.shortDescription
+  session.value.date = updated.date
+  session.value.maxPlayers = updated.maxPlayers
+  session.value.tags = updated.tags
+  session.value.isStoryAdventure = updated.isStoryAdventure
+  session.value.excludeFromKarma = updated.excludeFromKarma
+  session.value.rankCombat = updated.rankCombat
+  session.value.rankExploration = updated.rankExploration
+  session.value.rankRoleplaying = updated.rankRoleplaying
+}
 
 // ── Sign-up ───────────────────────────────────────────────────────────────
 
@@ -443,11 +487,27 @@ function setAttendance(signUpId: string, value: boolean) {
         </ul>
       </section>
 
+      <!-- ── Edit session dialog ──────────────────────────────────────────── -->
+      <SessionFormDialog
+        v-model:visible="editDialogVisible"
+        :session="sessionAsSummary"
+        @saved="onSessionEdited"
+      />
+
       <!-- ── DM management panel ────────────────────────────────────────── -->
       <section v-if="canManage" class="sd-section sd-dm-panel">
         <h2 class="sd-section-title">DM</h2>
 
         <!-- Status actions -->
+        <div class="sd-dm-actions">
+          <Button
+            :label="t('session.ab.detail.edit')"
+            icon="pi pi-pencil"
+            severity="secondary"
+            outlined
+            @click="editDialogVisible = true"
+          />
+        </div>
         <div class="sd-dm-actions">
           <Button
             v-if="session.status === 'draft'"

@@ -8,6 +8,7 @@ import Tag from 'primevue/tag'
 import Skeleton from 'primevue/skeleton'
 import { sessionService, type SessionSummary, type SessionFilter, type SignUpStatus } from '@/services/sessionService'
 import { useAuthStore } from '@/stores/auth'
+import SessionFormDialog from '@/components/adventureboard/SessionFormDialog.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -21,6 +22,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const activeFilter = ref<SessionFilter>('upcoming')
 const signingUpId = ref<string | null>(null)
+const createDialogVisible = ref(false)
 
 // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -108,8 +110,11 @@ async function handleSignUp(session: SessionSummary, event: Event) {
 }
 
 function handleCreateSession() {
-  // TODO: open SessionFormDialog when it is built
-  toast.add({ severity: 'info', summary: 'Coming soon', detail: 'Session creation dialog is not yet available.', life: 3000 })
+  createDialogVisible.value = true
+}
+
+function onSessionCreated(session: SessionSummary) {
+  sessions.value.unshift(session)
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────
@@ -219,6 +224,12 @@ function rankValue(session: SessionSummary, key: RankKey): number {
       <i class="pi pi-calendar ab-empty-icon" />
       <p>{{ emptyMessage }}</p>
     </div>
+
+    <!-- Create session dialog -->
+    <SessionFormDialog
+      v-model:visible="createDialogVisible"
+      @saved="onSessionCreated"
+    />
 
     <!-- Session grid -->
     <div v-else class="ab-grid">
