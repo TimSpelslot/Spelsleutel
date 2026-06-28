@@ -162,5 +162,52 @@
       "reactions": "Reactions",
       "legendaryActions": "Legendary Actions"
     }
+  },
+  "ab": {
+    "title": "Adventure Board",
+    "create": "Sessie aanmaken",
+    "filters": {
+      "upcoming": "Aankomend",
+      "mine": "Mijn inschrijvingen",
+      "dm": "DM-sessies"
+    },
+    "empty": {
+      "upcoming": "Geen aankomende sessies.",
+      "mine": "Je hebt je voor geen enkele sessie ingeschreven.",
+      "dm": "Je hebt geen sessies als DM."
+    },
+    "card": {
+      "spotsLeft": "{count} plek over | {count} plekken over",
+      "full": "Vol",
+      "story": "Verhaalaventuur",
+      "signUp": "Inschrijven",
+      "cancel": "Inschrijving annuleren",
+      "signed": "Ingeschreven",
+      "assigned": "Toegewezen",
+      "waitlist": "Wachtlijst"
+    },
+    "detail": {
+      "back": "Terug naar sessies",
+      "notReleased": "De toewijzingen zijn nog niet vrijgegeven.",
+      "releaseToggle": "Toewijzingen vrijgeven",
+      "openForSignups": "Openstellen voor inschrijvingen",
+      "confirm": "Sessie bevestigen",
+      "cancelSession": "Sessie annuleren",
+      "attendance": "Aanwezigheid registreren",
+      "appeared": "Aanwezig",
+      "assignSection": "Toewijzingen beheren"
+    },
+    "status": {
+      "draft": "Concept",
+      "open": "Open",
+      "confirmed": "Bevestigd",
+      "completed": "Afgerond",
+      "cancelled": "Geannuleerd"
+    },
+    "ranks": {
+      "combat": "Gevecht",
+      "exploration": "Verkenning",
+      "roleplay": "Rollenspel"
+    }
   }
 }

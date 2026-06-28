@@ -14,6 +14,7 @@ import { uploadRouter } from './routes/upload'
 import { ddbRouter } from './routes/ddb'
 import { calendarsRouter } from './routes/calendars'
 import { monstersRouter } from './routes/monsters'
+import { sessionsRouter } from './routes/sessions'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -34,6 +35,7 @@ app.use('/api/upload', uploadRouter)
 app.use('/api/ddb', ddbRouter)
 app.use('/api/calendars', calendarsRouter)
 app.use('/api/monsters', monstersRouter)
+app.use('/api/sessions', sessionsRouter)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 app.use(errorHandler)

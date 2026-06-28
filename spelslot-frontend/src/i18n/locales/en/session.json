@@ -162,5 +162,52 @@
       "reactions": "Reactions",
       "legendaryActions": "Legendary Actions"
     }
+  },
+  "ab": {
+    "title": "Adventure Board",
+    "create": "Create session",
+    "filters": {
+      "upcoming": "Upcoming",
+      "mine": "My sign-ups",
+      "dm": "DM sessions"
+    },
+    "empty": {
+      "upcoming": "No upcoming sessions.",
+      "mine": "You have not signed up for any sessions.",
+      "dm": "You have no sessions as DM."
+    },
+    "card": {
+      "spotsLeft": "{count} spot left | {count} spots left",
+      "full": "Full",
+      "story": "Story adventure",
+      "signUp": "Sign up",
+      "cancel": "Cancel sign-up",
+      "signed": "Signed up",
+      "assigned": "Assigned",
+      "waitlist": "Waitlist"
+    },
+    "detail": {
+      "back": "Back to sessions",
+      "notReleased": "Assignments have not been released yet.",
+      "releaseToggle": "Release assignments",
+      "openForSignups": "Open for sign-ups",
+      "confirm": "Confirm session",
+      "cancelSession": "Cancel session",
+      "attendance": "Mark attendance",
+      "appeared": "Appeared",
+      "assignSection": "Manage assignments"
+    },
+    "status": {
+      "draft": "Draft",
+      "open": "Open",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "ranks": {
+      "combat": "Combat",
+      "exploration": "Exploration",
+      "roleplay": "Roleplay"
+    }
   }
 }

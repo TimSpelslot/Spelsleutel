@@ -43,6 +43,11 @@ const router = createRouter({
           component: () => import('@/views/AdventureBoardView.vue'),
         },
         {
+          path: 'sessions/:id',
+          name: 'session-detail',
+          component: () => import('@/views/SessionDetailView.vue'),
+        },
+        {
           path: 'session',
           name: 'session',
           component: () => import('@/views/SessionView.vue'),
