@@ -4,7 +4,6 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
-import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { instantModeService, type InstantModeRange } from '@/services/instantModeService'
 
