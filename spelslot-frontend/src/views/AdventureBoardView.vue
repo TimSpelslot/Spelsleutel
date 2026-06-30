@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Skeleton from 'primevue/skeleton'
-import { sessionService, type SessionSummary, type SessionFilter, type SignUpStatus } from '@/services/sessionService'
+import Avatar from 'primevue/avatar'
+import { sessionService, type SessionSummary } from '@/services/sessionService'
+import { instantModeService } from '@/services/instantModeService'
 import { useAuthStore } from '@/stores/auth'
 import SessionFormDialog from '@/components/adventureboard/SessionFormDialog.vue'
+import SessionDetailDialog from '@/components/adventureboard/SessionDetailDialog.vue'
+import combatIcon from '@/assets/spiked-dragon-head.svg'
+import explorationIcon from '@/assets/dungeon-gate.svg'
+import roleplayIcon from '@/assets/drama-masks.svg'
 
 const { t } = useI18n()
-const router = useRouter()
 const toast = useToast()
 const auth = useAuthStore()
 
@@ -20,37 +24,69 @@ const auth = useAuthStore()
 const sessions = ref<SessionSummary[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const activeFilter = ref<SessionFilter>('upcoming')
 const signingUpId = ref<string | null>(null)
 const createDialogVisible = ref(false)
+const detailDialogVisible = ref(false)
+const selectedSessionId = ref<string | null>(null)
+const isInstantMode = ref(false)
+
+// Week navigation: ISO date string of the Monday for the displayed week
+const currentWeekMonday = ref<string>(getUpcomingMonday())
+
+// Track which priorities are already used this week: Set of 1 | 2 | 3
+const usedPriorities = computed<Set<number>>(() => {
+  const used = new Set<number>()
+  for (const s of sessions.value) {
+    if (s.mySignUp && s.mySignUp.status !== 'cancelled') {
+      used.add(s.mySignUp.priority)
+    }
+  }
+  return used
+})
 
 // ── Derived ───────────────────────────────────────────────────────────────
 
-const isDmOrAdmin = computed(() => auth.hasPermission(['DM', 'ADMIN']))
-
-const availableFilters = computed<Array<{ value: SessionFilter; label: string }>>(() => {
-  const filters: Array<{ value: SessionFilter; label: string }> = [
-    { value: 'upcoming', label: t('session.ab.filters.upcoming') },
-    { value: 'mine', label: t('session.ab.filters.mine') },
-  ]
-  if (isDmOrAdmin.value) {
-    filters.push({ value: 'dm', label: t('session.ab.filters.dm') })
-  }
-  return filters
+const weekLabel = computed(() => {
+  const monday = new Date(currentWeekMonday.value)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const fmt = (d: Date) => d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+  return `${fmt(monday)} – ${fmt(sunday)}`
 })
 
-const emptyMessage = computed(() => {
-  if (activeFilter.value === 'mine') return t('session.ab.empty.mine')
-  if (activeFilter.value === 'dm') return t('session.ab.empty.dm')
-  return t('session.ab.empty.upcoming')
-})
+// ── Week helpers ──────────────────────────────────────────────────────────
+
+function getUpcomingMonday(): string {
+  const today = new Date()
+  const day = today.getDay() // 0=Sun
+  const daysFromMon = day === 0 ? 6 : day - 1
+  const thisMon = new Date(today)
+  thisMon.setDate(today.getDate() - daysFromMon)
+  thisMon.setHours(0, 0, 0, 0)
+  const offset = day >= 1 && day <= 3 ? 0 : 7
+  const result = new Date(thisMon)
+  result.setDate(thisMon.getDate() + offset)
+  return result.toISOString().slice(0, 10)
+}
+
+function shiftWeek(delta: number) {
+  const d = new Date(currentWeekMonday.value)
+  d.setDate(d.getDate() + delta * 7)
+  currentWeekMonday.value = d.toISOString().slice(0, 10)
+  loadSessions()
+}
+
+function goToCurrentWeek() {
+  currentWeekMonday.value = getUpcomingMonday()
+  loadSessions()
+}
 
 // ── Data fetching ─────────────────────────────────────────────────────────
 
-async function loadSessions(filter: SessionFilter) {
+async function loadSessions() {
   loading.value = true
   error.value = null
-  const result = await sessionService.list(filter)
+  const result = await sessionService.list('week', currentWeekMonday.value)
   loading.value = false
   if (result.type === 'ok') {
     sessions.value = result.data
@@ -60,47 +96,78 @@ async function loadSessions(filter: SessionFilter) {
   }
 }
 
-async function selectFilter(filter: SessionFilter) {
-  if (activeFilter.value === filter && !loading.value) return
-  activeFilter.value = filter
-  await loadSessions(filter)
-}
-
-onMounted(() => loadSessions('upcoming'))
+onMounted(async () => {
+  const [, instantResult] = await Promise.all([
+    loadSessions(),
+    instantModeService.check(),
+  ])
+  if (instantResult.type === 'ok') isInstantMode.value = instantResult.data
+})
 
 // ── Sign-up actions ───────────────────────────────────────────────────────
 
-async function handleSignUp(session: SessionSummary, event: Event) {
+async function handleChoicePick(session: SessionSummary, choice: 1 | 2 | 3, event: Event) {
   event.stopPropagation()
   if (signingUpId.value) return
-
   signingUpId.value = session.id
-  let result: Awaited<ReturnType<typeof sessionService.signUp | typeof sessionService.cancelSignUp>>
 
-  if (session.mySignUp && session.mySignUp.status !== 'cancelled') {
-    result = await sessionService.cancelSignUp(session.id)
-    if (result.type === 'ok') {
-      const s = sessions.value.find((x) => x.id === session.id)
+  const currentPriority = session.mySignUp?.priority
+
+  // Always POST — backend handles toggle-off (same session + same priority) internally
+  // without a karma penalty. Never call cancelSignUp here; that DELETE route penalises
+  // players who cancel an already-assigned slot.
+  const result = await sessionService.signUp(session.id, choice)
+
+  if (result.type === 'ok') {
+    const s = sessions.value.find((x) => x.id === session.id)
+    if (result.data === null) {
+      // Backend toggled off: same session, same priority was already set
+      if (s) { s.mySignUp = null; s.signupCount = Math.max(0, s.signupCount - 1) }
+      toast.add({ severity: 'success', summary: 'Aanmelding verwijderd', life: 3000 })
+    } else {
       if (s) {
-        s.mySignUp = null
-        s.signupCount = Math.max(0, s.signupCount - 1)
-        if (session.mySignUp?.status === 'assigned') {
-          s.assignedCount = Math.max(0, s.assignedCount - 1)
+        if (!currentPriority) s.signupCount += 1  // only increment when newly signing up for this session
+        s.mySignUp = { id: result.data.id, status: result.data.status, priority: result.data.priority, appeared: false }
+      }
+      // Backend also cleared any other session that held this priority — mirror that locally
+      for (const other of sessions.value) {
+        if (other.id !== session.id && other.mySignUp?.priority === choice) {
+          other.signupCount = Math.max(0, other.signupCount - 1)
+          other.mySignUp = null
         }
       }
-      toast.add({ severity: 'success', summary: t('session.ab.card.cancel'), life: 3000 })
+      toast.add({ severity: 'success', summary: `Keuze ${choice} ingesteld`, life: 3000 })
+    }
+  } else {
+    toast.add({ severity: 'error', summary: result.message, life: 5000 })
+  }
+
+  signingUpId.value = null
+}
+
+async function handleInstantSignup(session: SessionSummary, event: Event) {
+  event.stopPropagation()
+  if (signingUpId.value) return
+  signingUpId.value = session.id
+
+  if (session.mySignUp) {
+    const result = await sessionService.cancelSignUp(session.id)
+    if (result.type === 'ok') {
+      const s = sessions.value.find((x) => x.id === session.id)
+      if (s) { s.mySignUp = null; s.signupCount = Math.max(0, s.signupCount - 1) }
+      toast.add({ severity: 'success', summary: 'Aanmelding verwijderd', life: 3000 })
     } else {
       toast.add({ severity: 'error', summary: result.message, life: 5000 })
     }
   } else {
-    result = await sessionService.signUp(session.id)
+    const result = await sessionService.instantSignUp(session.id)
     if (result.type === 'ok') {
       const s = sessions.value.find((x) => x.id === session.id)
-      if (s) {
-        s.mySignUp = { id: result.data.id, status: result.data.status, appeared: false }
+      if (s && result.data) {
         s.signupCount += 1
+        s.mySignUp = { id: result.data.id, status: result.data.status, priority: result.data.priority, appeared: false }
       }
-      toast.add({ severity: 'success', summary: t('session.ab.card.signUp'), life: 3000 })
+      toast.add({ severity: 'success', summary: 'Direct aangemeld!', life: 3000 })
     } else {
       toast.add({ severity: 'error', summary: result.message, life: 5000 })
     }
@@ -117,17 +184,54 @@ function onSessionCreated(session: SessionSummary) {
   sessions.value.unshift(session)
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────
+// ── Detail dialog ─────────────────────────────────────────────────────────
 
-function goToSession(id: string) {
-  router.push({ name: 'session-detail', params: { id } })
+function openDetail(id: string) {
+  selectedSessionId.value = id
+  detailDialogVisible.value = true
+}
+
+function onDialogSignupChanged(
+  sessionId: string,
+  mySignUp: { id: string; status: string; priority: number; appeared: boolean } | null,
+  delta: number,
+) {
+  const s = sessions.value.find((x) => x.id === sessionId)
+  if (!s) return
+  s.mySignUp = mySignUp as typeof s.mySignUp
+  s.signupCount = Math.max(0, s.signupCount + delta)
+  // If the dialog signed up with a priority, clear that priority from all other sessions
+  if (mySignUp) {
+    for (const other of sessions.value) {
+      if (other.id !== sessionId && other.mySignUp?.priority === mySignUp.priority) {
+        other.signupCount = Math.max(0, other.signupCount - 1)
+        other.mySignUp = null
+      }
+    }
+  }
+}
+
+function onDialogSessionUpdated(updated: import('@/services/sessionService').SessionSummary) {
+  const s = sessions.value.find((x) => x.id === updated.id)
+  if (!s) return
+  s.title = updated.title
+  s.shortDescription = updated.shortDescription
+  s.date = updated.date
+  s.maxPlayers = updated.maxPlayers
+  s.tags = updated.tags
+  s.isStoryAdventure = updated.isStoryAdventure
+  s.excludeFromKarma = updated.excludeFromKarma
+  s.rankCombat = updated.rankCombat
+  s.rankExploration = updated.rankExploration
+  s.rankRoleplaying = updated.rankRoleplaying
+  s.status = updated.status
 }
 
 // ── Formatting helpers ────────────────────────────────────────────────────
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
-  return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+  return d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function isFull(session: SessionSummary): boolean {
@@ -137,21 +241,6 @@ function isFull(session: SessionSummary): boolean {
 function capacityPercent(session: SessionSummary): number {
   if (session.maxPlayers === 0) return 0
   return Math.min(100, Math.round((session.assignedCount / session.maxPlayers) * 100))
-}
-
-function signUpLabel(session: SessionSummary): string {
-  if (!session.mySignUp || session.mySignUp.status === 'cancelled') return t('session.ab.card.signUp')
-  const map: Record<SignUpStatus, string> = {
-    pending: t('session.ab.card.signed'),
-    assigned: t('session.ab.card.assigned'),
-    waitlist: t('session.ab.card.waitlist'),
-    cancelled: t('session.ab.card.signUp'),
-  }
-  return map[session.mySignUp.status]
-}
-
-function isSignedUp(session: SessionSummary): boolean {
-  return !!session.mySignUp && session.mySignUp.status !== 'cancelled'
 }
 
 function statusSeverity(status: string): string {
@@ -168,10 +257,20 @@ function statusSeverity(status: string): string {
 const RANK_KEYS = ['combat', 'exploration', 'roleplay'] as const
 type RankKey = (typeof RANK_KEYS)[number]
 
+const RANK_ICONS: Record<RankKey, string> = {
+  combat: combatIcon,
+  exploration: explorationIcon,
+  roleplay: roleplayIcon,
+}
+
 function rankValue(session: SessionSummary, key: RankKey): number {
   if (key === 'combat') return session.rankCombat
   if (key === 'exploration') return session.rankExploration
   return session.rankRoleplaying
+}
+
+function avatarLabel(name: string): string {
+  return name.charAt(0).toUpperCase() || '?'
 }
 </script>
 
@@ -181,25 +280,28 @@ function rankValue(session: SessionSummary, key: RankKey): number {
     <div class="ab-header">
       <h1 class="ab-title">{{ t('session.ab.title') }}</h1>
       <Button
-        v-if="isDmOrAdmin"
         :label="t('session.ab.create')"
         icon="pi pi-plus"
         @click="handleCreateSession"
       />
     </div>
 
-    <!-- Filter tabs -->
-    <div class="ab-filters" role="tablist">
-      <button
-        v-for="f in availableFilters"
-        :key="f.value"
-        role="tab"
-        class="ab-filter-tab"
-        :class="{ 'ab-filter-tab--active': activeFilter === f.value }"
-        :aria-selected="activeFilter === f.value"
-        @click="selectFilter(f.value)"
-      >
-        {{ f.label }}
+    <!-- Instant mode banner -->
+    <div v-if="isInstantMode" class="ab-instant-banner">
+      <i class="pi pi-bolt" />
+      <span>Instant aanmelden is actief — je wordt direct ingedeeld!</span>
+    </div>
+
+    <!-- Week navigation -->
+    <div class="ab-week-nav">
+      <button class="ab-week-btn" :disabled="loading" @click="shiftWeek(-1)">
+        <i class="pi pi-chevron-left" />
+      </button>
+      <button class="ab-week-label" :disabled="loading" @click="goToCurrentWeek">
+        {{ weekLabel }}
+      </button>
+      <button class="ab-week-btn" :disabled="loading" @click="shiftWeek(1)">
+        <i class="pi pi-chevron-right" />
       </button>
     </div>
 
@@ -222,14 +324,8 @@ function rankValue(session: SessionSummary, key: RankKey): number {
     <!-- Empty state -->
     <div v-else-if="sessions.length === 0" class="ab-empty">
       <i class="pi pi-calendar ab-empty-icon" />
-      <p>{{ emptyMessage }}</p>
+      <p>{{ t('session.ab.empty.week') }}</p>
     </div>
-
-    <!-- Create session dialog -->
-    <SessionFormDialog
-      v-model:visible="createDialogVisible"
-      @saved="onSessionCreated"
-    />
 
     <!-- Session grid -->
     <div v-else class="ab-grid">
@@ -240,9 +336,9 @@ function rankValue(session: SessionSummary, key: RankKey): number {
         tabindex="0"
         role="button"
         :aria-label="session.title"
-        @click="goToSession(session.id)"
-        @keydown.enter="goToSession(session.id)"
-        @keydown.space.prevent="goToSession(session.id)"
+        @click="openDetail(session.id)"
+        @keydown.enter="openDetail(session.id)"
+        @keydown.space.prevent="openDetail(session.id)"
       >
         <!-- Status badge (non-open only) -->
         <div v-if="session.status !== 'open'" class="ab-card-status-row">
@@ -291,25 +387,31 @@ function rankValue(session: SessionSummary, key: RankKey): number {
         <!-- Rank pips -->
         <div class="ab-card-ranks">
           <div v-for="key in RANK_KEYS" :key="key" class="ab-card-rank" :title="t(`session.ab.ranks.${key}`)">
-            <span class="ab-card-rank-label">{{ t(`session.ab.ranks.${key}`).slice(0, 3) }}</span>
-            <div class="ab-card-rank-pips">
-              <span
-                v-for="pip in 3"
-                :key="pip"
-                class="ab-card-rank-pip"
-                :class="{ 'ab-card-rank-pip--filled': pip <= rankValue(session, key) }"
-              />
-            </div>
+            <img
+              v-for="pip in 3"
+              :key="pip"
+              :src="RANK_ICONS[key]"
+              class="ab-card-rank-pip"
+              :class="pip <= rankValue(session, key) ? 'ab-card-rank-pip--on' : 'ab-card-rank-pip--off'"
+              :alt="pip === 1 ? t(`session.ab.ranks.${key}`) : ''"
+            />
           </div>
         </div>
 
-        <!-- Tags + story badge -->
+        <!-- Tags + story badge + series -->
         <div class="ab-card-tags">
           <Tag
             v-if="session.isStoryAdventure"
             :value="t('session.ab.card.story')"
             severity="warn"
             icon="pi pi-book"
+            class="ab-tag"
+          />
+          <Tag
+            v-if="session.numSessions > 1"
+            :value="`Deel ${session.sessionNumber}/${session.numSessions}`"
+            severity="info"
+            icon="pi pi-link"
             class="ab-tag"
           />
           <Tag
@@ -321,19 +423,89 @@ function rankValue(session: SessionSummary, key: RankKey): number {
           />
         </div>
 
-        <!-- Sign-up button (players only; session must be open) -->
-        <div v-if="!isDmOrAdmin && session.status === 'open'" class="ab-card-actions" @click.stop>
-          <Button
-            :label="signUpLabel(session)"
-            :icon="isSignedUp(session) ? 'pi pi-times' : 'pi pi-check'"
-            :severity="isSignedUp(session) ? 'secondary' : 'primary'"
-            size="small"
-            :loading="signingUpId === session.id"
-            @click="handleSignUp(session, $event)"
-          />
+        <!-- Assigned room -->
+        <div v-if="session.assignedRoom" class="ab-card-room">
+          <i class="pi pi-map-marker ab-card-room-icon" />
+          <span>{{ session.assignedRoom }}</span>
+        </div>
+
+        <!-- Assigned players (shown after release or for DM/admin) -->
+        <div v-if="session.assignedPlayers && session.assignedPlayers.length > 0" class="ab-card-players" @click.stop>
+          <div class="ab-card-players-label">
+            <i class="pi pi-users" />
+            <span>{{ session.assignedPlayers.length }} spelers</span>
+          </div>
+          <div class="ab-card-players-list">
+            <div
+              v-for="player in session.assignedPlayers.slice(0, 6)"
+              :key="player.userId"
+              class="ab-card-player"
+              :title="player.displayName"
+            >
+              <Avatar
+                :image="player.avatarUrl ?? undefined"
+                :label="player.avatarUrl ? undefined : avatarLabel(player.displayName)"
+                shape="circle"
+                size="small"
+                class="ab-card-player-avatar"
+              />
+            </div>
+            <span v-if="session.assignedPlayers.length > 6" class="ab-card-players-more">
+              +{{ session.assignedPlayers.length - 6 }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Signup actions (hidden from session owner; session must be open) -->
+        <div v-if="session.dm?.uid !== auth.user?.uid && session.status === 'open'" class="ab-card-actions" @click.stop>
+          <!-- Instant mode: single toggle button -->
+          <template v-if="isInstantMode">
+            <button
+              class="ab-instant-btn"
+              :class="{ 'ab-instant-btn--active': !!session.mySignUp }"
+              :disabled="signingUpId === session.id"
+              @click="handleInstantSignup(session, $event)"
+            >
+              <i class="pi" :class="session.mySignUp ? 'pi-check' : 'pi-bolt'" />
+              {{ session.mySignUp ? 'Afmelden' : 'Aanmelden' }}
+            </button>
+          </template>
+          <!-- Normal mode: priority picker -->
+          <template v-else>
+            <div class="ab-choice-picker">
+              <button
+                v-for="choice in ([1, 2, 3] as const)"
+                :key="choice"
+                class="ab-choice-btn"
+                :class="{
+                  'ab-choice-btn--active': session.mySignUp?.priority === choice,
+                  'ab-choice-btn--taken': usedPriorities.has(choice) && session.mySignUp?.priority !== choice,
+                }"
+                :disabled="signingUpId === session.id || (usedPriorities.has(choice) && session.mySignUp?.priority !== choice)"
+                :title="usedPriorities.has(choice) && session.mySignUp?.priority !== choice ? `Keuze ${choice} al gebruikt` : `Aanmelden als keuze ${choice}`"
+                @click="handleChoicePick(session, choice, $event)"
+              >
+                {{ choice }}e keuze
+              </button>
+            </div>
+          </template>
         </div>
       </article>
     </div>
+
+    <!-- Create session dialog -->
+    <SessionFormDialog
+      v-model:visible="createDialogVisible"
+      @saved="onSessionCreated"
+    />
+
+    <!-- Session detail dialog -->
+    <SessionDetailDialog
+      v-model:visible="detailDialogVisible"
+      :session-id="selectedSessionId"
+      @signup-changed="onDialogSignupChanged"
+      @session-updated="onDialogSessionUpdated"
+    />
   </div>
 </template>
 
@@ -366,7 +538,7 @@ function rankValue(session: SessionSummary, key: RankKey): number {
 .ab-filters {
   display: flex;
   gap: 0.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--ss-border);
 }
 
@@ -390,6 +562,59 @@ function rankValue(session: SessionSummary, key: RankKey): number {
 .ab-filter-tab--active {
   color: var(--ss-primary);
   border-bottom-color: var(--ss-primary);
+}
+
+/* ── Week navigation ─────────────────────────────────────────────────────── */
+
+.ab-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.ab-week-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  color: var(--ss-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.ab-week-btn:hover:not(:disabled) {
+  background: var(--ss-surface-raised);
+  color: var(--ss-primary);
+}
+
+.ab-week-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ab-week-label {
+  flex: 1;
+  max-width: 220px;
+  padding: 0.35rem 0.75rem;
+  background: none;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ss-text);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.ab-week-label:hover:not(:disabled) {
+  background: var(--ss-surface-raised);
 }
 
 /* ── Session grid ────────────────────────────────────────────────────────── */
@@ -531,39 +756,31 @@ function rankValue(session: SessionSummary, key: RankKey): number {
 
 .ab-card-ranks {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-top: 0.25rem;
 }
 
 .ab-card-rank {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.2rem;
-}
-
-.ab-card-rank-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ss-text-subtle);
-}
-
-.ab-card-rank-pips {
-  display: flex;
   gap: 2px;
 }
 
 .ab-card-rank-pip {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ss-border);
-  transition: background 0.15s;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
-.ab-card-rank-pip--filled {
-  background: var(--ss-primary);
+.ab-card-rank-pip--on {
+  color: var(--ss-primary);
+  opacity: 1;
+}
+
+.ab-card-rank-pip--off {
+  color: var(--ss-text-subtle);
+  opacity: 0.25;
 }
 
 /* ── Tags ────────────────────────────────────────────────────────────────── */
@@ -580,12 +797,164 @@ function rankValue(session: SessionSummary, key: RankKey): number {
   font-size: 0.7rem;
 }
 
-/* ── Sign-up button ──────────────────────────────────────────────────────── */
+/* ── Room indicator ──────────────────────────────────────────────────────── */
+
+.ab-card-room {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--ss-text-muted);
+  margin-top: 0.25rem;
+}
+
+.ab-card-room-icon {
+  font-size: 0.7rem;
+  color: var(--ss-primary);
+}
+
+/* ── Assigned players ────────────────────────────────────────────────────── */
+
+.ab-card-players {
+  border-top: 1px solid var(--ss-border-subtle);
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ab-card-players-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--ss-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.ab-card-players-list {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+}
+
+.ab-card-player {
+  flex-shrink: 0;
+}
+
+.ab-card-player-avatar {
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 0.65rem !important;
+}
+
+.ab-card-players-more {
+  font-size: 0.72rem;
+  color: var(--ss-text-muted);
+  margin-left: 0.2rem;
+}
+
+/* ── Choice picker ───────────────────────────────────────────────────────── */
 
 .ab-card-actions {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--ss-border-subtle);
+}
+
+.ab-choice-picker {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ab-choice-btn {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--ss-border);
+  background: transparent;
+  color: var(--ss-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.ab-choice-btn:hover:not(:disabled) {
+  border-color: var(--ss-primary);
+  color: var(--ss-primary);
+}
+
+.ab-choice-btn--active {
+  background: var(--ss-primary);
+  border-color: var(--ss-primary);
+  color: var(--ss-primary-fg);
+}
+
+.ab-choice-btn--active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ss-primary) 85%, black);
+  color: var(--ss-primary-fg);
+}
+
+.ab-choice-btn--taken,
+.ab-choice-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Instant mode ────────────────────────────────────────────────────────── */
+
+.ab-instant-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  background: color-mix(in srgb, var(--ss-primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ss-primary) 40%, transparent);
+  border-radius: var(--ss-radius);
+  color: var(--ss-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ab-instant-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--ss-radius);
+  border: 2px solid var(--ss-border);
+  background: transparent;
+  color: var(--ss-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.ab-instant-btn:hover:not(:disabled) {
+  border-color: var(--ss-primary);
+  color: var(--ss-primary);
+}
+
+.ab-instant-btn--active {
+  background: var(--ss-primary);
+  border-color: var(--ss-primary);
+  color: var(--ss-primary-fg);
+}
+
+.ab-instant-btn--active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ss-primary) 85%, black);
+}
+
+.ab-instant-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* ── Skeleton cards ──────────────────────────────────────────────────────── */

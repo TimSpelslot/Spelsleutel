@@ -167,11 +167,13 @@
     "title": "Adventure Board",
     "create": "Sessie aanmaken",
     "filters": {
+      "week": "Deze week",
       "upcoming": "Aankomend",
       "mine": "Mijn inschrijvingen",
       "dm": "DM-sessies"
     },
     "empty": {
+      "week": "Geen sessies deze week.",
       "upcoming": "Geen aankomende sessies.",
       "mine": "Je hebt je voor geen enkele sessie ingeschreven.",
       "dm": "Je hebt geen sessies als DM."

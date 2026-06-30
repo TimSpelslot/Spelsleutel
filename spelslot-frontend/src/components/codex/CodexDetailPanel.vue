@@ -8,10 +8,12 @@ import InputText from 'primevue/inputtext'
 import InputChips from 'primevue/inputchips'
 import Textarea from 'primevue/textarea'
 import Skeleton from 'primevue/skeleton'
+import AutoComplete from 'primevue/autocomplete'
+import ToggleSwitch from 'primevue/toggleswitch'
 import TiptapRenderer from './TiptapRenderer.vue'
 import CodexEditor from './CodexEditor.vue'
 import TimelineView from './TimelineView.vue'
-import { codexService, type CodexEntryDetail, type EntryType } from '@/services/codexService'
+import { codexService, type CodexEntryDetail, type CodexEntry, type EntryType, type EntryPermission } from '@/services/codexService'
 import { uploadImage } from '@/services/uploadService'
 import { useAuthStore } from '@/stores/auth'
 
@@ -37,11 +39,53 @@ const metaForm = reactive({
   name: '',
   type: 'lore' as EntryType,
   status: 'PUBLISHED' as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
-  permission: 'PLAYERS' as 'PUBLIC' | 'PLAYERS' | 'DM_ONLY' | 'PRIVATE',
+  permission: 'PUBLIC' as EntryPermission,
   tags: [] as string[],
   summary: '',
 })
 const editorContent = ref<unknown>(null)
+
+// Relation editing state
+const relationSearch = ref('')
+const relationSuggestions = ref<CodexEntry[]>([])
+const relationSelectedEntry = ref<CodexEntry | null>(null)
+const relationTypeInput = ref('')
+const savingRelation = ref(false)
+const deletingRelationId = ref<string | null>(null)
+
+async function searchEntries(event: { query: string }) {
+  const result = await codexService.listEntries(event.query)
+  if (result.type === 'ok') {
+    relationSuggestions.value = result.data.filter((e) => e.id !== entry.value?.id)
+  }
+}
+
+async function addRelation() {
+  if (!relationSelectedEntry.value || !entry.value) return
+  savingRelation.value = true
+  const result = await codexService.createRelation(
+    entry.value.id,
+    relationSelectedEntry.value.id,
+    relationTypeInput.value.trim() || undefined,
+  )
+  if (result.type === 'ok' && detail.value) {
+    detail.value.relations.push(result.data)
+    relationSelectedEntry.value = null
+    relationSearch.value = ''
+    relationTypeInput.value = ''
+  }
+  savingRelation.value = false
+}
+
+async function removeRelation(relationId: string) {
+  if (!entry.value) return
+  deletingRelationId.value = relationId
+  const result = await codexService.deleteRelation(entry.value.id, relationId)
+  if (result.type === 'ok' && detail.value) {
+    detail.value.relations = detail.value.relations.filter((r) => r.id !== relationId)
+  }
+  deletingRelationId.value = null
+}
 
 // Banner state
 const bannerForm = reactive({ enabled: false, url: '', yPosition: 50 })
@@ -81,7 +125,8 @@ async function load(slug: string) {
 
   if (result.type === 'ok') {
     detail.value = result.data
-    const visible = result.data.documents.filter((d) => !d.isHidden)
+    const isDm = auth.effectiveUser?.isStoryDm ?? false
+    const visible = result.data.documents.filter((d) => isDm || !d.isHidden)
     const firstFlagIdx = visible.findIndex((d) => d.isFirst)
     const firstPageIdx = visible.findIndex((d) => d.type === 'page')
     activeDocIndex.value = firstFlagIdx >= 0 ? firstFlagIdx : firstPageIdx >= 0 ? firstPageIdx : 0
@@ -103,7 +148,11 @@ watch(
 )
 
 const entry = computed(() => detail.value?.entry)
-const visibleDocs = computed(() => (detail.value?.documents ?? []).filter((d) => !d.isHidden))
+const visibleDocs = computed(() => {
+  const docs = detail.value?.documents ?? []
+  if (auth.effectiveUser?.isStoryDm) return docs
+  return docs.filter((d) => !d.isHidden)
+})
 const relations = computed(() => detail.value?.relations ?? [])
 const activeDoc = computed(() => visibleDocs.value[activeDocIndex.value] ?? null)
 
@@ -112,10 +161,9 @@ const canWrite = computed(() => {
   const user = auth.effectiveUser
   const e = entry.value
   if (!user || !e) return false
-  if (user.role === 'DM' || user.role === 'ADMIN') return true
+  if (user.role === 'ADMIN') return true
   if (e.isLocked) return false
-  if (!user.isWorldbuilder) return false
-  return e.authorId === user.id || (e.editors ?? []).includes(user.id)
+  return user.isWorldbuilder
 })
 
 const TYPE_OPTIONS = computed(() => [
@@ -135,18 +183,22 @@ const STATUS_OPTIONS = computed(() => [
   { label: t('codex.status.archived'), value: 'ARCHIVED' },
 ])
 
-const permissionOptions = computed(() => {
-  const opts: { label: string; value: string }[] = [
-    { label: t('codex.permission.public'), value: 'PUBLIC' },
-    { label: t('codex.permission.players'), value: 'PLAYERS' },
-    { label: t('codex.permission.private'), value: 'PRIVATE' },
-  ]
-  const r = auth.effectiveUser?.role
-  if (r === 'DM' || r === 'ADMIN') {
-    opts.splice(2, 0, { label: t('codex.permission.dmOnly'), value: 'DM_ONLY' })
-  }
-  return opts
+const isDmOnly = computed({
+  get: () => metaForm.permission === 'DM_ONLY',
+  set: (v: boolean) => { metaForm.permission = v ? 'DM_ONLY' : 'PUBLIC' },
 })
+
+async function toggleDocHidden() {
+  const doc = activeDoc.value
+  const e = entry.value
+  if (!doc || !e || !detail.value) return
+  const newHidden = !doc.isHidden
+  const result = await codexService.updateDocument(e.id, doc.id, { isHidden: newHidden })
+  if (result.type === 'ok') {
+    const idx = detail.value.documents.findIndex((d) => d.id === doc.id)
+    if (idx >= 0) detail.value.documents[idx] = { ...detail.value.documents[idx], isHidden: newHidden }
+  }
+}
 
 function enterEditMode() {
   if (!entry.value) return
@@ -280,15 +332,12 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
                 class="edit-select"
               />
             </div>
-            <div class="edit-field">
+            <div v-if="auth.effectiveUser?.isStoryDm" class="edit-field">
               <label class="edit-label">{{ $t('codex.editForm.permissionLabel') }}</label>
-              <Select
-                v-model="metaForm.permission"
-                :options="permissionOptions"
-                option-label="label"
-                option-value="value"
-                class="edit-select"
-              />
+              <div class="edit-dm-row">
+                <ToggleSwitch v-model="isDmOnly" input-id="perm-dm-only" />
+                <label for="perm-dm-only" class="edit-dm-label">{{ $t('codex.permission.dmOnly') }}</label>
+              </div>
             </div>
           </div>
           <div class="edit-meta__row">
@@ -395,6 +444,16 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
               @click="saveEdit"
             />
             <Button :label="$t('common.cancel')" text severity="secondary" @click="cancelEdit" />
+            <Button
+              v-if="auth.effectiveUser?.isStoryDm && activeDoc"
+              :icon="activeDoc.isHidden ? 'pi pi-lock' : 'pi pi-unlock'"
+              :label="activeDoc.isHidden ? $t('codex.tab.dmOnly') : $t('codex.tab.public')"
+              :severity="activeDoc.isHidden ? 'warn' : 'secondary'"
+              text
+              size="small"
+              :title="$t('codex.tab.toggleHint')"
+              @click="toggleDocHidden"
+            />
           </div>
         </div>
       </template>
@@ -454,10 +513,11 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
             v-for="(doc, i) in visibleDocs"
             :key="doc.id"
             class="detail-tab"
-            :class="{ 'detail-tab--active': activeDocIndex === i }"
+            :class="{ 'detail-tab--active': activeDocIndex === i, 'detail-tab--secret': doc.isHidden }"
             :disabled="isEditing"
             @click="activeDocIndex = i"
           >
+            <i v-if="doc.isHidden" class="pi pi-lock detail-tab-lock" />
             {{ doc.name }}
           </button>
         </div>
@@ -509,7 +569,7 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
       </div>
 
       <!-- ── Relations ── -->
-      <div v-if="relations.length && !isEditing" class="detail-relations">
+      <div v-if="relations.length || isEditing" class="detail-relations">
         <h2 class="detail-relations__heading">
           <i class="pi pi-link" aria-hidden="true" />
           {{ $t('codex.related') }}
@@ -529,7 +589,42 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
               {{ rel.relatedEntry.name }}
             </button>
             <span v-else class="detail-relation__unknown">{{ $t('codex.unknownEntry') }}</span>
+            <button
+              v-if="isEditing"
+              class="detail-relation__delete"
+              :disabled="deletingRelationId === rel.id"
+              :title="$t('codex.removeRelation')"
+              @click="removeRelation(rel.id)"
+            >
+              <i class="pi pi-times" />
+            </button>
           </div>
+        </div>
+
+        <!-- Add relation form (edit mode only) -->
+        <div v-if="isEditing" class="detail-relation-add">
+          <AutoComplete
+            v-model="relationSelectedEntry"
+            :suggestions="relationSuggestions"
+            option-label="name"
+            :placeholder="$t('codex.searchEntry')"
+            class="detail-relation-add__search"
+            :input-style="{ fontSize: '0.8rem' }"
+            @complete="searchEntries"
+          />
+          <InputText
+            v-model="relationTypeInput"
+            :placeholder="$t('codex.relationTypeHint')"
+            class="detail-relation-add__type"
+            style="font-size: 0.8rem"
+          />
+          <Button
+            icon="pi pi-plus"
+            size="small"
+            :disabled="!relationSelectedEntry || savingRelation"
+            :loading="savingRelation"
+            @click="addRelation"
+          />
         </div>
       </div>
     </div>
@@ -754,6 +849,24 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.detail-tab--secret {
+  color: var(--ss-text-muted);
+}
+.detail-tab-lock {
+  font-size: 0.65rem;
+  margin-right: 0.25rem;
+  opacity: 0.7;
+}
+.edit-dm-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.edit-dm-label {
+  font-size: 0.85rem;
+  color: var(--ss-text);
+  cursor: pointer;
+}
 
 .detail-doc-body {
   padding: 1.25rem;
@@ -834,6 +947,44 @@ const TYPE_META: Record<EntryType, { label: string; icon: string }> = {
 .detail-relation__unknown {
   color: var(--ss-text-muted);
   font-style: italic;
+}
+
+.detail-relation__delete {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--ss-text-subtle);
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  border-radius: var(--ss-radius-sm);
+  font-size: 0.65rem;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.detail-relation:hover .detail-relation__delete {
+  opacity: 1;
+}
+
+.detail-relation__delete:hover {
+  color: var(--color-danger, #ef4444);
+}
+
+.detail-relation-add {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.detail-relation-add__search {
+  flex: 1;
+  min-width: 140px;
+}
+
+.detail-relation-add__type {
+  width: 100px;
 }
 
 /* ── Banner upload ── */

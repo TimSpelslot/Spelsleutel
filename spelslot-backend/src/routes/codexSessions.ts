@@ -41,8 +41,8 @@ codexSessionsRouter.post('/sync', requireAuth, async (req, res, next) => {
   try {
     const authReq = req as AuthRequest
     const mongoUser = await User.findOne({ uid: authReq.user!.uid }).lean()
-    if (!mongoUser || (mongoUser.role !== 'DM' && mongoUser.role !== 'ADMIN')) {
-      res.status(403).json({ message: 'DM or ADMIN required' })
+    if (!mongoUser || (mongoUser.role !== 'ADMIN' && !(mongoUser as any).isStoryDm)) {
+      res.status(403).json({ message: 'Story DM or ADMIN required' })
       return
     }
 

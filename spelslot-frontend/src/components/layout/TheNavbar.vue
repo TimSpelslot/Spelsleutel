@@ -72,7 +72,6 @@ function timeAgo(iso: string): string {
 
 const VIEW_ROLES = computed<{ role: UserRole; label: string }[]>(() => [
   { role: 'ADMIN', label: t('admin.roles.admin') },
-  { role: 'DM', label: t('admin.roles.dm') },
   { role: 'PLAYER', label: t('admin.roles.player') },
 ])
 
@@ -83,8 +82,6 @@ const userInitials = computed(() => {
 
 const roleSeverity = computed(() => {
   switch (auth.effectiveUser?.role) {
-    case 'DM':
-      return 'warn'
     case 'ADMIN':
       return 'contrast'
     default:
@@ -92,12 +89,8 @@ const roleSeverity = computed(() => {
   }
 })
 
-const isDevOverride = computed(() => auth.devRole !== null)
-
 function toggleView(role: UserRole) {
-  // Clicking the already-active dev role resets to real role
-  if (auth.devRole === role) auth.setDevRole(null)
-  else auth.setDevRole(role)
+  if (auth.effectiveUser?.role !== role) auth.switchRole(role)
 }
 
 async function logout() {
@@ -129,13 +122,25 @@ async function logout() {
         v-for="v in VIEW_ROLES"
         :key="v.role"
         class="view-pill"
-        :class="{
-          'view-pill--active': auth.effectiveUser?.role === v.role,
-          'view-pill--override': isDevOverride && auth.effectiveUser?.role === v.role,
-        }"
+        :class="{ 'view-pill--active': auth.effectiveUser?.role === v.role }"
         @click="toggleView(v.role)"
       >
         {{ v.label }}
+      </button>
+      <span class="view-divider" />
+      <button
+        class="view-pill"
+        :class="{ 'view-pill--active': auth.effectiveUser?.isStoryDm }"
+        @click="auth.toggleFlag('isStoryDm')"
+      >
+        Story DM
+      </button>
+      <button
+        class="view-pill"
+        :class="{ 'view-pill--active': auth.effectiveUser?.isWorldbuilder }"
+        @click="auth.toggleFlag('isWorldbuilder')"
+      >
+        Worldbuilder
       </button>
     </div>
 
@@ -249,7 +254,6 @@ async function logout() {
             :severity="roleSeverity"
             class="navbar__role-tag"
           />
-          <span v-if="isDevOverride" class="navbar__dev-badge">DEV</span>
         </div>
       </div>
 
@@ -359,9 +363,13 @@ async function logout() {
   color: var(--ss-primary-fg);
 }
 
-/* Pulsing amber ring when actively overriding the real role */
-.view-pill--override {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ss-primary) 40%, transparent);
+.view-divider {
+  display: block;
+  width: 1px;
+  height: 14px;
+  background: color-mix(in srgb, var(--ss-shell-fg) 20%, transparent);
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 /* ── End section ── */

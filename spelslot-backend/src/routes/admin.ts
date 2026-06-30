@@ -27,9 +27,11 @@ function serializeUser(user: HydratedDocument<IUser>) {
     displayName: user.displayName,
     avatarUrl: user.avatarUrl ?? null,
     role: user.role,
+    isStoryDm: user.isStoryDm,
     isWorldbuilder: user.isWorldbuilder,
     worldbuilderRequestPending: user.worldbuilderRequestPending,
     dndbeyondCharacterId: user.dndbeyondCharacterId ?? null,
+    defaultRoom: user.defaultRoom ?? null,
     createdAt: user.createdAt,
   }
 }
@@ -54,9 +56,11 @@ adminRouter.patch('/users/:id', async (req, res, next) => {
   try {
     const allowed = [
       'role',
+      'isStoryDm',
       'isWorldbuilder',
       'worldbuilderRequestPending',
       'dndbeyondCharacterId',
+      'defaultRoom',
     ] as const
     type AllowedKey = (typeof allowed)[number]
     const updates: Partial<Record<AllowedKey, unknown>> = {}

@@ -6,10 +6,13 @@ import { generateKeyBetween } from 'fractional-indexing'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import CodexTreeNode, { type TreeNode } from '@/components/codex/CodexTreeNode.vue'
 import CodexDetailPanel from '@/components/codex/CodexDetailPanel.vue'
 import { codexService, type CodexEntry, type EntryType } from '@/services/codexService'
+import { authService } from '@/services/authService'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
@@ -22,12 +25,39 @@ const toast = useToast()
 const canCreateEntry = computed(() => {
   const u = auth.effectiveUser
   if (!u) return false
-  return u.role === 'DM' || u.role === 'ADMIN' || u.isWorldbuilder
+  return u.role === 'ADMIN' || u.isWorldbuilder
 })
+
+const canRequestWorldbuilder = computed(() => {
+  const u = auth.effectiveUser
+  if (!u) return false
+  return !u.isWorldbuilder && !u.worldbuilderRequestPending
+})
+
+const worldbuilderRequestPending = computed(() => auth.effectiveUser?.worldbuilderRequestPending ?? false)
+
+const requestDialogVisible = ref(false)
+const requestReason = ref('')
+const requestingWorldbuilder = ref(false)
+
+async function submitWorldbuilderRequest() {
+  if (!requestReason.value.trim()) return
+  requestingWorldbuilder.value = true
+  const result = await authService.requestWorldbuilder(requestReason.value.trim())
+  requestingWorldbuilder.value = false
+  if (result.type === 'ok') {
+    auth.user = result.data
+    requestDialogVisible.value = false
+    requestReason.value = ''
+    toast.add({ severity: 'success', summary: 'Verzoek verstuurd', life: 3000 })
+  } else {
+    toast.add({ severity: 'error', summary: result.message, life: 4000 })
+  }
+}
 
 const canReorder = computed(() => {
   const role = auth.effectiveUser?.role
-  return role === 'DM' || role === 'ADMIN'
+  return role === 'ADMIN' || !!auth.effectiveUser?.isWorldbuilder
 })
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -204,6 +234,22 @@ async function handleReorder({
           :title="$t('codex.newEntry')"
           @click="router.push({ name: 'codex-new' })"
         />
+        <Button
+          v-else-if="!treeCollapsed && canRequestWorldbuilder"
+          icon="pi pi-user-plus"
+          text
+          size="small"
+          class="codex-tree__new-btn"
+          title="Worldbuilder-toegang aanvragen"
+          @click="requestDialogVisible = true"
+        />
+        <span
+          v-else-if="!treeCollapsed && worldbuilderRequestPending"
+          class="codex-tree__pending-hint"
+          title="Verzoek in behandeling"
+        >
+          <i class="pi pi-clock" />
+        </span>
         <button
           class="codex-tree__toggle"
           :title="treeCollapsed ? $t('codex.expandTree') : $t('codex.collapseTree')"
@@ -293,6 +339,37 @@ async function handleReorder({
       <CodexDetailPanel :slug="selectedSlug" @navigate="navigateRelation" />
     </main>
   </div>
+
+  <Dialog
+    v-model:visible="requestDialogVisible"
+    header="Worldbuilder-toegang aanvragen"
+    modal
+    :draggable="false"
+    :style="{ width: '420px' }"
+  >
+    <div class="wb-request-form">
+      <p class="wb-request-desc">
+        Leg uit waarom je worldbuilder-toegang wilt. Een admin beoordeelt je verzoek.
+      </p>
+      <Textarea
+        v-model="requestReason"
+        :rows="4"
+        auto-resize
+        placeholder="Ik wil bijdragen aan..."
+        class="wb-request-textarea"
+      />
+    </div>
+    <template #footer>
+      <Button label="Annuleren" text severity="secondary" @click="requestDialogVisible = false" />
+      <Button
+        label="Verstuur verzoek"
+        icon="pi pi-send"
+        :loading="requestingWorldbuilder"
+        :disabled="!requestReason.trim()"
+        @click="submitWorldbuilderRequest"
+      />
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -369,6 +446,30 @@ async function handleReorder({
 }
 .codex-tree__new-btn:hover {
   color: var(--ss-primary) !important;
+}
+
+.codex-tree__pending-hint {
+  color: var(--ss-shell-fg-muted);
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  margin-left: auto;
+}
+
+.wb-request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wb-request-desc {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ss-text-muted);
+  line-height: 1.5;
+}
+
+.wb-request-textarea {
+  width: 100%;
 }
 
 /* Search */

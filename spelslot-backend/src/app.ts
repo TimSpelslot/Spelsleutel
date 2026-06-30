@@ -15,6 +15,8 @@ import { ddbRouter } from './routes/ddb'
 import { calendarsRouter } from './routes/calendars'
 import { monstersRouter } from './routes/monsters'
 import { sessionsRouter } from './routes/sessions'
+import { roomsRouter } from './routes/rooms'
+import { instantModeRouter } from './routes/instantMode'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -36,6 +38,8 @@ app.use('/api/ddb', ddbRouter)
 app.use('/api/calendars', calendarsRouter)
 app.use('/api/monsters', monstersRouter)
 app.use('/api/sessions', sessionsRouter)
+app.use('/api/rooms', roomsRouter)
+app.use('/api/instant-mode', instantModeRouter)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 app.use(errorHandler)

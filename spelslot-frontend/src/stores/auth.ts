@@ -12,37 +12,12 @@ import { t } from '@/i18n'
 import { authService } from '@/services/authService'
 import type { Result, User, UserRole } from '@/types'
 
-const DEV_ROLE_KEY = 'spelslot-dev-role'
-
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const firebaseUser = ref<FirebaseUser | null>(null)
   const loading = ref(false)
 
-  // Dev-only: override role for testing different views (persisted across page loads)
-  const devRole = ref<UserRole | null>(
-    import.meta.env.DEV ? (localStorage.getItem(DEV_ROLE_KEY) as UserRole | null) || null : null,
-  )
-
-  // The user seen by permission checks — devRole overrides role but not identity
-  const effectiveUser = computed<User | null>(() => {
-    if (!user.value) return null
-    if (!devRole.value) return user.value
-    return {
-      ...user.value,
-      role: devRole.value,
-      // DMs and Admins implicitly have worldbuilder rights
-      isWorldbuilder:
-        devRole.value === 'DM' || devRole.value === 'ADMIN' ? true : user.value.isWorldbuilder,
-    }
-  })
-
-  function setDevRole(role: UserRole | null) {
-    if (!import.meta.env.DEV) return
-    devRole.value = role
-    if (role) localStorage.setItem(DEV_ROLE_KEY, role)
-    else localStorage.removeItem(DEV_ROLE_KEY)
-  }
+  const effectiveUser = computed<User | null>(() => user.value)
 
   function init(): Promise<void> {
     return new Promise((resolve) => {
@@ -101,10 +76,21 @@ export const useAuthStore = defineStore('auth', () => {
     firebaseUser.value = null
   }
 
-  async function updateProfile(displayName: string): Promise<Result<void>> {
-    const result = await authService.updateProfile(displayName)
+  async function updateProfile(data: Parameters<typeof authService.updateProfile>[0]): Promise<Result<void>> {
+    const result = await authService.updateProfile(data)
     if (result.type === 'ok') user.value = result.data
     return result.type === 'ok' ? { type: 'ok', data: undefined } : result
+  }
+
+  async function switchRole(role: UserRole): Promise<void> {
+    const result = await authService.switchRole(role)
+    if (result.type === 'ok') user.value = result.data
+  }
+
+  async function toggleFlag(flag: 'isStoryDm' | 'isWorldbuilder'): Promise<void> {
+    if (!user.value) return
+    const result = await authService.switchFlags({ [flag]: !user.value[flag] })
+    if (result.type === 'ok') user.value = result.data
   }
 
   function hasPermission(role: UserRole | UserRole[]): boolean {
@@ -117,14 +103,14 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     effectiveUser,
-    devRole,
-    setDevRole,
     firebaseUser,
     loading,
     init,
     loginWithGoogle,
     logout,
     updateProfile,
+    switchRole,
+    toggleFlag,
     hasPermission,
   }
 })

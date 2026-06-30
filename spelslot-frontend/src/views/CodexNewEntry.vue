@@ -7,6 +7,7 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import InputChips from 'primevue/inputchips'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { codexService, type EntryType } from '@/services/codexService'
 import { useAuthStore } from '@/stores/auth'
 
@@ -21,7 +22,7 @@ const error = ref<string | null>(null)
 const form = reactive({
   name: '',
   type: 'lore' as EntryType,
-  permission: 'PLAYERS' as 'PUBLIC' | 'PLAYERS' | 'DM_ONLY' | 'PRIVATE',
+  permission: 'PUBLIC' as 'PUBLIC' | 'DM_ONLY',
   tags: [] as string[],
   summary: '',
 })
@@ -37,17 +38,9 @@ const TYPE_OPTIONS = computed(() => [
   { label: t('codex.types.session'), value: 'session' },
 ])
 
-const permissionOptions = computed(() => {
-  const opts: { label: string; value: string }[] = [
-    { label: t('codex.permission.public'), value: 'PUBLIC' },
-    { label: t('codex.permission.players'), value: 'PLAYERS' },
-    { label: t('codex.permission.private'), value: 'PRIVATE' },
-  ]
-  const r = auth.effectiveUser?.role
-  if (r === 'DM' || r === 'ADMIN') {
-    opts.splice(2, 0, { label: t('codex.permission.dmOnly'), value: 'DM_ONLY' })
-  }
-  return opts
+const isDmOnly = computed({
+  get: () => form.permission === 'DM_ONLY',
+  set: (v: boolean) => { form.permission = v ? 'DM_ONLY' : 'PUBLIC' },
 })
 
 async function submit() {
@@ -113,15 +106,12 @@ async function submit() {
               class="form-input"
             />
           </div>
-          <div class="form-field">
+          <div v-if="auth.effectiveUser?.isStoryDm" class="form-field">
             <label class="form-label">{{ $t('codex.newEntryForm.visibilityLabel') }}</label>
-            <Select
-              v-model="form.permission"
-              :options="permissionOptions"
-              option-label="label"
-              option-value="value"
-              class="form-input"
-            />
+            <div class="form-dm-row">
+              <ToggleSwitch v-model="isDmOnly" input-id="new-perm-dm-only" />
+              <label for="new-perm-dm-only" class="form-dm-label">{{ $t('codex.permission.dmOnly') }}</label>
+            </div>
           </div>
         </div>
 
@@ -249,6 +239,19 @@ async function submit() {
 
 .form-input {
   width: 100%;
+}
+
+.form-dm-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+}
+
+.form-dm-label {
+  font-size: 0.875rem;
+  color: var(--ss-text);
+  cursor: pointer;
 }
 
 .new-entry__actions {

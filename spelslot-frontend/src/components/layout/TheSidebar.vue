@@ -26,12 +26,7 @@ const navItems = computed<NavItem[]>(() => {
     { name: 'session-player', label: t('nav.sidebar.session'), icon: 'pi pi-play-circle' },
     { name: 'marketplace', label: t('nav.sidebar.marketplace'), icon: 'pi pi-shopping-bag' },
   ]
-  // DM Dashboard only for permanent DM/ADMIN roles.
-  // Player-hosted sessions will add this link dynamically once AdventureBoard
-  // integration is in place and we know who's running a given session.
-  if (role === 'DM' || role === 'ADMIN') {
-    items.push({ name: 'session-dm', label: t('nav.sidebar.dmDashboard'), icon: 'pi pi-shield' })
-  }
+  items.push({ name: 'session-dm', label: t('nav.sidebar.dmDashboard'), icon: 'pi pi-shield' })
   if (role === 'ADMIN') {
     items.push({ name: 'admin', label: t('nav.sidebar.admin'), icon: 'pi pi-sliders-h' })
   }

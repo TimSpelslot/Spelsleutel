@@ -11,6 +11,12 @@ export interface SessionDm {
   avatarUrl: string | null
 }
 
+export interface AssignedPlayer {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+}
+
 export interface SessionSummary {
   id: string
   title: string
@@ -26,9 +32,31 @@ export interface SessionSummary {
   rankExploration: number
   rankRoleplaying: number
   releaseAssignments: boolean
+  requestedRoom: string | null
+  assignedRoom: string | null
+  predecessorId: string | null
+  numSessions: number
+  sessionNumber: number
+  requestedPlayerIds: string[]
+  isWaitingList: boolean
   signupCount: number
   assignedCount: number
-  mySignUp: { id: string; status: SignUpStatus; appeared: boolean } | null
+  mySignUp: { id: string; status: SignUpStatus; priority: number; appeared: boolean } | null
+  assignedPlayers: AssignedPlayer[] | null
+}
+
+export interface AdminSignupsUser {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  karma: number
+  signups: Array<{ sessionId: string; sessionTitle: string; priority: number; status: string }>
+}
+
+export interface AdminSignupsResult {
+  weekStart: string
+  sessions: Array<{ id: string; title: string }>
+  users: AdminSignupsUser[]
 }
 
 export interface SessionPlayer {
@@ -47,11 +75,23 @@ export interface SessionDetail extends Omit<SessionSummary, 'signupCount' | 'ass
   signups: SessionPlayer[]
 }
 
-export type SessionFilter = 'upcoming' | 'mine' | 'dm' | 'all'
+export interface AdminRoomSession {
+  id: string
+  title: string
+  date: string
+  status: SessionStatus
+  dm: { id: string; displayName: string; defaultRoom: string | null } | null
+  requestedRoom: string | null
+  assignedRoom: string | null
+}
+
+export type SessionFilter = 'upcoming' | 'mine' | 'dm' | 'all' | 'week'
 
 export const sessionService = {
-  async list(filter: SessionFilter = 'upcoming'): Promise<Result<SessionSummary[]>> {
-    const result = await api.get<{ sessions: SessionSummary[] }>(`/api/sessions?filter=${filter}`)
+  async list(filter: SessionFilter = 'upcoming', week?: string): Promise<Result<SessionSummary[]>> {
+    const params = new URLSearchParams({ filter })
+    if (week) params.set('week', week)
+    const result = await api.get<{ sessions: SessionSummary[] }>(`/api/sessions?${params}`)
     if (result.type === 'error') return result
     return { type: 'ok', data: result.data.sessions }
   },
@@ -73,6 +113,10 @@ export const sessionService = {
     rankCombat?: number
     rankExploration?: number
     rankRoleplaying?: number
+    requestedRoom?: string | null
+    predecessorId?: string | null
+    numSessions?: number
+    sessionNumber?: number
   }): Promise<Result<SessionSummary>> {
     const result = await api.post<{ session: SessionSummary }>('/api/sessions', data)
     if (result.type === 'error') return result
@@ -91,12 +135,21 @@ export const sessionService = {
     return { type: 'ok', data: undefined }
   },
 
-  async signUp(sessionId: string): Promise<Result<{ id: string; status: SignUpStatus }>> {
-    const result = await api.post<{ signUp: { id: string; status: SignUpStatus } }>(
+  async signUp(sessionId: string, priority: 1 | 2 | 3): Promise<Result<{ id: string; status: SignUpStatus; priority: number } | null>> {
+    const result = await api.post<{ signUp?: { id: string; status: SignUpStatus; priority: number }; removed?: boolean }>(
+      `/api/sessions/${sessionId}/signup`, { priority },
+    )
+    if (result.type === 'error') return result
+    // Backend returns { removed: true } when same session + same priority is toggled off
+    return { type: 'ok', data: result.data.signUp ?? null }
+  },
+
+  async instantSignUp(sessionId: string): Promise<Result<{ id: string; status: SignUpStatus; priority: number } | null>> {
+    const result = await api.post<{ signUp?: { id: string; status: SignUpStatus; priority: number }; removed?: boolean }>(
       `/api/sessions/${sessionId}/signup`, {},
     )
     if (result.type === 'error') return result
-    return { type: 'ok', data: result.data.signUp }
+    return { type: 'ok', data: result.data.signUp ?? null }
   },
 
   async cancelSignUp(sessionId: string): Promise<Result<void>> {
@@ -127,5 +180,54 @@ export const sessionService = {
     const result = await api.get<{ karma: number }>('/api/sessions/karma')
     if (result.type === 'error') return result
     return { type: 'ok', data: result.data.karma }
+  },
+
+  async requestPlayer(sessionId: string, userId: string): Promise<Result<void>> {
+    const result = await api.post<{ success: boolean }>(`/api/sessions/${sessionId}/request-player`, { userId })
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
+  async removeRequestedPlayer(sessionId: string, userId: string): Promise<Result<void>> {
+    const result = await api.delete<{ success: boolean }>(`/api/sessions/${sessionId}/request-player/${userId}`)
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
+  async getWeekRooms(): Promise<Result<AdminRoomSession[]>> {
+    const result = await api.get<{ sessions: AdminRoomSession[] }>('/api/sessions/admin/rooms/week')
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.sessions }
+  },
+
+  async assignRoom(sessionId: string, assignedRoom: string | null): Promise<Result<void>> {
+    const result = await api.patch<{ success: boolean }>(`/api/sessions/${sessionId}/room`, { assignedRoom })
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
+  async getWeekSignups(): Promise<Result<Array<{ adventure_id: string; priority: number }>>> {
+    const result = await api.get<{ signups: Array<{ adventure_id: string; priority: number }> }>('/api/sessions/signups')
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.signups }
+  },
+
+  async adminAction(action: 'assign' | 'release' | 'reset' | 'karma' | 'reassign', date?: string): Promise<Result<void>> {
+    const result = await api.post<{ message: string }>('/api/sessions/admin/action', { action, date })
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
+  async movePlayer(signUpId: string, toSessionId: string): Promise<Result<void>> {
+    const result = await api.patch<{ success: boolean }>('/api/sessions/move-player', { signUpId, toSessionId })
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
+  async getAdminSignups(week?: string): Promise<Result<AdminSignupsResult>> {
+    const params = week ? `?week=${week}` : ''
+    const result = await api.get<AdminSignupsResult>(`/api/sessions/admin/signups${params}`)
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data }
   },
 }

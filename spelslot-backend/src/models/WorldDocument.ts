@@ -12,6 +12,8 @@ export interface IWorldDocument {
   isHidden: boolean
   isFirst: boolean
   calendarId?: string
+  deletedAt?: Date
+  deletedBy?: Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }
@@ -27,6 +29,8 @@ const WorldDocumentSchema = new Schema<IWorldDocument>(
     isHidden: { type: Boolean, default: false },
     isFirst: { type: Boolean, default: false },
     calendarId: { type: String },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
 )

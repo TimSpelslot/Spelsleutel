@@ -17,32 +17,23 @@ type MongoUser = IWorldEntry extends never
   : {
       _id: unknown
       role: string
+      isStoryDm: boolean
       isWorldbuilder: boolean
     }
 
-function permissionFilter(user: { _id: unknown; role: string } | null) {
+function permissionFilter(user: { _id: unknown; role: string; isStoryDm: boolean } | null) {
   if (!user) return { permission: 'PUBLIC' }
-  if (user.role === 'DM' || user.role === 'ADMIN') return {}
-  return {
-    $or: [
-      { permission: { $in: ['PUBLIC', 'PLAYERS'] } },
-      { permission: 'PRIVATE', authorId: user._id },
-      { permission: 'PRIVATE', editors: user._id },
-    ],
-  }
+  if (user.isStoryDm) return {}
+  return { permission: { $ne: 'DM_ONLY' } }
 }
 
 function canWrite(
   user: { _id: unknown; role: string; isWorldbuilder: boolean },
-  entry: { isLocked?: boolean; authorId?: unknown; editors?: unknown[] },
+  entry: { isLocked?: boolean },
 ): boolean {
-  if (user.role === 'DM' || user.role === 'ADMIN') return true
+  if (user.role === 'ADMIN') return true
   if (entry.isLocked) return false
-  if (!user.isWorldbuilder) return false
-  const uid = user._id?.toString()
-  const isAuthor = entry.authorId?.toString() === uid
-  const isEditor = (entry.editors ?? []).some((e) => e?.toString() === uid)
-  return isAuthor || isEditor
+  return user.isWorldbuilder
 }
 
 function buildEntrySummary(e: Record<string, unknown>) {
@@ -96,7 +87,7 @@ async function entryWithRelations(entry: Record<string, unknown>) {
   const id = entry._id as object
 
   const [documents, outgoing, incoming] = await Promise.all([
-    WorldDocument.find({ entryId: id }).sort({ isFirst: -1, pos: 1 }).lean(),
+    WorldDocument.find({ entryId: id, deletedAt: { $exists: false } }).sort({ isFirst: -1, pos: 1 }).lean(),
     WorldEntryRelation.find({ sourceId: id }).lean(),
     WorldEntryRelation.find({ targetId: id }).lean(),
   ])
@@ -144,7 +135,7 @@ codexRouter.get('/', optionalAuth, async (req, res, next) => {
       1,
       parseInt(req.query.limit as string) || (req.query.name ? 20 : 2000),
     )
-    const entries = await WorldEntry.find({ ...permissionFilter(mongoUser), ...nameFilter })
+    const entries = await WorldEntry.find({ ...permissionFilter(mongoUser), ...nameFilter, deletedAt: { $exists: false } })
       .select('-lkProperties')
       .sort(isRecent ? { updatedAt: -1 } : {})
       .limit(isRecent ? Math.min(limitParam, 20) : limitParam)
@@ -165,8 +156,7 @@ codexRouter.post('/', requireAuth, async (req, res, next) => {
       return
     }
 
-    const isDmAdmin = mongoUser.role === 'DM' || mongoUser.role === 'ADMIN'
-    if (!isDmAdmin && !mongoUser.isWorldbuilder) {
+    if (mongoUser.role !== 'ADMIN' && !mongoUser.isWorldbuilder) {
       res.status(403).json({ message: 'Insufficient permissions' })
       return
     }
@@ -209,6 +199,24 @@ codexRouter.post('/', requireAuth, async (req, res, next) => {
   }
 })
 
+// GET /api/codex/archive — list archived entries (admin + worldbuilder; MUST be before /:id)
+codexRouter.get('/archive', requireAuth, async (req, res, next) => {
+  try {
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (mongoUser.role !== 'ADMIN' || !mongoUser.isWorldbuilder) {
+      res.status(403).json({ message: 'Admin + worldbuilder access required' }); return
+    }
+
+    const filter: Record<string, unknown> = { deletedAt: { $exists: true } }
+    if (!mongoUser.isStoryDm) filter.permission = { $ne: 'DM_ONLY' }
+
+    const entries = await WorldEntry.find(filter).select('-lkProperties').sort({ deletedAt: -1 }).lean()
+    res.json({ entries: entries.map((e) => buildEntrySummary(e as Record<string, unknown>)) })
+  } catch (err) { next(err) }
+})
+
 // GET /api/codex/slug/:slug — get entry by slug (MUST be before /:id)
 codexRouter.get('/slug/:slug', optionalAuth, async (req, res, next) => {
   try {
@@ -217,6 +225,7 @@ codexRouter.get('/slug/:slug', optionalAuth, async (req, res, next) => {
     const entry = await WorldEntry.findOne({
       slug: req.params.slug,
       ...permissionFilter(mongoUser),
+      deletedAt: { $exists: false },
     }).lean()
 
     if (!entry) {
@@ -243,6 +252,7 @@ codexRouter.get('/:id', optionalAuth, async (req, res, next) => {
     const entry = await WorldEntry.findOne({
       _id: req.params.id,
       ...permissionFilter(mongoUser),
+      deletedAt: { $exists: false },
     }).lean()
 
     if (!entry) {
@@ -328,13 +338,14 @@ codexRouter.get('/:id/documents', optionalAuth, async (req, res, next) => {
     const entry = await WorldEntry.findOne({
       _id: req.params.id,
       ...permissionFilter(mongoUser),
+      deletedAt: { $exists: false },
     }).lean()
     if (!entry) {
       res.status(404).json({ message: 'Entry not found' })
       return
     }
 
-    const docs = await WorldDocument.find({ entryId: entry._id })
+    const docs = await WorldDocument.find({ entryId: entry._id, deletedAt: { $exists: false } })
       .sort({ isFirst: -1, pos: 1 })
       .lean()
     res.json({ documents: docs.map((d) => buildDocPayload(d as Record<string, unknown>)) })
@@ -434,7 +445,7 @@ codexRouter.patch('/:id/documents/:docId', requireAuth, async (req, res, next) =
   }
 })
 
-// DELETE /api/codex/:id/documents/:docId — DM/Admin only
+// DELETE /api/codex/:id/documents/:docId — soft-delete (worldbuilder or admin)
 codexRouter.delete('/:id/documents/:docId', requireAuth, async (req, res, next) => {
   try {
     if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.docId)) {
@@ -449,20 +460,175 @@ codexRouter.delete('/:id/documents/:docId', requireAuth, async (req, res, next) 
       return
     }
 
-    if (mongoUser.role !== 'DM' && mongoUser.role !== 'ADMIN') {
+    if (mongoUser.role !== 'ADMIN' && !mongoUser.isWorldbuilder) {
       res.status(403).json({ message: 'Insufficient permissions' })
       return
     }
 
-    const deleted = await WorldDocument.findOneAndDelete({
-      _id: req.params.docId,
-      entryId: req.params.id,
-    })
+    const doc = await WorldDocument.findOneAndUpdate(
+      { _id: req.params.docId, entryId: req.params.id, deletedAt: { $exists: false } },
+      { $set: { deletedAt: new Date(), deletedBy: mongoUser._id } },
+      { new: true },
+    )
 
-    if (!deleted) {
+    if (!doc) {
       res.status(404).json({ message: 'Document not found' })
       return
     }
+    res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/codex/:id/documents/:docId/restore — restore archived document
+codexRouter.post('/:id/documents/:docId/restore', requireAuth, async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.docId)) {
+      res.status(400).json({ message: 'Invalid ID' }); return
+    }
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (mongoUser.role !== 'ADMIN' && !mongoUser.isWorldbuilder) {
+      res.status(403).json({ message: 'Insufficient permissions' }); return
+    }
+
+    const doc = await WorldDocument.findOneAndUpdate(
+      { _id: req.params.docId, entryId: req.params.id },
+      { $unset: { deletedAt: '', deletedBy: '' } },
+      { new: true },
+    )
+    if (!doc) { res.status(404).json({ message: 'Document not found' }); return }
+    res.json({ success: true })
+  } catch (err) { next(err) }
+})
+
+// DELETE /api/codex/:id — soft-delete entry and all its documents
+codexRouter.delete('/:id', requireAuth, async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (mongoUser.role !== 'ADMIN' && !mongoUser.isWorldbuilder) {
+      res.status(403).json({ message: 'Insufficient permissions' }); return
+    }
+
+    const now = new Date()
+    const entry = await WorldEntry.findOneAndUpdate(
+      { _id: req.params.id, deletedAt: { $exists: false } },
+      { $set: { deletedAt: now, deletedBy: mongoUser._id } },
+    )
+    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    await WorldDocument.updateMany(
+      { entryId: req.params.id, deletedAt: { $exists: false } },
+      { $set: { deletedAt: now, deletedBy: mongoUser._id } },
+    )
+    res.json({ success: true })
+  } catch (err) { next(err) }
+})
+
+// POST /api/codex/:id/restore — restore a soft-deleted entry
+codexRouter.post('/:id/restore', requireAuth, async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (mongoUser.role !== 'ADMIN' || !mongoUser.isWorldbuilder) {
+      res.status(403).json({ message: 'Admin + worldbuilder access required' }); return
+    }
+
+    const entry = await WorldEntry.findByIdAndUpdate(
+      req.params.id,
+      { $unset: { deletedAt: '', deletedBy: '' } },
+      { new: true },
+    )
+    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    res.json({ entry: buildEntrySummary(entry.toObject() as unknown as Record<string, unknown>) })
+  } catch (err) { next(err) }
+})
+
+// DELETE /api/codex/:id/permanent — hard-delete a soft-deleted entry (admin + worldbuilder)
+codexRouter.delete('/:id/permanent', requireAuth, async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+    if (mongoUser.role !== 'ADMIN' || !mongoUser.isWorldbuilder) {
+      res.status(403).json({ message: 'Admin + worldbuilder access required' }); return
+    }
+
+    await WorldEntry.findByIdAndDelete(req.params.id)
+    await WorldDocument.deleteMany({ entryId: req.params.id })
+    await WorldEntryRelation.deleteMany({
+      $or: [{ sourceId: req.params.id }, { targetId: req.params.id }],
+    })
+    res.json({ success: true })
+  } catch (err) { next(err) }
+})
+
+// POST /api/codex/:id/relations — add a relation from this entry to a target
+codexRouter.post('/:id/relations', requireAuth, async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id)) { res.status(400).json({ message: 'Invalid ID' }); return }
+
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+
+    const entry = await WorldEntry.findById(req.params.id).lean()
+    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!canWrite(mongoUser as any, entry as any)) { res.status(403).json({ message: 'Insufficient permissions' }); return }
+
+    const { targetId, type } = req.body
+    if (!isValidObjectId(targetId)) { res.status(400).json({ message: 'targetId is required and must be a valid ID' }); return }
+
+    const target = await WorldEntry.findById(targetId).select('name slug type').lean()
+    if (!target) { res.status(404).json({ message: 'Target entry not found' }); return }
+
+    const relation = await WorldEntryRelation.findOneAndUpdate(
+      { sourceId: req.params.id, targetId },
+      { sourceId: req.params.id, targetId, type: type ?? undefined },
+      { upsert: true, new: true },
+    )
+
+    res.status(201).json({
+      relation: {
+        id: relation._id.toString(),
+        direction: 'outgoing' as const,
+        type: relation.type,
+        relatedEntry: { id: target._id.toString(), name: target.name, slug: target.slug, type: target.type },
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// DELETE /api/codex/:id/relations/:relationId — remove a relation
+codexRouter.delete('/:id/relations/:relationId', requireAuth, async (req, res, next) => {
+  try {
+    if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.relationId)) {
+      res.status(400).json({ message: 'Invalid ID' }); return
+    }
+
+    const authReq = req as AuthRequest
+    const mongoUser = await loadUser(authReq.user!.uid)
+    if (!mongoUser) { res.status(401).json({ message: 'User not found' }); return }
+
+    const entry = await WorldEntry.findById(req.params.id).lean()
+    if (!entry) { res.status(404).json({ message: 'Entry not found' }); return }
+    if (!canWrite(mongoUser as any, entry as any)) { res.status(403).json({ message: 'Insufficient permissions' }); return }
+
+    const deleted = await WorldEntryRelation.findOneAndDelete({
+      _id: req.params.relationId,
+      $or: [{ sourceId: req.params.id }, { targetId: req.params.id }],
+    })
+
+    if (!deleted) { res.status(404).json({ message: 'Relation not found' }); return }
     res.json({ success: true })
   } catch (err) {
     next(err)

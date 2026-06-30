@@ -43,11 +43,6 @@ const router = createRouter({
           component: () => import('@/views/AdventureBoardView.vue'),
         },
         {
-          path: 'sessions/:id',
-          name: 'session-detail',
-          component: () => import('@/views/SessionDetailView.vue'),
-        },
-        {
           path: 'session',
           name: 'session',
           component: () => import('@/views/SessionView.vue'),
@@ -56,7 +51,6 @@ const router = createRouter({
           path: 'session/dm',
           name: 'session-dm',
           component: () => import('@/views/SessionDmView.vue'),
-          meta: { requiresDM: true },
         },
         {
           path: 'session/player',
@@ -80,6 +74,30 @@ const router = createRouter({
           meta: { requiresAdmin: true },
         },
         {
+          path: 'admin/rooms',
+          name: 'admin-rooms',
+          component: () => import('@/views/AdminRoomsView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'admin/signups',
+          name: 'admin-signups',
+          component: () => import('@/views/AdminSignupsView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'admin/instant-mode',
+          name: 'admin-instant-mode',
+          component: () => import('@/views/AdminInstantModeView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'admin/archive',
+          name: 'admin-archive',
+          component: () => import('@/views/AdminArchiveView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
           path: 'profile',
           name: 'profile',
           component: () => import('@/views/ProfileView.vue'),
@@ -100,10 +118,6 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.requiresGuest && auth.user) {
-    return { name: 'dashboard' }
-  }
-
-  if (to.meta.requiresDM && !auth.hasPermission(['DM', 'ADMIN'])) {
     return { name: 'dashboard' }
   }
 

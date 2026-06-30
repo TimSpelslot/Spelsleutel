@@ -17,6 +17,13 @@ export interface ISession {
   rankRoleplaying: number
   releaseAssignments: boolean
   codexEntryId?: Types.ObjectId
+  requestedPlayerIds: Types.ObjectId[]
+  isWaitingList: boolean
+  requestedRoom: string | null
+  assignedRoom: string | null
+  predecessorId: Types.ObjectId | null
+  numSessions: number
+  sessionNumber: number
   createdAt: Date
   updatedAt: Date
 }
@@ -41,6 +48,13 @@ const SessionSchema = new Schema<ISession>(
     rankRoleplaying: { type: Number, min: 1, max: 3, default: 2 },
     releaseAssignments: { type: Boolean, default: false },
     codexEntryId: { type: Schema.Types.ObjectId, ref: 'WorldEntry' },
+    requestedPlayerIds: { type: [Schema.Types.ObjectId], ref: 'User', default: [] },
+    isWaitingList: { type: Boolean, default: false },
+    requestedRoom: { type: String, default: null },
+    assignedRoom: { type: String, default: null },
+    predecessorId: { type: Schema.Types.ObjectId, ref: 'Session', default: null },
+    numSessions: { type: Number, min: 1, max: 4, default: 1 },
+    sessionNumber: { type: Number, min: 1, max: 4, default: 1 },
   },
   { timestamps: true },
 )

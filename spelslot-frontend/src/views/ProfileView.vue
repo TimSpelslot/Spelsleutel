@@ -35,7 +35,7 @@ async function saveName() {
   if (!nameInput.value.trim()) return
   nameSaving.value = true
   nameError.value = null
-  const result = await auth.updateProfile(nameInput.value.trim())
+  const result = await auth.updateProfile({ displayName: nameInput.value.trim() })
   nameSaving.value = false
   if (result.type === 'ok') {
     editingName.value = false
@@ -102,13 +102,11 @@ const userInitials = computed(() => {
 
 const ROLE_LABEL = computed<Record<string, string>>(() => ({
   PLAYER: t('profile.roles.player'),
-  DM: t('profile.roles.dm'),
   ADMIN: t('profile.roles.admin'),
 }))
 
 const ROLE_SEVERITY: Record<string, string> = {
   PLAYER: 'secondary',
-  DM: 'warn',
   ADMIN: 'danger',
 }
 </script>
@@ -205,9 +203,9 @@ const ROLE_SEVERITY: Record<string, string> = {
             <span>{{ $t('profile.roleAccess.wbPending') }}</span>
           </div>
 
-          <!-- DM/Admin bypass notice -->
+          <!-- Admin bypass notice -->
           <div
-            v-else-if="user.role === 'DM' || user.role === 'ADMIN'"
+            v-else-if="user.role === 'ADMIN'"
             class="profile-wb profile-wb--active"
           >
             <i class="pi pi-check-circle" />

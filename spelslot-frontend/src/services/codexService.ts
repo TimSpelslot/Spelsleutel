@@ -11,13 +11,15 @@ export type EntryType =
   | 'rule'
   | 'session'
 
+export type EntryPermission = 'PUBLIC' | 'PLAYERS' | 'DM_ONLY' | 'PRIVATE'
+
 export interface CodexEntry {
   id: string
   name: string
   slug: string
   type: EntryType
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-  permission: 'PUBLIC' | 'PLAYERS' | 'DM_ONLY' | 'PRIVATE'
+  permission: EntryPermission
   isLocked: boolean
   parentId: string | null
   pos: string
@@ -127,6 +129,23 @@ export const codexService = {
     return { type: 'ok', data: undefined }
   },
 
+  async createRelation(entryId: string, targetId: string, type?: string): Promise<Result<CodexRelation>> {
+    const result = await api.post<{ relation: CodexRelation }>(
+      `/api/codex/${entryId}/relations`,
+      { targetId, type: type || undefined },
+    )
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.relation }
+  },
+
+  async deleteRelation(entryId: string, relationId: string): Promise<Result<void>> {
+    const result = await api.delete<{ success: boolean }>(
+      `/api/codex/${entryId}/relations/${relationId}`,
+    )
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
   async syncSession(
     abSessionId: number,
   ): Promise<Result<{ entryId: string; slug: string; docId: string | null }>> {
@@ -143,5 +162,29 @@ export const codexService = {
     calendarId: string,
   ): Promise<Result<import('@/utils/lkCalendar').LkCalendarDef>> {
     return api.get(`/api/calendars/${calendarId}`)
+  },
+
+  async listArchive(): Promise<Result<CodexEntry[]>> {
+    const result = await api.get<{ entries: CodexEntry[] }>('/api/codex/archive')
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.entries }
+  },
+
+  async restoreEntry(id: string): Promise<Result<CodexEntry>> {
+    const result = await api.post<{ entry: CodexEntry }>(`/api/codex/${id}/restore`, {})
+    if (result.type === 'error') return result
+    return { type: 'ok', data: result.data.entry }
+  },
+
+  async permanentDeleteEntry(id: string): Promise<Result<void>> {
+    const result = await api.delete<void>(`/api/codex/${id}/permanent`)
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
+  },
+
+  async restoreDocument(entryId: string, docId: string): Promise<Result<void>> {
+    const result = await api.post<void>(`/api/codex/${entryId}/documents/${docId}/restore`, {})
+    if (result.type === 'error') return result
+    return { type: 'ok', data: undefined }
   },
 }

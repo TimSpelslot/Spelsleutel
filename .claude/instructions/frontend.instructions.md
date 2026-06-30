@@ -20,7 +20,7 @@ is the source of truth for versions.
 | HTTP/data layer | `fetch` wrapped by `src/services/api.ts` | — |
 | Rich text / collab | Tiptap 3 + Yjs + `@hocuspocus/provider` | ^3.27 / ^13.6 |
 | Auth / messaging | Firebase Web SDK (Google OAuth + FCM) | ^12 |
-| i18n | none | — |
+| vue-i18n | none | — |
 | Test runner | none yet — see `testing.instructions.md` | — |
 | Lint/format | ESLint (flat config, `eslint-plugin-vue`) + Prettier — root `eslint.config.mjs` | — |
 

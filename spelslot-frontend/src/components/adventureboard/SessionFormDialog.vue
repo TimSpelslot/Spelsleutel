@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Dialog from 'primevue/dialog'
@@ -8,7 +8,12 @@ import Textarea from 'primevue/textarea'
 import InputNumber from 'primevue/inputnumber'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
 import { sessionService, type SessionSummary } from '@/services/sessionService'
+import { roomService } from '@/services/roomService'
+import combatIcon from '@/assets/spiked-dragon-head.svg'
+import explorationIcon from '@/assets/dungeon-gate.svg'
+import roleplayIcon from '@/assets/drama-masks.svg'
 
 // ── Props & emits ──────────────────────────────────────────────────────────
 
@@ -40,6 +45,24 @@ const excludeFromKarma = ref(false)
 const rankCombat = ref(1)
 const rankExploration = ref(1)
 const rankRoleplaying = ref(1)
+const requestedRoom = ref<string | null>(null)
+const availableRooms = ref<Array<{ label: string; value: string | null }>>([
+  { label: '— Geen voorkeur —', value: null },
+])
+
+onMounted(async () => {
+  const result = await roomService.list()
+  if (result.type === 'ok') {
+    availableRooms.value = [
+      { label: '— Geen voorkeur —', value: null },
+      ...result.data.filter(r => r.isActive).map(r => ({ label: r.name, value: r.name })),
+    ]
+  }
+})
+
+// Multi-session adventure (backend creates the full chain automatically)
+const isMultiSession = ref(false)
+const numSessions = ref(2)
 
 const saving = ref(false)
 const validationError = ref<string | null>(null)
@@ -58,7 +81,6 @@ const dialogHeader = computed(() =>
 function populateForm(session: SessionSummary) {
   title.value = session.title
   shortDescription.value = session.shortDescription ?? ''
-  // Convert ISO date string to datetime-local format (YYYY-MM-DDTHH:MM)
   const d = new Date(session.date)
   const pad = (n: number) => String(n).padStart(2, '0')
   date.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
@@ -69,6 +91,9 @@ function populateForm(session: SessionSummary) {
   rankCombat.value = session.rankCombat
   rankExploration.value = session.rankExploration
   rankRoleplaying.value = session.rankRoleplaying
+  requestedRoom.value = session.requestedRoom ?? null
+  isMultiSession.value = session.numSessions > 1
+  numSessions.value = session.numSessions > 1 ? session.numSessions : 2
 }
 
 function resetForm() {
@@ -83,6 +108,9 @@ function resetForm() {
   rankCombat.value = 1
   rankExploration.value = 1
   rankRoleplaying.value = 1
+  requestedRoom.value = null
+  isMultiSession.value = false
+  numSessions.value = 2
   validationError.value = null
   serverError.value = null
 }
@@ -137,9 +165,9 @@ function getRank(rank: 'combat' | 'exploration' | 'roleplaying'): number {
 }
 
 const RANK_OPTIONS = [
-  { key: 'combat' as const, label: 'session.ab.form.rankCombat' },
-  { key: 'exploration' as const, label: 'session.ab.form.rankExploration' },
-  { key: 'roleplaying' as const, label: 'session.ab.form.rankRoleplay' },
+  { key: 'combat' as const, label: 'session.ab.form.rankCombat', icon: combatIcon },
+  { key: 'exploration' as const, label: 'session.ab.form.rankExploration', icon: explorationIcon },
+  { key: 'roleplaying' as const, label: 'session.ab.form.rankRoleplay', icon: roleplayIcon },
 ]
 
 // ── Submit ─────────────────────────────────────────────────────────────────
@@ -172,6 +200,8 @@ async function handleSubmit() {
     rankCombat: rankCombat.value,
     rankExploration: rankExploration.value,
     rankRoleplaying: rankRoleplaying.value,
+    requestedRoom: requestedRoom.value || null,
+    numSessions: isMultiSession.value ? numSessions.value : 1,
   }
 
   let result: Awaited<ReturnType<typeof sessionService.create | typeof sessionService.update>>
@@ -299,6 +329,20 @@ function handleCancel() {
         </div>
       </div>
 
+      <!-- Room request -->
+      <div class="sf-field">
+        <label class="sf-label" for="sf-room">Ruimte voorkeur</label>
+        <Select
+          id="sf-room"
+          v-model="requestedRoom"
+          :options="availableRooms"
+          option-label="label"
+          option-value="value"
+          class="sf-input"
+          placeholder="Geen voorkeur"
+        />
+      </div>
+
       <!-- Toggles row -->
       <div class="sf-toggles-row">
         <div class="sf-toggle-item">
@@ -337,14 +381,45 @@ function handleCancel() {
                 :key="pip"
                 type="button"
                 class="sf-rank-pip"
-                :class="{ 'sf-rank-pip--filled': pip <= getRank(rank.key) }"
+                :class="pip <= getRank(rank.key) ? 'sf-rank-pip--on' : 'sf-rank-pip--off'"
                 :aria-label="`${t(rank.label)} ${pip}`"
                 :aria-pressed="pip <= getRank(rank.key)"
                 @click="setRank(rank.key, pip)"
-              />
+              >
+                <img :src="rank.icon" :alt="''" class="sf-rank-pip-icon" />
+              </button>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Multi-session adventure -->
+      <div class="sf-section sf-section--series">
+        <div class="sf-section-header">
+          <div class="sf-toggle-item">
+            <ToggleSwitch v-model="isMultiSession" input-id="sf-series" />
+            <label for="sf-series" class="sf-toggle-label sf-toggle-label--em">
+              Meerdelig avontuur
+            </label>
+          </div>
+        </div>
+
+        <Transition name="sf-expand">
+          <div v-if="isMultiSession" class="sf-series-fields">
+            <div class="sf-field sf-field--sm">
+              <label class="sf-label" for="sf-num-sessions">Aantal sessies</label>
+              <InputNumber
+                id="sf-num-sessions"
+                v-model="numSessions"
+                :min="2"
+                :max="4"
+                :show-buttons="true"
+                class="sf-input-number sf-input-number--sm"
+              />
+            </div>
+            <span class="sf-hint">Alle sessies worden automatisch aangemaakt, één week na elkaar. Spelers die de vorige sessie hebben gespeeld krijgen voorrang.</span>
+          </div>
+        </Transition>
       </div>
     </form>
 
@@ -397,6 +472,10 @@ function handleCancel() {
   gap: 0.35rem;
 }
 
+.sf-field--sm {
+  flex: 0 0 auto;
+}
+
 .sf-label {
   font-size: 0.85rem;
   font-weight: 600;
@@ -409,12 +488,21 @@ function handleCancel() {
   color: var(--ss-danger);
 }
 
+.sf-hint {
+  font-size: 0.78rem;
+  color: var(--ss-text-muted);
+}
+
 .sf-input {
   width: 100%;
 }
 
 .sf-input-number {
   width: 10rem;
+}
+
+.sf-input-number--sm {
+  width: 7rem;
 }
 
 /* ── Datetime input ──────────────────────────────────────────────────────── */
@@ -513,6 +601,10 @@ function handleCancel() {
   cursor: pointer;
 }
 
+.sf-toggle-label--em {
+  font-weight: 600;
+}
+
 /* ── Rank pips ───────────────────────────────────────────────────────────── */
 
 .sf-ranks {
@@ -529,7 +621,7 @@ function handleCancel() {
 }
 
 .sf-rank-label {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--ss-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -537,28 +629,94 @@ function handleCancel() {
 
 .sf-rank-pips {
   display: flex;
-  gap: 5px;
+  gap: 4px;
 }
 
 .sf-rank-pip {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--ss-border);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ss-radius-sm);
+  border: 2px solid transparent;
   background: transparent;
   cursor: pointer;
-  padding: 0;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s, border-color 0.15s;
 }
 
-.sf-rank-pip--filled {
-  background: var(--ss-primary);
-  border-color: var(--ss-primary);
+.sf-rank-pip-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sf-rank-pip--on {
+  color: var(--ss-primary);
+  opacity: 1;
+}
+
+.sf-rank-pip--off {
+  color: var(--ss-text-subtle);
+  opacity: 0.25;
 }
 
 .sf-rank-pip:hover {
   border-color: var(--ss-primary);
+  opacity: 1;
+}
+
+/* ── Series section ──────────────────────────────────────────────────────── */
+
+.sf-section--series {
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sf-section-header {
+  display: flex;
+  align-items: center;
+}
+
+.sf-series-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ss-border);
+}
+
+.sf-series-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sf-series-of {
+  font-size: 0.9rem;
+  color: var(--ss-text-muted);
+  padding-bottom: 0.45rem;
+}
+
+/* ── Expand transition ───────────────────────────────────────────────────── */
+
+.sf-expand-enter-active,
+.sf-expand-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.sf-expand-enter-from,
+.sf-expand-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

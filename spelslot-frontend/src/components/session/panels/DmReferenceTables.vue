@@ -19,8 +19,8 @@ const ACTIONS: Action[] = [
     tag: 'Action',
     desc: 'Make one melee or ranged weapon attack. You can replace one attack with a Grapple or Shove.',
     sub: [
-      { name: 'Grapple', desc: 'Athletics vs. target's Athletics or Acrobatics. Success → target is Grappled.' },
-      { name: 'Shove', desc: 'Athletics vs. target's Athletics or Acrobatics. Success → knock prone or push 5 ft.' },
+      { name: 'Grapple', desc: "Athletics vs. target's Athletics or Acrobatics. Success → target is Grappled." },
+      { name: 'Shove', desc: "Athletics vs. target's Athletics or Acrobatics. Success → knock prone or push 5 ft." },
     ],
   },
   { name: 'Cast a Spell', tag: 'Action', desc: 'Cast a spell with a casting time of 1 action.' },

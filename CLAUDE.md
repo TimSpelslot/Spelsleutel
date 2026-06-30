@@ -56,10 +56,10 @@ AdventureBoard and Marketplace are **live external systems**. This app integrate
 
 ### Auth & Users
 - Google OAuth via Firebase Auth (no email/password)
-- Roles: `PLAYER` / `DM` / `ADMIN`
-- `isWorldbuilder: boolean` on User — grants Codex create/edit rights to players
-  - Players can request the flag; admins approve in admin panel
-  - DMs and Admins bypass this (always have full access)
+- Roles: `PLAYER` / `ADMIN` only — no DM role
+- `isStoryDm: boolean` — grants read access to Codex `DM_ONLY` entries. No extra write access. Admins can set this flag on any user.
+- `isWorldbuilder: boolean` — grants Codex create/edit rights. Players request it; admins approve. Does not grant `DM_ONLY` read access by itself.
+- Any user (PLAYER or ADMIN) can host sessions. Hosting a session grants contextual DM dashboard access for that session — no role or flag required.
 - Karma: pulled from AdventureBoard API (not stored locally)
 - Gold: pulled from Marketplace API (not stored locally)
 - DnD Beyond character ID linkable per user; admins can set it on behalf of users
@@ -87,14 +87,14 @@ AdventureBoard and Marketplace are **live external systems**. This app integrate
 Permission model:
 - `PUBLIC` — visible to everyone including non-logged-in
 - `PLAYERS` — visible to all logged-in users (default for entries)
-- `DM_ONLY` — visible to DMs and Admins only (maps to LK `isHidden: true`)
+- `DM_ONLY` — visible to `isStoryDm` users and Admins only (maps to LK `isHidden: true`)
 - `PRIVATE` — visible only to entry author and explicitly added editors
 
 Write access:
 - Players: read-only by default
-- `isWorldbuilder` players: can create entries and edit entries they authored
+- `isWorldbuilder` users: can create entries and edit entries they authored; can reorder the tree
+- `isStoryDm` users: read-only access to `DM_ONLY` entries — no extra write access
 - Session pages: all session participants can edit regardless of `isWorldbuilder`
-- DMs: full create/edit on all entries
 - Admins: full access including delete
 
 Features:
@@ -119,8 +119,7 @@ Timelines: **deferred to v2** (after August deadline)
 - No gold adjustments here (Marketplace handles gold)
 
 ### Admin Panel
-- Deferred to v2 — build after core features are stable
-- Will include: worldbuilder flag approvals, user management, DnD Beyond ID assignment
+- **Already built** (v1). Includes: user management, role assignment, worldbuilder/isStoryDm flag toggles, worldbuilder request approvals, default room assignment, DnD Beyond ID assignment, instant mode, room planning, signup overview.
 
 ### DnD Beyond Integration
 - Deferred to v2
@@ -246,7 +245,13 @@ Follow `.claude/instructions/frontend.instructions.md` and `.claude/instructions
 - Dialogs named `*Dialog.vue`, never `*Modal.vue`
 - `@/` import alias maps to `src/`
 - Tests with Vitest, pattern: `it('should ...')`
-- Permission checks always through `auth.hasPermission()` — never hardcode role names
+- Permission checks: roles via `auth.hasPermission('ADMIN')`; flags via `auth.effectiveUser?.isStoryDm` / `auth.effectiveUser?.isWorldbuilder` — never hardcode strings inline
+
+---
+
+## Collaboration Guidelines
+
+**Ask before implementing design or feature decisions.** When a task involves choices about permissions, UI structure, naming, role models, or feature scope — ask clarifying questions first rather than inferring. This avoids double work. Examples: "Should X be a role or a flag?", "Who should be able to see Y?", "Should this be contextual or persistent?" Tim prefers a short Q&A before implementation over rework after.
 
 ---
 

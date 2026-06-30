@@ -33,6 +33,8 @@ export interface IWorldEntry {
   authorId?: Types.ObjectId
   editors: Types.ObjectId[]
   lkProperties: unknown[]
+  deletedAt?: Date
+  deletedBy?: Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }
@@ -76,6 +78,8 @@ const WorldEntrySchema = new Schema<IWorldEntry>(
     authorId: { type: Schema.Types.ObjectId, ref: 'User' },
     editors: { type: [Schema.Types.ObjectId], ref: 'User', default: [] },
     lkProperties: { type: [Schema.Types.Mixed], default: [] },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
 )

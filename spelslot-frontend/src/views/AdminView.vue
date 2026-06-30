@@ -11,15 +11,19 @@ import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Avatar from 'primevue/avatar'
 import { adminService, type AdminUser } from '@/services/adminService'
+import { roomService, type Room } from '@/services/roomService'
 
 const users = ref<AdminUser[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const rooms = ref<Room[]>([])
 
 const editTarget = ref<AdminUser | null>(null)
-const editRole = ref<'PLAYER' | 'DM' | 'ADMIN'>('PLAYER')
+const editRole = ref<'PLAYER' | 'ADMIN'>('PLAYER')
+const editStoryDm = ref(false)
 const editWorldbuilder = ref(false)
 const editDndId = ref('')
+const editDefaultRoom = ref<string | null>(null)
 const saving = ref(false)
 const saveError = ref<string | null>(null)
 
@@ -27,23 +31,30 @@ const { t } = useI18n()
 
 const ROLE_OPTIONS = computed(() => [
   { label: t('admin.roles.player'), value: 'PLAYER' },
-  { label: t('admin.roles.dm'), value: 'DM' },
   { label: t('admin.roles.admin'), value: 'ADMIN' },
 ])
 
 onMounted(async () => {
   loading.value = true
-  const result = await adminService.listUsers()
+  const [usersResult, roomsResult] = await Promise.all([adminService.listUsers(), roomService.list()])
   loading.value = false
-  if (result.type === 'ok') users.value = result.data
-  else error.value = result.message
+  if (usersResult.type === 'ok') users.value = usersResult.data
+  else error.value = usersResult.message
+  if (roomsResult.type === 'ok') rooms.value = roomsResult.data
 })
+
+const defaultRoomOptions = computed(() => [
+  { label: '— Geen standaard ruimte —', value: null },
+  ...rooms.value.filter(r => r.isActive).map(r => ({ label: r.name, value: r.name })),
+])
 
 function openEdit(user: AdminUser) {
   editTarget.value = { ...user }
   editRole.value = user.role
+  editStoryDm.value = user.isStoryDm
   editWorldbuilder.value = user.isWorldbuilder
   editDndId.value = user.dndbeyondCharacterId ?? ''
+  editDefaultRoom.value = user.defaultRoom ?? null
   saveError.value = null
 }
 
@@ -62,8 +73,10 @@ async function saveEdit() {
 
   const result = await adminService.updateUser(editTarget.value.id, {
     role: editRole.value,
+    isStoryDm: editStoryDm.value,
     isWorldbuilder: editWorldbuilder.value,
     dndbeyondCharacterId: normalizedDndId,
+    defaultRoom: editDefaultRoom.value || null,
   })
   saving.value = false
   if (result.type === 'error') {
@@ -104,15 +117,13 @@ async function rejectWorldbuilder(user: AdminUser) {
   }
 }
 
-function roleSeverity(role: string): 'warn' | 'danger' | 'secondary' {
+function roleSeverity(role: string): 'danger' | 'secondary' {
   if (role === 'ADMIN') return 'danger'
-  if (role === 'DM') return 'warn'
   return 'secondary'
 }
 
 function roleLabel(role: string) {
   if (role === 'ADMIN') return t('admin.roles.admin')
-  if (role === 'DM') return t('admin.roles.dm')
   return t('admin.roles.player')
 }
 
@@ -125,7 +136,23 @@ const pendingRequests = computed(() => users.value.filter((u) => u.worldbuilderR
 
 <template>
   <div class="admin-view">
-    <h1 class="admin-view__title">{{ $t('admin.title') }}</h1>
+    <div class="admin-view__header">
+      <h1 class="admin-view__title">{{ $t('admin.title') }}</h1>
+      <div class="admin-header-links">
+        <router-link to="/admin/signups" class="admin-rooms-link">
+          <i class="pi pi-list" /> Aanmeldingen
+        </router-link>
+        <router-link to="/admin/rooms" class="admin-rooms-link">
+          <i class="pi pi-map-marker" /> Ruimteplanning
+        </router-link>
+        <router-link to="/admin/instant-mode" class="admin-rooms-link">
+          <i class="pi pi-bolt" /> Instant mode
+        </router-link>
+        <router-link to="/admin/archive" class="admin-rooms-link">
+          <i class="pi pi-inbox" /> Archief
+        </router-link>
+      </div>
+    </div>
 
     <!-- Worldbuilder pending requests -->
     <section v-if="pendingRequests.length" class="admin-requests">
@@ -228,6 +255,17 @@ const pendingRequests = computed(() => users.value.filter((u) => u.worldbuilderR
           </template>
         </Column>
 
+        <Column header="Story DM" style="width: 120px">
+          <template #body="{ data }">
+            <Tag
+              v-if="data.isStoryDm"
+              value="Ja"
+              severity="success"
+            />
+            <Tag v-else value="Nee" severity="secondary" />
+          </template>
+        </Column>
+
         <Column :header="$t('admin.users.columns.dndBeyond')" style="width: 130px">
           <template #body="{ data }">
             <span v-if="data.dndbeyondCharacterId" class="admin-table__dndbeyond">
@@ -321,6 +359,31 @@ const pendingRequests = computed(() => users.value.filter((u) => u.worldbuilderR
             </div>
           </div>
 
+          <!-- Story DM toggle -->
+          <div class="admin-edit__field">
+            <label class="admin-edit__label">{{ $t('admin.edit.storyDmLabel') }}</label>
+            <div class="admin-edit__toggle-row">
+              <ToggleSwitch v-model="editStoryDm" />
+              <span class="admin-edit__toggle-hint">
+                {{ editStoryDm ? $t('admin.edit.storyDmEnabled') : $t('admin.edit.storyDmDisabled') }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Default room -->
+          <div class="admin-edit__field">
+            <label class="admin-edit__label">Standaard ruimte</label>
+            <Select
+              v-model="editDefaultRoom"
+              :options="defaultRoomOptions"
+              option-label="label"
+              option-value="value"
+              class="admin-edit__select"
+              placeholder="Geen standaard ruimte"
+            />
+            <span class="admin-edit__hint">Wordt automatisch aan sessies van deze DM toegewezen.</span>
+          </div>
+
           <!-- DnD Beyond character ID -->
           <div class="admin-edit__field">
             <label class="admin-edit__label">{{ $t('admin.edit.dndBeyondLabel') }}</label>
@@ -350,11 +413,44 @@ const pendingRequests = computed(() => users.value.filter((u) => u.worldbuilderR
   padding: 1.5rem;
 }
 
+.admin-view__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .admin-view__title {
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--ss-text);
-  margin: 0 0 1.5rem;
+  margin: 0;
+}
+
+.admin-header-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-rooms-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ss-primary);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ss-primary) 30%, transparent);
+  border-radius: var(--ss-radius-sm);
+  transition: background 0.15s;
+}
+
+.admin-rooms-link:hover {
+  background: color-mix(in srgb, var(--ss-primary) 8%, transparent);
 }
 
 /* ── Pending requests banner ── */

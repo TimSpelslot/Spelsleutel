@@ -8,18 +8,22 @@ export interface AdminUser {
   name: string
   displayName: string
   avatarUrl: string | null
-  role: 'PLAYER' | 'DM' | 'ADMIN'
+  role: 'PLAYER' | 'ADMIN'
+  isStoryDm: boolean
   isWorldbuilder: boolean
   worldbuilderRequestPending: boolean
   dndbeyondCharacterId: string | null
+  defaultRoom: string | null
   createdAt: string
 }
 
 export interface AdminUserPatch {
-  role?: 'PLAYER' | 'DM' | 'ADMIN'
+  role?: 'PLAYER' | 'ADMIN'
+  isStoryDm?: boolean
   isWorldbuilder?: boolean
   worldbuilderRequestPending?: boolean
   dndbeyondCharacterId?: string | null
+  defaultRoom?: string | null
 }
 
 export const adminService = {

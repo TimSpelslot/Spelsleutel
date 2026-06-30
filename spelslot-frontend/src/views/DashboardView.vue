@@ -8,7 +8,6 @@ import Button from 'primevue/button'
 import { useAuthStore } from '@/stores/auth'
 import { sessionService, type SessionSummary } from '@/services/sessionService'
 import { codexService, type CodexEntry } from '@/services/codexService'
-import { authService } from '@/services/authService'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -25,42 +24,6 @@ const karma = ref<number | null>(null)
 // ── Recent Codex ──────────────────────────────────────────────────────────
 const recentEntries = ref<CodexEntry[]>([])
 const codexLoading = ref(false)
-
-// ── Worldbuilder request ──────────────────────────────────────────────────
-const requestingWorldbuilder = ref(false)
-const worldbuilderRequestSent = ref(false)
-
-const showWorldbuilderBanner = computed(() => {
-  const u = auth.effectiveUser
-  if (!u) return false
-  return (
-    u.role === 'PLAYER' &&
-    !u.isWorldbuilder &&
-    !u.worldbuilderRequestPending &&
-    !worldbuilderRequestSent.value
-  )
-})
-
-const showWorldbuilderPending = computed(() => {
-  const u = auth.effectiveUser
-  if (!u) return false
-  return (
-    u.role === 'PLAYER' &&
-    !u.isWorldbuilder &&
-    (u.worldbuilderRequestPending || worldbuilderRequestSent.value)
-  )
-})
-
-async function requestWorldbuilder() {
-  if (requestingWorldbuilder.value) return
-  requestingWorldbuilder.value = true
-  const result = await authService.requestWorldbuilder()
-  requestingWorldbuilder.value = false
-  if (result.type === 'ok') {
-    auth.user = result.data
-    worldbuilderRequestSent.value = true
-  }
-}
 
 // ── Quick links ───────────────────────────────────────────────────────────
 const quickLinks = computed(() => {
@@ -91,14 +54,12 @@ const quickLinks = computed(() => {
       desc: t('dashboard.links.sessionPlayer.desc'),
     },
   ]
-  if (role === 'DM' || role === 'ADMIN') {
-    links.push({
-      name: 'session-dm',
-      label: t('dashboard.links.sessionDm.label'),
-      icon: 'pi pi-shield',
-      desc: t('dashboard.links.sessionDm.desc'),
-    })
-  }
+  links.push({
+    name: 'session-dm',
+    label: t('dashboard.links.sessionDm.label'),
+    icon: 'pi pi-shield',
+    desc: t('dashboard.links.sessionDm.desc'),
+  })
   if (role === 'ADMIN') {
     links.push({
       name: 'admin',
@@ -146,13 +107,12 @@ function formatMonth(dateStr: string): string {
 }
 
 // ── Role display ──────────────────────────────────────────────────────────
-const ROLE_SEVERITY: Record<string, string> = { PLAYER: 'secondary', DM: 'warn', ADMIN: 'danger' }
+const ROLE_SEVERITY: Record<string, string> = { PLAYER: 'secondary', ADMIN: 'danger' }
 
 const userRoleLabel = computed(() => {
   const role = auth.effectiveUser?.role ?? 'PLAYER'
   const map: Record<string, string> = {
     PLAYER: t('dashboard.roles.player'),
-    DM: t('dashboard.roles.dm'),
     ADMIN: t('dashboard.roles.admin'),
   }
   return map[role] ?? t('dashboard.roles.player')
@@ -212,28 +172,6 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Worldbuilder request banner -->
-      <div v-if="showWorldbuilderBanner" class="worldbuilder-banner">
-        <i class="pi pi-pencil worldbuilder-banner__icon" />
-        <div class="worldbuilder-banner__text">
-          <strong>{{ $t('dashboard.worldbuilder.bannerTitle') }}</strong>
-          {{ $t('dashboard.worldbuilder.bannerBody') }}
-        </div>
-        <Button
-          :label="$t('dashboard.worldbuilder.requestAccess')"
-          size="small"
-          :loading="requestingWorldbuilder"
-          @click="requestWorldbuilder"
-        />
-      </div>
-
-      <div v-if="showWorldbuilderPending" class="worldbuilder-banner worldbuilder-banner--pending">
-        <i class="pi pi-clock worldbuilder-banner__icon" />
-        <div class="worldbuilder-banner__text">
-          <strong>{{ $t('dashboard.worldbuilder.pendingTitle') }}</strong>
-          {{ $t('dashboard.worldbuilder.pendingBody') }}
-        </div>
-      </div>
     </section>
 
     <!-- Main grid -->
@@ -505,39 +443,6 @@ onMounted(async () => {
   border-radius: 99px;
   background: color-mix(in srgb, var(--ss-primary) 8%, transparent);
   white-space: nowrap;
-}
-
-/* ── Worldbuilder banner ── */
-.worldbuilder-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  background-color: color-mix(in srgb, var(--ss-primary) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ss-primary) 25%, transparent);
-  border-radius: var(--ss-radius);
-  padding: 0.75rem 1rem;
-  font-size: 0.85rem;
-  color: var(--ss-text);
-}
-
-.worldbuilder-banner--pending {
-  background-color: color-mix(in srgb, var(--ss-info) 8%, transparent);
-  border-color: color-mix(in srgb, var(--ss-info) 25%, transparent);
-}
-
-.worldbuilder-banner__icon {
-  color: var(--ss-primary);
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.worldbuilder-banner--pending .worldbuilder-banner__icon {
-  color: var(--ss-info);
-}
-
-.worldbuilder-banner__text {
-  flex: 1;
-  line-height: 1.4;
 }
 
 /* ── Sessions ── */

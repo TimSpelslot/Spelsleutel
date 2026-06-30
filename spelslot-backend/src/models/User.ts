@@ -5,16 +5,24 @@ export interface IUser {
   email: string
   name: string
   displayName: string
+  worldBuilderName: string | null
+  dndBeyondName: string | null
+  dndBeyondCampaign: number | null
   avatarUrl?: string
-  role: 'PLAYER' | 'DM' | 'ADMIN'
+  role: 'PLAYER' | 'ADMIN'
+  isStoryDm: boolean
   isWorldbuilder: boolean
   worldbuilderRequestPending: boolean
+  worldbuilderRequestReason?: string
   dndbeyondCharacterId?: string
+  karma: number
   notifySignup: boolean
   notifyAssignment: boolean
   notifyMarketplace: boolean
   notifySession: boolean
-  karmaBonus: number
+  notifyCreateAdventureReminder: boolean
+  storyPlayer: boolean
+  defaultRoom: string | null
   fcmTokens: string[]
   createdAt: Date
   updatedAt: Date
@@ -26,16 +34,24 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true },
     name: { type: String, required: true },
     displayName: { type: String, required: true },
+    worldBuilderName: { type: String, default: null },
+    dndBeyondName: { type: String, default: null },
+    dndBeyondCampaign: { type: Number, default: null },
     avatarUrl: { type: String },
-    role: { type: String, enum: ['PLAYER', 'DM', 'ADMIN'], default: 'PLAYER' },
+    role: { type: String, enum: ['PLAYER', 'ADMIN'], default: 'PLAYER' },
+    isStoryDm: { type: Boolean, default: false },
     isWorldbuilder: { type: Boolean, default: false },
     worldbuilderRequestPending: { type: Boolean, default: false },
+    worldbuilderRequestReason: { type: String },
     dndbeyondCharacterId: { type: String },
+    karma: { type: Number, default: 1000 },
     notifySignup: { type: Boolean, default: true },
     notifyAssignment: { type: Boolean, default: true },
     notifyMarketplace: { type: Boolean, default: true },
     notifySession: { type: Boolean, default: true },
-    karmaBonus: { type: Number, default: 0 },
+    notifyCreateAdventureReminder: { type: Boolean, default: false },
+    storyPlayer: { type: Boolean, default: false },
+    defaultRoom: { type: String, default: null },
     fcmTokens: { type: [String], default: [] },
   },
   { timestamps: true },
