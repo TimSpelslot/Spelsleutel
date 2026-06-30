@@ -15,6 +15,12 @@ export interface DdbStats {
   cha: number
 }
 
+export interface DdbSavingThrow {
+  modifier: number    // ability modifier (before proficiency)
+  proficient: boolean
+  total: number       // final value: modifier + proficiency bonus (if any) + bonuses
+}
+
 export interface DdbCharacterData {
   id: number
   name: string
@@ -25,7 +31,8 @@ export interface DdbCharacterData {
   stats: DdbStats
   modifiers: DdbStats
   proficiencyBonus: number
-  savingThrowProficiencies: Array<keyof DdbStats>
+  savingThrowProficiencies: Array<keyof DdbStats>  // backward compat
+  savingThrows: Record<keyof DdbStats, DdbSavingThrow>
   armorClass: number
   speed: number
 }

@@ -12,6 +12,9 @@
   "noDocumentsShort": "Geen documenten voor deze pagina.",
   "relatedEntries": "Gerelateerde pagina's",
   "related": "Gerelateerd",
+  "removeRelation": "Relatie verwijderen",
+  "searchEntry": "Zoek pagina…",
+  "relationTypeHint": "Label (optioneel)",
   "selectEntry": "Selecteer een pagina in de boom",
   "bannerAlt": "Banner voor {name}",
   "types": {
@@ -34,6 +37,11 @@
     "players": "Spelers",
     "dmOnly": "Alleen DM",
     "private": "Privé"
+  },
+  "tab": {
+    "dmOnly": "Geheim (DM Only)",
+    "public": "Zichtbaar voor iedereen",
+    "toggleHint": "Schakel DM Only voor dit tabblad"
   },
   "docViewer": {
     "comingInV2": "{type}-weergave komt in v2.",
@@ -88,6 +96,7 @@
     "blockquote": "Citaat",
     "codeBlock": "Codeblok",
     "insertTable": "Tabel invoegen",
+    "secretBlock": "Geheim DM-blok (aan/uit)",
     "undo": "Ongedaan maken",
     "redo": "Opnieuw uitvoeren",
     "collaborationStatus": "Samenwerking: {status}"

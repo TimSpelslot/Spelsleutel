@@ -10,6 +10,7 @@ import TableHeader from '@tiptap/extension-table-header'
 import Mention from '@tiptap/extension-mention'
 import Collaboration from '@tiptap/extension-collaboration'
 import * as Y from 'yjs'
+import { SecretBlock } from '@/extensions/SecretBlock'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import tippy, { type Instance } from 'tippy.js'
 import MentionList from './MentionList.vue'
@@ -124,6 +125,7 @@ const editor = useEditor({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       suggestion: mentionSuggestion as any,
     }),
+    SecretBlock,
   ],
   onUpdate: ({ editor: e }) => {
     // Still emit so CodexDetailPanel can save metadata + content together on "Save"
@@ -257,6 +259,19 @@ function insertTable() {
       <button class="ce-btn" :title="t('codex.editor.insertTable')" @click="insertTable()">
         <i class="pi pi-table" style="font-size: 0.75rem" />
       </button>
+
+      <!-- DM Secret block (StoryDM only) -->
+      <template v-if="auth.effectiveUser?.isStoryDm">
+        <span class="ce-sep" />
+        <button
+          class="ce-btn ce-btn--secret"
+          :class="{ active: isActive('secretBlock') }"
+          :title="t('codex.editor.secretBlock')"
+          @click="cmd()?.toggleSecretBlock().run()"
+        >
+          🔒
+        </button>
+      </template>
 
       <span class="ce-sep" />
 
@@ -479,6 +494,33 @@ function insertTable() {
 }
 .codex-editor__content :deep(.ProseMirror td, .ProseMirror th) {
   position: relative;
+}
+
+/* Secret block (DM Only) */
+.codex-editor__content :deep(.secret-block) {
+  background: color-mix(in srgb, var(--ss-dm-color, #7c3aed) 8%, transparent);
+  border-left: 3px solid var(--ss-dm-color, #7c3aed);
+  border-radius: var(--ss-radius, 6px);
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  margin: 0.75em 0;
+}
+.codex-editor__content :deep(.secret-block::before) {
+  content: '🔒 DM Only';
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ss-dm-color, #7c3aed);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+}
+
+.ce-btn--secret {
+  font-size: 0.85rem;
+}
+.ce-btn--secret.active {
+  background: color-mix(in srgb, var(--ss-dm-color, #7c3aed) 15%, transparent);
+  color: var(--ss-dm-color, #7c3aed);
 }
 
 /* Mention chip */

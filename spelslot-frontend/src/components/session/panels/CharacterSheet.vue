@@ -52,6 +52,9 @@ function fmtMod(mod: number): string {
 
 function saveMod(key: (typeof STAT_KEYS)[number]): string {
   if (!character.value) return ''
+  const st = character.value.savingThrows?.[key]
+  if (st != null) return fmtMod(st.total)
+  // Fallback for cached data before savingThrows field was added
   const base = character.value.modifiers[key]
   const prof = character.value.savingThrowProficiencies?.includes(key)
     ? character.value.proficiencyBonus
@@ -60,7 +63,9 @@ function saveMod(key: (typeof STAT_KEYS)[number]): string {
 }
 
 function hasProf(key: (typeof STAT_KEYS)[number]): boolean {
-  return character.value?.savingThrowProficiencies?.includes(key) ?? false
+  return character.value?.savingThrows?.[key]?.proficient ??
+    character.value?.savingThrowProficiencies?.includes(key) ??
+    false
 }
 
 async function load() {

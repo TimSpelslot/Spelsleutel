@@ -12,6 +12,9 @@
   "noDocumentsShort": "No documents for this entry.",
   "relatedEntries": "Related Entries",
   "related": "Related",
+  "removeRelation": "Remove relation",
+  "searchEntry": "Search entry…",
+  "relationTypeHint": "Label (optional)",
   "selectEntry": "Select an entry from the tree",
   "bannerAlt": "Banner for {name}",
   "types": {
@@ -34,6 +37,11 @@
     "players": "Players",
     "dmOnly": "DM Only",
     "private": "Private"
+  },
+  "tab": {
+    "dmOnly": "Secret (DM Only)",
+    "public": "Visible to everyone",
+    "toggleHint": "Toggle DM Only for this tab"
   },
   "docViewer": {
     "comingInV2": "{type} viewer coming in v2.",
@@ -88,6 +96,7 @@
     "blockquote": "Blockquote",
     "codeBlock": "Code block",
     "insertTable": "Insert table",
+    "secretBlock": "DM Secret block (toggle)",
     "undo": "Undo",
     "redo": "Redo",
     "collaborationStatus": "Collaboration: {status}"

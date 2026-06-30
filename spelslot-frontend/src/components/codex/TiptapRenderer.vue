@@ -7,6 +7,8 @@ import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import Mention from '@tiptap/extension-mention'
+import { SecretBlock } from '@/extensions/SecretBlock'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   content: unknown
@@ -15,6 +17,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   navigate: [slug: string]
 }>()
+
+const auth = useAuthStore()
 
 // Node types native to Tiptap's StarterKit + our extensions.
 const NATIVE_NODES = new Set([
@@ -69,20 +73,26 @@ interface PmNode {
 
 // Returns an array so that transparent / degraded nodes can contribute
 // multiple children to their parent's content list.
-function sanitize(node: PmNode): PmNode[] {
+function sanitize(node: PmNode, isStoryDm: boolean): PmNode[] {
+  // Secret blocks: strip entirely for non-StoryDM users
+  if (node.type === 'secretBlock') {
+    if (!isStoryDm) return []
+    return [{ ...node, content: (node.content ?? []).flatMap((n) => sanitize(n, isStoryDm)) }]
+  }
+
   if (NATIVE_NODES.has(node.type)) {
     if (!node.content) return [node]
-    return [{ ...node, content: node.content.flatMap(sanitize) }]
+    return [{ ...node, content: node.content.flatMap((n) => sanitize(n, isStoryDm)) }]
   }
 
   if (DEGRADE_TO_BLOCKQUOTE.has(node.type)) {
-    const children = (node.content ?? []).flatMap(sanitize)
+    const children = (node.content ?? []).flatMap((n) => sanitize(n, isStoryDm))
     if (!children.length) return []
     return [{ type: 'blockquote', content: children }]
   }
 
   if (TRANSPARENT_NODES.has(node.type)) {
-    return (node.content ?? []).flatMap(sanitize)
+    return (node.content ?? []).flatMap((n) => sanitize(n, isStoryDm))
   }
 
   // Unknown inline nodes: keep text content as plain text
@@ -92,7 +102,7 @@ function sanitize(node: PmNode): PmNode[] {
 
   // Unknown node with children: lift children directly
   if (node.content && node.content.length > 0) {
-    return node.content.flatMap(sanitize)
+    return node.content.flatMap((n) => sanitize(n, isStoryDm))
   }
 
   return []
@@ -102,9 +112,10 @@ function prepare(raw: unknown): object | null {
   if (!raw || typeof raw !== 'object') return null
   const root = raw as PmNode
   if (root.type !== 'doc') return null
+  const isStoryDm = auth.effectiveUser?.isStoryDm ?? false
   return {
     type: 'doc',
-    content: (root.content ?? []).flatMap(sanitize),
+    content: (root.content ?? []).flatMap((n) => sanitize(n, isStoryDm)),
   }
 }
 
@@ -120,6 +131,7 @@ const editor = useEditor({
     Mention.configure({
       HTMLAttributes: { class: 'codex-mention' },
     }),
+    SecretBlock,
   ],
 })
 
@@ -254,6 +266,25 @@ function handleClick(e: MouseEvent) {
   background: var(--ss-parchment-dark);
   font-weight: 700;
   text-align: left;
+}
+
+/* Secret block (DM Only — only rendered for StoryDM users, stripped for others) */
+.tiptap-renderer :deep(.secret-block) {
+  background: color-mix(in srgb, var(--ss-dm-color, #7c3aed) 8%, transparent);
+  border-left: 3px solid var(--ss-dm-color, #7c3aed);
+  border-radius: var(--ss-radius, 6px);
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  margin: 0.75em 0;
+}
+.tiptap-renderer :deep(.secret-block::before) {
+  content: '🔒 DM Only';
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ss-dm-color, #7c3aed);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
 }
 
 /* Mention chip */
